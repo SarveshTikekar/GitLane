@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../services/indexer_service.dart';
 
 class VisualMergeEditor extends StatefulWidget {
   final String repoPath;
@@ -116,34 +117,55 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
     final conflicts = _chunks.where((c) => c['local'] != c['remote']).toList();
     if (conflicts.isEmpty) return const SizedBox.shrink();
 
+    final symbols = IndexerService.getSymbolsInText(conflicts[_currentConflictIndex]['local'] + "\n" + conflicts[_currentConflictIndex]['remote']);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: AppTheme.surfaceSlate,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.warning_amber_rounded, color: AppTheme.accentOrange, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                "Conflict ${_currentConflictIndex + 1} of ${_chunks.length}",
-                style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: AppTheme.accentOrange, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Conflict ${_currentConflictIndex + 1} of ${conflicts.length}",
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+                    onPressed: _currentConflictIndex > 0 ? () => setState(() => _currentConflictIndex--) : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                    onPressed: _currentConflictIndex < conflicts.length - 1 ? () => setState(() => _currentConflictIndex++) : null,
+                  ),
+                ],
               ),
             ],
           ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
-                onPressed: _currentConflictIndex > 0 ? () => setState(() => _currentConflictIndex--) : null,
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
-                onPressed: _currentConflictIndex < _chunks.length - 1 ? () => setState(() => _currentConflictIndex++) : null,
-              ),
-            ],
-          ),
+          if (symbols.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.psychology_rounded, color: AppTheme.accentCyan, size: 14),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Semantic Hint: Conflicting logic in ${symbols.join(', ')}",
+                    style: GoogleFonts.inter(color: AppTheme.accentCyan, fontSize: 11, fontStyle: FontStyle.italic),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

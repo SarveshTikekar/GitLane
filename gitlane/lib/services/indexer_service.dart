@@ -129,6 +129,27 @@ class IndexerService {
     }
   }
 
+  static List<String> getSymbolsInText(String text) {
+    final List<String> symbols = [];
+    final lines = text.split('\n');
+    for (var line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('class ') ||
+          trimmed.startsWith('void ') ||
+          trimmed.startsWith('Future<') ||
+          (trimmed.contains('(') && trimmed.contains('{') && !trimmed.contains('if'))) {
+        final parts = trimmed.split(RegExp(r'[\s\(]'));
+        for (var part in parts) {
+          if (part.length > 3 && !['class', 'void', 'Future', 'static', 'async'].contains(part)) {
+            symbols.add(part);
+            break;
+          }
+        }
+      }
+    }
+    return symbols.toSet().toList();
+  }
+
   static String? _getDocs(List<String> lines, int index) {
     List<String> docs = [];
     for (int i = index - 1; i >= 0; i--) {

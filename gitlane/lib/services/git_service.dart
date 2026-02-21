@@ -422,6 +422,12 @@ class GitService {
     } on PlatformException catch (e) {
       // Log error
       return -1;
+
+  static Future<String> runHealthCheck(String path) async {
+    try {
+      return await _channel.invokeMethod('runHealthCheck', {'path': path});
+    } on PlatformException catch (_) {
+      return "Internal Error";
     }
   }
 }

@@ -73,6 +73,7 @@ class GitBridge {
     external fun rebaseFinish(path: String): Int
     external fun commitSigned(path: String, message: String, signature: String): Int
     external fun getCommitContent(path: String, message: String): String
+    external fun runHealthCheck(path: String): String
 
     companion object {
         init {

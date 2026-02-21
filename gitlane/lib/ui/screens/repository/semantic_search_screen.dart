@@ -37,7 +37,7 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
   }
 
   void _onQueryChanged() {
-    final q = _queryController.text.trim();
+    String q = _queryController.text.trim().toLowerCase();
     if (q.length < 2) {
       setState(() {
         _symbolResults = [];
@@ -46,10 +46,18 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
       });
       return;
     }
+
+    // Smart Intelligence: Handle "symbol:" or other NL-like prefixes
+    bool symbolOnly = false;
+    if (q.startsWith('symbol:') || q.startsWith('func:') || q.startsWith('class:')) {
+      q = q.split(':').last.trim();
+      symbolOnly = true;
+    }
+
     setState(() {
       _hasSearched = true;
       _symbolResults = IndexerService.searchSymbols(q);
-      _contentResults = IndexerService.searchContent(q);
+      _contentResults = symbolOnly ? [] : IndexerService.searchContent(q);
     });
   }
 

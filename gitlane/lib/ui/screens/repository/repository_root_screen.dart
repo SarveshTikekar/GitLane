@@ -28,6 +28,7 @@ import 'semantic_search_screen.dart';
 import 'git_hooks_screen.dart';
 import 'collaboration_dashboard.dart';
 import 'gpg_workbench.dart';
+import 'maintenance_dashboard.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -1142,6 +1143,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentOrange,
         ),
         _menuItem(
+          'health',
+          Icons.health_and_safety_rounded,
+          'Health & Maintenance',
+          AppTheme.accentGreen,
+        ),
+        _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
@@ -1251,6 +1258,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           context,
           MaterialPageRoute(
             builder: (_) => const GPGWorkbench(),
+          ),
+        );
+        break;
+      case 'health':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MaintenanceDashboard(repoPath: widget.repoPath),
           ),
         );
         break;

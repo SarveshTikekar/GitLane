@@ -2234,3 +2234,32 @@ cleanup_signed:
     git_libgit2_shutdown();
     return result;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 39. runHealthCheck(path: String): String
+ *     Runs a basic integrity check on the repository.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_runHealthCheck(
+        JNIEnv *env, jobject obj, jstring jpath) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+    char *result_msg = "Healthy";
+
+    if (git_repository_open(&repo, path) < 0) {
+        result_msg = "Corrupted or Missing";
+    } else {
+        git_odb *odb = NULL;
+        if (git_repository_odb(&odb, repo) < 0) {
+            result_msg = "ODB Error";
+        } else {
+            git_odb_free(odb);
+        }
+    }
+
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    return (*env)->NewStringUTF(env, result_msg);
+}

@@ -223,7 +223,11 @@ class MainActivity : FlutterActivity() {
                                 "getCommitContent" -> {
                                     val path = call.argument<String>("path")!!
                                     val message = call.argument<String>("message")!!
-                                    bridge.getCommitContent(path, message)
+                                    result.success(bridge.getCommitContent(path, message))
+                                }
+                                "runHealthCheck" -> {
+                                    val path = call.argument<String>("path")!!
+                                    result.success(bridge.runHealthCheck(path))
                                 }
                                 "generateSSHKey" -> {
                                     val label = call.argument<String>("label")!!
