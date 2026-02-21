@@ -687,3 +687,55 @@ cleanup_diff:
     free(payload.output);
     return result_str;
 }
+
+/* ─── Callback: Clone Progress ─────────────────────────────────────────── */
+static int fetch_progress_cb(const git_indexer_progress *stats, void *payload) {
+    LOGI("Fetch Progress: %u/%u objects", stats->received_objects, stats->total_objects);
+    return 0;
+}
+
+static void checkout_progress_cb(const char *path, size_t cur, size_t tot, void *payload) {
+    if (path) LOGI("Checkout Progress: %s (%zu/%zu)", path, cur, tot);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 10. cloneRepository(url: String, path: String): Int
+ *     Clones a remote repository to a local path.
+ *     Returns 0 on success, negative on failure.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_cloneRepository(
+        JNIEnv *env, jobject obj, jstring jurl, jstring jpath) {
+
+    git_libgit2_init();
+    const char *url  = (*env)->GetStringUTFChars(env, jurl,  NULL);
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository *repo = NULL;
+    git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+
+    /* Set up progress callbacks */
+    fetch_opts.callbacks.transfer_progress = fetch_progress_cb;
+    clone_opts.fetch_opts = fetch_opts;
+
+    checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+    checkout_opts.progress_cb = checkout_progress_cb;
+    clone_opts.checkout_opts = checkout_opts;
+
+    int result = git_clone(&repo, url, path, &clone_opts);
+    
+    if (result < 0) {
+        LOGE("cloneRepository failed: %s", git_error_str(result));
+    } else {
+        LOGI("cloneRepository OK: %s -> %s", url, path);
+    }
+
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jurl,  url);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}

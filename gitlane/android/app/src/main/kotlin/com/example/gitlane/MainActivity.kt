@@ -93,6 +93,14 @@ class MainActivity : FlutterActivity() {
                         result.success(bridge.getCommitDiff(path, hash))
                     }
 
+                    "cloneRepository" -> {
+                        val url  = call.argument<String>("url")
+                        val path = call.argument<String>("path")
+                        if (url == null || path == null) { result.error("INVALID_ARG", "url and path are required", null); return@setMethodCallHandler }
+                        val code = bridge.cloneRepository(url, path)
+                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "cloneRepository failed: $code", code)
+                    }
+
                     else -> result.notImplemented()
                 }
             }
