@@ -7,6 +7,7 @@ import 'package:highlight/languages/cpp.dart';
 import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
+import '../../../services/indexer_service.dart';
 
 class FileEditorScreen extends StatefulWidget {
   final String filePath;
@@ -27,6 +28,10 @@ class FileEditorScreen extends StatefulWidget {
 class _FileEditorScreenState extends State<FileEditorScreen> {
   late CodeController _codeController;
   bool _isDirty = false;
+  bool _showBlame = false;
+  List<Map<String, dynamic>> _blameData = [];
+  bool _isBlameLoading = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -52,7 +57,28 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
   @override
   void dispose() {
     _codeController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleBlame() async {
+    if (_showBlame) {
+      setState(() => _showBlame = false);
+      return;
+    }
+
+    setState(() {
+      _isBlameLoading = true;
+      _showBlame = true;
+    });
+
+    final data = await GitService.getBlame(widget.repoPath, widget.fileName);
+    if (mounted) {
+      setState(() {
+        _blameData = data;
+        _isBlameLoading = false;
+      });
+    }
   }
 
   Future<void> _saveFile() async {
@@ -88,10 +114,15 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             decoration: const InputDecoration(hintText: "Enter commit message"),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentCyan,
+              ),
               child: const Text("Commit", style: TextStyle(color: Colors.black)),
             ),
           ],
@@ -99,11 +130,129 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
       );
 
       if (confirmed == true) {
-        final msg = commitController.text.trim().isEmpty ? "Update ${widget.fileName}" : commitController.text;
+        final msg =
+            commitController.text.trim().isEmpty
+                ? "Update ${widget.fileName}"
+                : commitController.text;
         await GitService.commitAll(widget.repoPath, msg);
         if (mounted) Navigator.pop(context, true);
       }
     }
+  }
+
+  void _handleSymbolInteraction() {
+    final selection = _codeController.selection;
+    if (selection.isCollapsed && selection.baseOffset < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Place cursor on a symbol or select text")),
+      );
+      return;
+    }
+
+    String? symbol;
+    if (!selection.isCollapsed) {
+      symbol = _codeController.text.substring(selection.start, selection.end);
+    } else {
+      final text = _codeController.text;
+      final offset = selection.baseOffset;
+      symbol = IndexerService.getSymbolAt(text, offset);
+    }
+
+    if (symbol == null || symbol.isEmpty) return;
+
+    final loc = IndexerService.findSymbol(symbol);
+    if (loc == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Definition not found for '$symbol'")),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.bg1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder:
+          (context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.code_rounded,
+                  color: AppTheme.accentCyan,
+                ),
+                title: Text(
+                  "Go to Definition: $symbol",
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  loc.path.split(Platform.pathSeparator).last,
+                  style: const TextStyle(color: AppTheme.textMuted),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (loc.path == widget.filePath) {
+                    _codeController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _getOffsetForLine(loc.line)),
+                    );
+                    _scrollController.animateTo(
+                      (loc.line - 1) * 19.0, // Rough estimation of line height
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => FileEditorScreen(
+                              filePath: loc.path,
+                              fileName:
+                                  loc.path.split(Platform.pathSeparator).last,
+                              repoPath: widget.repoPath,
+                            ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              if (loc.documentation != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceSlate,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.border),
+                    ),
+                    child: Text(
+                      loc.documentation!,
+                      style: const TextStyle(
+                        color: AppTheme.textLight,
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+    );
+  }
+
+  int _getOffsetForLine(int line) {
+    if (line <= 1) return 0;
+    final text = _codeController.text;
+    final lines = text.split('\n');
+    int offset = 0;
+    for (int i = 0; i < line - 1 && i < lines.length; i++) {
+      offset += lines[i].length + 1;
+    }
+    return offset;
   }
 
   @override
@@ -113,11 +262,19 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
       appBar: AppBar(
         title: Text(widget.fileName),
         actions: [
-          if (_isDirty)
-            IconButton(
-              icon: const Icon(Icons.save_rounded, color: AppTheme.accentCyan),
-              onPressed: _saveFile,
+          IconButton(
+            icon: Icon(
+              _showBlame ? Icons.person_off_rounded : Icons.person_search_rounded,
+              color: _showBlame ? AppTheme.accentCyan : null,
             ),
+            tooltip: "Git Blame",
+            onPressed: _toggleBlame,
+          ),
+          IconButton(
+            icon: const Icon(Icons.bolt_rounded, color: AppTheme.accentOrange),
+            tooltip: "LSP Code Intel",
+            onPressed: _handleSymbolInteraction,
+          ),
           IconButton(
             icon: const Icon(Icons.check_circle_outline_rounded),
             tooltip: "Save & Commit",
@@ -125,16 +282,93 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
           ),
         ],
       ),
-      body: CodeTheme(
-        data: CodeThemeData(styles: _getEditorStyles()),
-        child: SingleChildScrollView(
-          child: CodeField(
-            controller: _codeController,
-            textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_showBlame) _buildBlameGutter(),
+          Expanded(
+            child: CodeTheme(
+              data: CodeThemeData(styles: _getEditorStyles()),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: CodeField(
+                  controller: _codeController,
+                  textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  Widget _buildBlameGutter() {
+    if (_isBlameLoading) {
+      return Container(
+        width: 80,
+        decoration: const BoxDecoration(
+          color: AppTheme.bg1,
+          border: Border(right: BorderSide(color: AppTheme.border)),
+        ),
+        child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+      );
+    }
+
+    return Container(
+      width: 100,
+      decoration: const BoxDecoration(
+        color: AppTheme.bg1,
+        border: Border(right: BorderSide(color: AppTheme.border)),
+      ),
+      child: ListView.builder(
+        controller: _scrollController, // Sync with code field
+        padding: const EdgeInsets.only(top: 10), // Match CodeField padding if any
+        itemCount: _blameData.length,
+        itemBuilder: (context, index) {
+          final blame = _blameData[index];
+          final author = blame['author'] ?? 'unknown';
+          final firstLetter = author.isNotEmpty ? author[0].toUpperCase() : '?';
+
+          return Container(
+            height: 19, // Approximation for 13px mono font + line spacing
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                Text(
+                  firstLetter,
+                  style: TextStyle(
+                    color: _getAuthorColor(author),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    author,
+                    style: const TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _getAuthorColor(String name) {
+    final colors = [
+      AppTheme.accentCyan,
+      AppTheme.accentPurple,
+      AppTheme.accentOrange,
+      AppTheme.accentGreen,
+      AppTheme.accentPurple,
+    ];
+    return colors[name.hashCode % colors.length];
   }
 
   Map<String, TextStyle> _getEditorStyles() {

@@ -12,7 +12,7 @@ class GitService {
       });
       return result;
     } on PlatformException catch (e) {
-      print("Failed to init repository: '${e.message}'.");
+      // Log error internally if needed
       return -1;
     }
   }
@@ -25,7 +25,7 @@ class GitService {
       });
       return result;
     } on PlatformException catch (e) {
-      print("Failed to get commit log: '${e.message}'.");
+      // Log error internally if needed
       return null;
     }
   }
@@ -39,7 +39,7 @@ class GitService {
       );
       return result;
     } on PlatformException catch (e) {
-      print("Failed to get repo status: '${e.message}'.");
+      // Log error
       return null;
     }
   }
@@ -160,7 +160,7 @@ class GitService {
         'path': path,
       });
     } on PlatformException catch (e) {
-      print("Failed to clone: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -180,7 +180,7 @@ class GitService {
       if (content.isEmpty) return [];
       return content.split(',').map((e) => e.trim()).toList();
     } on PlatformException catch (e) {
-      print("Failed to get branches: '${e.message}'.");
+      // Log error
       return [];
     }
   }
@@ -190,7 +190,7 @@ class GitService {
     try {
       return await _channel.invokeMethod('getCurrentBranch', {'path': path});
     } on PlatformException catch (e) {
-      print("Failed to get current branch: '${e.message}'.");
+      // Log error
       return 'HEAD';
     }
   }
@@ -209,7 +209,7 @@ class GitService {
       if (content.isEmpty) return [];
       return content.split(',').map((e) => e.trim()).toList();
     } on PlatformException catch (e) {
-      print("Failed to get conflicts: '${e.message}'.");
+      // Log error
       return [];
     }
   }
@@ -222,7 +222,7 @@ class GitService {
         'branchName': branchName,
       });
     } on PlatformException catch (e) {
-      print("Failed to delete branch: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -235,7 +235,7 @@ class GitService {
         'message': message,
       });
     } on PlatformException catch (e) {
-      print("Failed to stash save: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -248,7 +248,7 @@ class GitService {
         'index': index,
       });
     } on PlatformException catch (e) {
-      print("Failed to stash pop: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -261,7 +261,7 @@ class GitService {
         'index': index,
       });
     } on PlatformException catch (e) {
-      print("Failed to stash apply: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -274,7 +274,7 @@ class GitService {
         'index': index,
       });
     } on PlatformException catch (e) {
-      print("Failed to stash drop: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -288,7 +288,7 @@ class GitService {
       if (jsonVal == null) return [];
       return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
     } on PlatformException catch (e) {
-      print("Failed to get stashes: '${e.message}'.");
+      // Log error
       return [];
     }
   }
@@ -301,7 +301,7 @@ class GitService {
         'token': token,
       });
     } on PlatformException catch (e) {
-      print("Failed to push: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -327,7 +327,7 @@ class GitService {
         'token': token,
       });
     } on PlatformException catch (e) {
-      print("Failed to pull: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -336,7 +336,7 @@ class GitService {
     try {
       return await _channel.invokeMethod('getRemoteUrl', {'path': path});
     } on PlatformException catch (e) {
-      print("Failed to get remote URL: '${e.message}'.");
+      // Log error
       return "";
     }
   }
@@ -345,7 +345,7 @@ class GitService {
     try {
       return await _channel.invokeMethod('getReflog', {'path': path});
     } on PlatformException catch (e) {
-      print("Failed to get reflog: '${e.message}'.");
+      // Log error
       return "[]";
     }
   }
@@ -357,7 +357,7 @@ class GitService {
       });
       return Map<String, dynamic>.from(json.decode(jsonStr));
     } on PlatformException catch (e) {
-      print("Failed to get sync status: '${e.message}'.");
+      // Log error
       return {"ahead": 0, "behind": 0};
     }
   }
@@ -373,7 +373,7 @@ class GitService {
       });
       return List<Map<String, dynamic>>.from(json.decode(jsonStr));
     } on PlatformException catch (e) {
-      print("Failed to get conflict chunks: '${e.message}'.");
+      // Log error
       return [];
     }
   }
@@ -390,7 +390,7 @@ class GitService {
         'content': content,
       });
     } on PlatformException catch (e) {
-      print("Failed to resolve conflict: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -402,7 +402,7 @@ class GitService {
         'command': command,
       });
     } on PlatformException catch (e) {
-      print("Failed to run git command: '${e.message}'.");
+      // Log error
       return "Error: ${e.message}";
     }
   }
@@ -418,7 +418,7 @@ class GitService {
       if (decoded is List) return List<Map<String, dynamic>>.from(decoded);
       return [];
     } on PlatformException catch (e) {
-      print("Failed to get tags: '${e.message}'.");
+      // Log error
       return [];
     }
   }
@@ -436,7 +436,7 @@ class GitService {
         'targetHash': targetHash,
       });
     } on PlatformException catch (e) {
-      print("Failed to create tag: '${e.message}'.");
+      // Log error
       return -1;
     }
   }
@@ -449,7 +449,121 @@ class GitService {
         'tagName': tagName,
       });
     } on PlatformException catch (e) {
-      print("Failed to delete tag: '${e.message}'.");
+      // Log error
+      return -1;
+    }
+  }
+
+  /// Returns a list of remotes.
+  static Future<List<Map<String, dynamic>>> getRemotes(String path) async {
+    try {
+      final String? jsonVal = await _channel.invokeMethod('getRemotes', {'path': path});
+      if (jsonVal == null) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
+    } on PlatformException catch (e) {
+      // Log error
+      return [];
+    }
+  }
+
+  /// Adds a new remote.
+  static Future<int> addRemote(String path, String name, String url) async {
+    try {
+      return await _channel.invokeMethod('addRemote', {
+        'path': path,
+        'name': name,
+        'url': url,
+      });
+    } on PlatformException catch (e) {
+      // Log error
+      return -1;
+    }
+  }
+
+  /// Deletes a remote.
+  static Future<int> deleteRemote(String path, String name) async {
+    try {
+      return await _channel.invokeMethod('deleteRemote', {
+        'path': path,
+        'name': name,
+      });
+    } on PlatformException catch (e) {
+      // Log error
+      return -1;
+    }
+  }
+
+  /// Sets the URL for a remote.
+  static Future<int> setRemoteUrl(String path, String name, String url) async {
+    try {
+      return await _channel.invokeMethod('setRemoteUrl', {
+        'path': path,
+        'name': name,
+        'url': url,
+      });
+    } on PlatformException catch (e) {
+      // Log error
+      return -1;
+    }
+  }
+
+  /// Returns blame info for a file.
+  static Future<List<Map<String, dynamic>>> getBlame(String path, String filePath) async {
+    try {
+      final String? jsonVal = await _channel.invokeMethod('getBlame', {
+        'path': path,
+        'filePath': filePath,
+      });
+      if (jsonVal == null) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
+    } on PlatformException catch (e) {
+      // Log error
+      return [];
+    }
+  }
+
+  /// Returns structural diff hunks for a file.
+  static Future<List<Map<String, dynamic>>> getDiffHunks(String path, String filePath) async {
+    try {
+      final String? jsonVal = await _channel.invokeMethod('getDiffHunks', {
+        'path': path,
+        'filePath': filePath,
+      });
+      if (jsonVal == null) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
+    } on PlatformException catch (e) {
+      // Log error
+      return [];
+    }
+  }
+
+  static Future<int> applyPatchToIndex(String path, String patch) async {
+    try {
+      return await _channel.invokeMethod('applyPatchToIndex', {
+        'path': path,
+        'patch': patch,
+      });
+    } on PlatformException catch (e) {
+      // Log error
+      return -1;
+    }
+  }
+
+  static Future<String> runHealthCheck(String path) async {
+    try {
+      return await _channel.invokeMethod('runHealthCheck', {'path': path});
+    } on PlatformException catch (_) {
+      return "Internal Error";
+    }
+  }
+
+  static Future<int> createBundle(String path, String bundlePath) async {
+    try {
+      return await _channel.invokeMethod('createBundle', {
+        'path': path,
+        'bundlePath': bundlePath,
+      });
+    } on PlatformException catch (_) {
       return -1;
     }
   }

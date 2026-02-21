@@ -20,6 +20,16 @@ import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'reflog_screen.dart';
 import 'analytics_screen.dart';
+import 'remotes_screen.dart';
+import 'hunk_staging_screen.dart';
+import '../../../services/indexer_service.dart';
+import 'ssh_workbench_screen.dart';
+import 'rebase_workbench.dart';
+import 'semantic_search_screen.dart';
+import 'git_hooks_screen.dart';
+import 'collaboration_dashboard.dart';
+import 'gpg_workbench.dart';
+import 'maintenance_dashboard.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -58,6 +68,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   void initState() {
     super.initState();
     _currentDir = widget.repoPath;
+    IndexerService.indexRepository(widget.repoPath);
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -1176,6 +1187,54 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentCyan,
         ),
         _menuItem(
+          'rebase',
+          Icons.swap_calls_rounded,
+          'Interactive Rebase',
+          AppTheme.accentCyan,
+        ),
+        _menuItem(
+          'remotes',
+          Icons.settings_input_component_rounded,
+          'Manage Remotes',
+          AppTheme.accentPurple,
+        ),
+        _menuItem(
+          'ssh',
+          Icons.vpn_key_rounded,
+          'SSH Workbench',
+          AppTheme.accentPurple,
+        ),
+        _menuItem(
+          'hooks',
+          Icons.webhook_rounded,
+          'Git Hooks',
+          AppTheme.accentGreen,
+        ),
+        _menuItem(
+          'social',
+          Icons.groups_rounded,
+          'Collaboration',
+          AppTheme.accentCyan,
+        ),
+        _menuItem(
+          'gpg',
+          Icons.verified_user_rounded,
+          'GPG Workbench',
+          AppTheme.accentOrange,
+        ),
+        _menuItem(
+          'health',
+          Icons.health_and_safety_rounded,
+          'Health & Maintenance',
+          AppTheme.accentGreen,
+        ),
+        _menuItem(
+          'bundle',
+          Icons.archive_rounded,
+          'Export Bundle (P2P)',
+          AppTheme.accentOrange,
+        ),
+        _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
@@ -1231,6 +1290,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
         break;
+      case 'remotes':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RemotesScreen(repoPath: widget.repoPath),
+          ),
+        );
+        break;
       case 'import':
       case 'upload':
         _uploadFile();
@@ -1238,6 +1305,73 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       case 'share':
         _shareRepo();
         break;
+      case 'ssh':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SSHWorkbenchScreen()),
+        );
+        break;
+      case 'rebase':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RebaseWorkbench(
+              repoPath: widget.repoPath,
+              currentBranch: _currentBranch,
+            ),
+          ),
+        ).then((res) {
+          if (res == true) _fetchData();
+        });
+        break;
+      case 'hooks':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GitHooksScreen(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'social':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CollaborationDashboard(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'gpg':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const GPGWorkbench()),
+        );
+        break;
+      case 'health':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MaintenanceDashboard(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'bundle':
+        _exportBundle();
+        break;
+    }
+  }
+
+  Future<void> _exportBundle() async {
+    final name = widget.repoName;
+    final bundlePath = '${widget.repoPath}/../$name.bundle';
+
+    setState(() => _isLoading = true);
+    final result = await GitService.createBundle(widget.repoPath, bundlePath);
+    setState(() => _isLoading = false);
+
+    if (result == 0) {
+      _showSnack('Bundle exported to: $name.bundle', AppTheme.accentGreen);
+    } else {
+      _showSnack('Failed to create bundle ($result)', AppTheme.accentRed);
     }
   }
 
@@ -1248,8 +1382,11 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
+          builder: (_) => ShareRepoScreen(
+            repoName: widget.repoName,
+            repoPath: widget.repoPath,
+            remoteUrl: url,
+          ),
         ),
       );
     } else {
@@ -1406,6 +1543,17 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.manage_search_rounded, size: 20),
+              tooltip: 'Semantic Search',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      SemanticSearchScreen(repoPath: widget.repoPath),
+                ),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.terminal_rounded, size: 20),
               tooltip: 'Terminal',
@@ -2473,16 +2621,41 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     visualDensity: VisualDensity.compact,
                     onPressed: () => _unstageFile(fileName),
                   )
-                : IconButton(
-                    icon: const Icon(
-                      Icons.add_circle_outline_rounded,
-                      size: 18,
-                      color: AppTheme.accentGreen,
-                    ),
-                    tooltip: 'Stage file',
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _stageFile(fileName),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.playlist_add_rounded,
+                          color: AppTheme.accentCyan,
+                          size: 20,
+                        ),
+                        tooltip: "Partial Stage",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => HunkStagingScreen(
+                                repoPath: widget.repoPath,
+                                filePath: '${widget.repoPath}/$fileName',
+                                fileName: fileName,
+                              ),
+                            ),
+                          ).then((_) => _fetchData());
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.add_circle_outline_rounded,
+                          size: 18,
+                          color: AppTheme.accentGreen,
+                        ),
+                        tooltip: 'Stage file',
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _stageFile(fileName),
+                      ),
+                    ],
                   ),
           ),
         ),

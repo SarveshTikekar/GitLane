@@ -14,6 +14,7 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
 
         val bridge = GitBridge()
+        val sshManager = SSHManager(this)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
@@ -165,6 +166,104 @@ class MainActivity : FlutterActivity() {
                                     val path = call.argument<String>("path")!!
                                     val tagName = call.argument<String>("tagName")!!
                                     bridge.deleteTag(path, tagName)
+                                }
+                                "getRemotes" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getRemotes(path)
+                                }
+                                "addRemote" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val name = call.argument<String>("name")!!
+                                    val url = call.argument<String>("url")!!
+                                    bridge.addRemote(path, name, url)
+                                }
+                                "deleteRemote" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val name = call.argument<String>("name")!!
+                                    bridge.deleteRemote(path, name)
+                                }
+                                "setRemoteUrl" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val name = call.argument<String>("name")!!
+                                    val url = call.argument<String>("url")!!
+                                    bridge.setRemoteUrl(path, name, url)
+                                }
+                                "getBlame" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    bridge.getBlame(path, filePath)
+                                }
+                                "getDiffHunks" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    bridge.getDiffHunks(path, filePath)
+                                }
+                                "applyPatchToIndex" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val patch = call.argument<String>("patch")!!
+                                    bridge.applyPatchToIndex(path, patch)
+                                }
+                                "rebaseInit" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val upstream = call.argument<String>("upstream")!!
+                                    val onto = call.argument<String>("onto")!!
+                                    bridge.rebaseInit(path, upstream, onto)
+                                }
+                                "rebaseNext" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.rebaseNext(path)
+                                }
+                                "rebaseCommit" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val authorName = call.argument<String>("authorName")!!
+                                    val authorEmail = call.argument<String>("authorEmail")!!
+                                    val message = call.argument<String>("message")!!
+                                    bridge.rebaseCommit(path, authorName, authorEmail, message)
+                                }
+                                "rebaseAbort" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.rebaseAbort(path)
+                                }
+                                "rebaseFinish" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.rebaseFinish(path)
+                                }
+                                "commitSigned" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val message = call.argument<String>("message")!!
+                                    val signature = call.argument<String>("signature")!!
+                                    result.success(bridge.commitSigned(path, message, signature))
+                                }
+                                "getCommitContent" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val message = call.argument<String>("message")!!
+                                    result.success(bridge.getCommitContent(path, message))
+                                }
+                                "runHealthCheck" -> {
+                                    val path = call.argument<String>("path")!!
+                                    result.success(bridge.runHealthCheck(path))
+                                }
+                                "createBundle" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val bundlePath = call.argument<String>("bundlePath")!!
+                                    result.success(bridge.createBundle(path, bundlePath))
+                                }
+                                "generateSSHKey" -> {
+                                    val label = call.argument<String>("label")!!
+                                    val type = call.argument<String>("type")!!
+                                    val bits = call.argument<Int>("bits") ?: 2048
+                                    result.success(sshManager.generateKeyPair(label, type, bits))
+                                }
+                                "listSSHKeys" -> {
+                                    result.success(sshManager.listKeys())
+                                }
+                                "deleteSSHKey" -> {
+                                    val label = call.argument<String>("label")!!
+                                    result.success(sshManager.deleteKey(label))
+                                }
+                                "getSSHPublicKey" -> {
+                                    val label = call.argument<String>("label")!!
+                                    sshManager.getPublicKey(label)
                                 }
                                 else -> "NOT_IMPLEMENTED"
                             }

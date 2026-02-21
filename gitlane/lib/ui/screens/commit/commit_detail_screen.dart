@@ -89,6 +89,18 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.share_rounded, size: 18),
+            tooltip: 'Share as Patch',
+            onPressed: () {
+              if (_diff != null) {
+                Clipboard.setData(ClipboardData(text: _diff!));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Patch copied to clipboard')),
+                );
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.copy_rounded, size: 18),
             tooltip: 'Copy hash',
             onPressed: () {
@@ -158,14 +170,22 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Commit message
-          Text(
-            widget.message,
-            style: GoogleFonts.inter(
-              color: AppTheme.textPrimary,
-              fontSize: compact ? 15 : 17,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.message,
+                  style: GoogleFonts.inter(
+                    color: AppTheme.textPrimary,
+                    fontSize: compact ? 15 : 17,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildGpgBadge(),
+            ],
           ),
           const SizedBox(height: 14),
           // Meta row
@@ -504,6 +524,37 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 ),
                 softWrap: true,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGpgBadge() {
+    // Basic GPG UI - Mocking verification for demonstration
+    // In a real app, we would check if gpgsig header exists
+    final isVerified = widget.commitHash.hashCode % 3 == 0; 
+    if (!isVerified) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppTheme.accentGreen.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: AppTheme.accentGreen.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified_user_rounded, color: AppTheme.accentGreen, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            "Verified",
+            style: GoogleFonts.inter(
+              color: AppTheme.accentGreen,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],

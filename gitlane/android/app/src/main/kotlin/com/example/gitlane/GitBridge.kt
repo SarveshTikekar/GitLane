@@ -62,6 +62,22 @@ class GitBridge {
     external fun getTags(path: String): String
     external fun createTag(path: String, tagName: String, targetHash: String): Int
     external fun deleteTag(path: String, tagName: String): Int
+    external fun getRemotes(path: String): String
+    external fun addRemote(path: String, name: String, url: String): Int
+    external fun deleteRemote(path: String, name: String): Int
+    external fun setRemoteUrl(path: String, name: String, url: String): Int
+    external fun getBlame(path: String, filePath: String): String
+    external fun getDiffHunks(path: String, filePath: String): String
+    external fun applyPatchToIndex(path: String, patch: String): Int
+    external fun rebaseInit(path: String, upstream: String, onto: String): Int
+    external fun rebaseNext(path: String): String
+    external fun rebaseCommit(path: String, authorName: String, authorEmail: String, message: String): Int
+    external fun rebaseAbort(path: String): Int
+    external fun rebaseFinish(path: String): Int
+    external fun commitSigned(path: String, message: String, signature: String): Int
+    external fun getCommitContent(path: String, message: String): String
+    external fun runHealthCheck(path: String): String
+    external fun createBundle(path: String, bundlePath: String): Int
 
     companion object {
         init {
