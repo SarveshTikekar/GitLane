@@ -229,4 +229,42 @@ class GitService {
       return "[]";
     }
   }
+
+  static Future<Map<String, dynamic>> getSyncStatus(String path) async {
+    try {
+      final jsonStr = await _channel.invokeMethod('getSyncStatus', {'path': path});
+      return Map<String, dynamic>.from(json.decode(jsonStr));
+    } on PlatformException catch (e) {
+      print("Failed to get sync status: '${e.message}'.");
+      return {"ahead": 0, "behind": 0};
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getConflictChunks(String path, String filePath) async {
+    try {
+      final jsonStr = await _channel.invokeMethod('getConflictChunks', {'path': path, 'filePath': filePath});
+      return List<Map<String, dynamic>>.from(json.decode(jsonStr));
+    } on PlatformException catch (e) {
+      print("Failed to get conflict chunks: '${e.message}'.");
+      return [];
+    }
+  }
+
+  static Future<int> resolveConflict(String path, String filePath, String content) async {
+    try {
+      return await _channel.invokeMethod('resolveConflict', {'path': path, 'filePath': filePath, 'content': content});
+    } on PlatformException catch (e) {
+      print("Failed to resolve conflict: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  static Future<String> runGitCommand(String path, String command) async {
+    try {
+      return await _channel.invokeMethod('runGitCommand', {'path': path, 'command': command});
+    } on PlatformException catch (e) {
+      print("Failed to run git command: '${e.message}'.");
+      return "Error: ${e.message}";
+    }
+  }
 }

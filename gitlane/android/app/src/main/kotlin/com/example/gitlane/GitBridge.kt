@@ -50,6 +50,10 @@ class GitBridge {
     external fun pullRepository(path: String, token: String): Int
     external fun getRemoteUrl(path: String): String
     external fun getReflog(path: String): String
+    external fun getSyncStatus(path: String): String
+    external fun getConflictChunks(path: String, filePath: String): String
+    external fun resolveConflict(path: String, filePath: String, content: String): Int
+    external fun runGitCommand(path: String, command: String): String
 
     companion object {
         init {

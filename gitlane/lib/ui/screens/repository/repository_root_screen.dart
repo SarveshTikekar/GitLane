@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../../theme/app_theme.dart';
@@ -9,6 +11,8 @@ import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'reflog_screen.dart';
 import '../commit/commit_graph_screen.dart';
+import 'file_editor_screen.dart';
+import 'native_terminal_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -36,7 +40,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   String _currentBranch = "HEAD";
   List<String> _branches = [];
 
-  List<FileSystemEntity> _currentFiles = [];
+  List<FileSystemEntity> _files = [];
+  Map<String, dynamic> _syncStatus = {"ahead": 0, "behind": 0};
   String _currentDir = "";
 
   String? _personalAccessToken;
@@ -49,19 +54,28 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     _listRepoFiles();
   }
 
+  Future<void> _fetchSyncStatus() async {
+    final status = await GitService.getSyncStatus(widget.repoPath);
+    if (mounted) {
+      setState(() {
+        _syncStatus = status;
+      });
+    }
+  }
+
   void _listRepoFiles() {
     try {
       final dir = Directory(_currentDir);
       if (dir.existsSync()) {
         setState(() {
           // List files and directories, excluding the .git folder
-          _currentFiles = dir.listSync().where((entity) {
+          _files = dir.listSync().where((entity) {
             final name = entity.path.split(Platform.pathSeparator).last;
             return name != ".git";
           }).toList();
 
           // Sort: Directories first, then alphabetical
-          _currentFiles.sort((a, b) {
+          _files.sort((a, b) {
             if (a is Directory && b is File) return -1;
             if (a is File && b is Directory) return 1;
             return a.path
@@ -84,6 +98,23 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
       setState(() {
         _currentDir = entity.path;
         _listRepoFiles();
+      });
+    } else if (entity is File) {
+      final name = entity.path.split(Platform.pathSeparator).last;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FileEditorScreen(
+            filePath: entity.path,
+            fileName: name,
+            repoPath: widget.repoPath,
+          ),
+        ),
+      ).then((value) {
+        if (value == true) {
+          _fetchData();
+          _listRepoFiles();
+        }
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -137,7 +168,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
 
         // Fetch branch metadata
         _updateBranchInfo();
-
+        _fetchSyncStatus();
         _isLoading = false;
       });
     }
@@ -785,6 +816,163 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     }
   }
 
+  Future<void> _uploadFile() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    if (result != null) {
+      for (var file in result.files) {
+        if (file.path != null) {
+          final targetPath = "$_currentDir${Platform.pathSeparator}${file.name}";
+          await File(file.path!).copy(targetPath);
+          await GitService.gitAddFile(widget.repoPath, file.name);
+        }
+      }
+      _fetchData();
+      _listRepoFiles();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Uploaded ${result.count} files")),
+        );
+      }
+    }
+  }
+
+  Widget _buildSyncBadge() {
+    final ahead = _syncStatus['ahead'] ?? 0;
+    final behind = _syncStatus['behind'] ?? 0;
+    final hasChanges = ahead > 0 || behind > 0;
+
+    return Center(
+      child: InkWell(
+        onTap: _showSyncDashboard,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: hasChanges ? AppTheme.accentCyan.withOpacity(0.2) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim.withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                hasChanges ? Icons.sync_problem_rounded : Icons.sync_rounded,
+                size: 14,
+                color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "↑$ahead ↓$behind",
+                style: TextStyle(
+                  color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Compact sync badge for inline use inside the AppBar title Row.
+  Widget _buildSyncBadgeCompact() {
+    final ahead = _syncStatus['ahead'] ?? 0;
+    final behind = _syncStatus['behind'] ?? 0;
+    final hasChanges = ahead > 0 || behind > 0;
+    return GestureDetector(
+      onTap: _showSyncDashboard,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: hasChanges
+              ? AppTheme.accentCyan.withOpacity(0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: hasChanges
+                ? AppTheme.accentCyan
+                : AppTheme.textDim.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasChanges ? Icons.sync_problem_rounded : Icons.sync_rounded,
+              size: 12,
+              color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              "↑$ahead ↓$behind",
+              style: TextStyle(
+                color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSyncDashboard() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceSlate,
+        title: const Text("Sync Dashboard", style: TextStyle(color: AppTheme.accentCyan)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildSyncInfoRow("Local Ahead", "${_syncStatus['ahead']} commits", Icons.upload_rounded, AppTheme.accentCyan),
+            const SizedBox(height: 16),
+            _buildSyncInfoRow("Remote Behind", "${_syncStatus['behind']} commits", Icons.download_rounded, Colors.orange),
+            const SizedBox(height: 24),
+            const Text(
+              "Your local changes are saved safely. Connect to internet and use 'Sync Now' to push/pull.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.textDim, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Close")),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              _pullRepo(); // Use existing pull logic
+            },
+            icon: const Icon(Icons.sync_rounded, color: Colors.black),
+            label: const Text("Sync Now", style: TextStyle(color: Colors.black)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSyncInfoRow(String label, String value, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: AppTheme.textDim, fontSize: 12)),
+            Text(value, style: const TextStyle(color: AppTheme.textLight, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final relativePath = _currentDir.length > widget.repoPath.length
@@ -806,112 +994,222 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
             : null,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(widget.repoName),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentCyan.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: AppTheme.accentCyan.withOpacity(0.5),
-                    ),
-                  ),
+                Flexible(
                   child: Text(
-                    _currentBranch,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.accentCyan,
-                      fontWeight: FontWeight.bold,
+                    widget.repoName,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 70),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentCyan.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: AppTheme.accentCyan.withOpacity(0.5),
+                      ),
+                    ),
+                    child: Text(
+                      _currentBranch,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.accentCyan,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
+                const SizedBox(width: 6),
+                // Sync badge inline with title for proper layout
+                _buildSyncBadgeCompact(),
               ],
             ),
             if (relativePath.isNotEmpty)
               Text(
                 relativePath,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 10, color: AppTheme.textDim),
               ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_2_rounded),
-            tooltip: "Share (QR)",
-            onPressed: _shareRepo,
-          ),
-          IconButton(
-            icon: const Icon(Icons.history_edu_rounded),
-            tooltip: "Action History (Reflog)",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ReflogScreen(repoPath: widget.repoPath),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _fetchData();
-              _listRepoFiles();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.download_rounded),
-            tooltip: "Pull",
-            onPressed: _pullRepo,
-          ),
-          IconButton(
-            icon: const Icon(Icons.upload_rounded),
-            tooltip: "Push",
-            onPressed: _pushRepo,
-          ),
-          IconButton(
-            icon: const Icon(Icons.inventory_2_outlined),
-            tooltip: "Stashes",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StashScreen(repoPath: widget.repoPath),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.archive_outlined),
-            tooltip: "Stash Changes",
-            onPressed: _showStashSaveDialog,
-          ),
+          // Branch manager — core USP
           IconButton(
             icon: const Icon(Icons.account_tree_outlined),
             tooltip: 'Branches',
             onPressed: _showBranchDialog,
           ),
+          // Native terminal — core USP
           IconButton(
-            icon: const Icon(Icons.timeline_outlined),
-            tooltip: 'Commit Graph',
+            icon: const Icon(Icons.terminal_rounded),
+            tooltip: "Git Terminal",
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CommitGraphScreen(
-                    commits: _graphNodesFromCommits(),
-                    title: '${widget.repoName} Graph',
-                  ),
+                  builder: (context) =>
+                      NativeTerminalScreen(repoPath: widget.repoPath),
                 ),
               );
             },
+          ),
+          // Overflow menu for secondary actions
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            color: AppTheme.surfaceSlate,
+            onSelected: (value) async {
+              switch (value) {
+                case 'refresh':
+                  _fetchData();
+                  _listRepoFiles();
+                  break;
+                case 'pull':
+                  await _pullRepo();
+                  break;
+                case 'push':
+                  await _pushRepo();
+                  break;
+                case 'commit_graph':
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CommitGraphScreen(
+                          commits: _graphNodesFromCommits(),
+                          title: '${widget.repoName} Graph',
+                        ),
+                      ),
+                    );
+                  }
+                  break;
+                case 'stash_save':
+                  await _showStashSaveDialog();
+                  break;
+                case 'stash_list':
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            StashScreen(repoPath: widget.repoPath),
+                      ),
+                    );
+                  }
+                  break;
+                case 'reflog':
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ReflogScreen(repoPath: widget.repoPath),
+                      ),
+                    );
+                  }
+                  break;
+                case 'share':
+                  await _shareRepo();
+                  break;
+                case 'upload':
+                  await _uploadFile();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'refresh',
+                child: ListTile(
+                  leading: Icon(Icons.refresh, color: AppTheme.accentCyan),
+                  title: Text('Refresh', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'pull',
+                child: ListTile(
+                  leading: Icon(Icons.download_rounded, color: AppTheme.accentCyan),
+                  title: Text('Pull', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'push',
+                child: ListTile(
+                  leading: Icon(Icons.upload_rounded, color: AppTheme.accentCyan),
+                  title: Text('Push', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'commit_graph',
+                child: ListTile(
+                  leading: Icon(Icons.timeline_outlined, color: AppTheme.accentCyan),
+                  title: Text('Commit Graph', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'stash_save',
+                child: ListTile(
+                  leading: Icon(Icons.archive_outlined, color: AppTheme.accentCyan),
+                  title: Text('Stash Changes', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'stash_list',
+                child: ListTile(
+                  leading: Icon(Icons.inventory_2_outlined, color: AppTheme.accentCyan),
+                  title: Text('Stash List', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'reflog',
+                child: ListTile(
+                  leading: Icon(Icons.history_edu_rounded, color: AppTheme.accentCyan),
+                  title: Text('Reflog', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'share',
+                child: ListTile(
+                  leading: Icon(Icons.qr_code_2_rounded, color: AppTheme.accentCyan),
+                  title: Text('Share (QR)', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'upload',
+                child: ListTile(
+                  leading: Icon(Icons.upload_file_rounded, color: AppTheme.accentCyan),
+                  title: Text('Import File', style: TextStyle(color: AppTheme.textLight)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -979,7 +1277,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   }
 
   Widget _buildExplorerView() {
-    if (_currentFiles.isEmpty) {
+    if (_files.isEmpty) {
       return const Center(
         child: Text(
           "Empty directory",
@@ -989,9 +1287,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     }
 
     return ListView.builder(
-      itemCount: _currentFiles.length,
+      itemCount: _files.length,
       itemBuilder: (context, index) {
-        final entity = _currentFiles[index];
+        final entity = _files[index];
         final name = entity.path.split(Platform.pathSeparator).last;
         final isDir = entity is Directory;
 

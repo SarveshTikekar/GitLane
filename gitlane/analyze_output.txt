@@ -1,0 +1,72 @@
+Analyzing gitlane...                                            
+
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:13:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:24:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:35:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:49:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:59:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:69:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:79:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:89:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:99:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:109:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:124:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:134:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:148:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:158:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:168:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:178:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:190:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:200:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:210:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:219:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:228:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:238:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:248:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:257:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:266:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\commit\commit_detail_screen.dart:154:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\commit\commit_detail_screen.dart:171:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\commit\commit_detail_screen.dart:174:28 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\home\dashboard_screen.dart:156:40 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\home\dashboard_screen.dart:191:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\home\dashboard_screen.dart:205:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:35:20 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:65:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:66:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:68:31 - deprecated_member_use
+warning - Unused import: 'dart:io' - lib\ui\screens\repository\merge_conflict_screen.dart:2:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\merge_conflict_screen.dart:68:43 - deprecated_member_use
+warning - The value of the field '_repoStatus' isn't used - lib\ui\screens\repository\repository_root_screen.dart:28:11 - unused_field
+   info - The private field _isStatusLoading could be 'final' - lib\ui\screens\repository\repository_root_screen.dart:33:8 - prefer_final_fields
+warning - The value of the field '_isStatusLoading' isn't used - lib\ui\screens\repository\repository_root_screen.dart:33:8 - unused_field
+  error - Undefined name '_currentFiles' - lib\ui\screens\repository\repository_root_screen.dart:73:11 - undefined_identifier
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:200:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\repository\repository_root_screen.dart:408:51 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:412:60 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:429:58 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:449:43 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:463:60 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:497:40 - use_build_context_synchronously
+   info - Unnecessary braces in a string interpolation - lib\ui\screens\repository\repository_root_screen.dart:562:34 - unnecessary_brace_in_string_interps
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:566:31 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:567:38 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\repository_root_screen.dart:635:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\repository_root_screen.dart:638:74 - deprecated_member_use
+  error - The named parameter 'onConfirm' is required, but there's no corresponding argument - lib\ui\screens\repository\repository_root_screen.dart:690:15 - missing_required_argument
+  error - The named parameter 'isPush' isn't defined - lib\ui\screens\repository\repository_root_screen.dart:690:37 - undefined_named_parameter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\repository_root_screen.dart:746:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\repository_root_screen.dart:748:67 - deprecated_member_use
+warning - Unnecessary cast - lib\ui\screens\repository\repository_root_screen.dart:934:28 - unnecessary_cast
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\repository_root_screen.dart:1054:45 - deprecated_member_use
+   info - 'foregroundColor' is deprecated and shouldn't be used. use colors in eyeStyle and dataModuleStyle instead - lib\ui\screens\repository\share_repo_screen.dart:58:21 - deprecated_member_use
+warning - Unused import: '../../widgets/glass_card.dart' - lib\ui\screens\repository\visual_merge_editor.dart:4:8 - unused_import
+   info - The private field _selections could be 'final' - lib\ui\screens\repository\visual_merge_editor.dart:22:20 - prefer_final_fields
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\visual_merge_editor.dart:117:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\visual_merge_editor.dart:117:87 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\theme\app_theme.dart:39:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\widgets\glass_card.dart:33:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\widgets\glass_card.dart:36:37 - deprecated_member_use
+   info - The imported package 'path_provider_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:5:8 - depend_on_referenced_packages
+   info - The imported package 'plugin_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:6:8 - depend_on_referenced_packages
+

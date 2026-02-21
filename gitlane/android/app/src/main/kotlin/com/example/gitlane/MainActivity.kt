@@ -117,6 +117,26 @@ class MainActivity : FlutterActivity() {
                                     val path = call.argument<String>("path")!!
                                     bridge.getReflog(path)
                                 }
+                                "getSyncStatus" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getSyncStatus(path)
+                                }
+                                "getConflictChunks" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    bridge.getConflictChunks(path, filePath)
+                                }
+                                "resolveConflict" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    val content = call.argument<String>("content")!!
+                                    bridge.resolveConflict(path, filePath, content)
+                                }
+                                "runGitCommand" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val command = call.argument<String>("command")!!
+                                    bridge.runGitCommand(path, command)
+                                }
                                 else -> "NOT_IMPLEMENTED"
                             }
                         } catch (e: Exception) {

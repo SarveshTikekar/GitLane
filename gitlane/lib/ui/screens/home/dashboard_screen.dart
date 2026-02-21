@@ -18,6 +18,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _docsPath;
   List<Map<String, String>> _repos = [];
   bool _initializing = true;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, String>> get _filteredRepos {
+    if (_searchQuery.isEmpty) return _repos;
+    final q = _searchQuery.toLowerCase();
+    return _repos
+        .where((r) => (r['title'] ?? '').toLowerCase().contains(q))
+        .toList();
+  }
 
   @override
   void initState() {
@@ -175,7 +191,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            tooltip: 'About',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: AppTheme.surfaceSlate,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) => Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: AppTheme.textDim,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const Icon(Icons.merge_type_rounded,
+                          size: 48, color: AppTheme.accentCyan),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'GitLane',
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textLight),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'v1.0.0 — SPIT Hackathon 2026',
+                        style: TextStyle(color: AppTheme.textDim, fontSize: 12),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Native Git client powered by libgit2.\nFeatures: Visual Merge Editor · Smart Sync · Native Terminal · QR Share.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppTheme.textDim, fontSize: 13),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -198,9 +262,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
                   decoration: InputDecoration(
                     hintText: 'Search repositories...',
                     prefixIcon: const Icon(Icons.search, color: AppTheme.textDim),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: AppTheme.textDim),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
                     filled: true,
                     fillColor: AppTheme.surfaceSlate.withOpacity(0.5),
                     border: OutlineInputBorder(
@@ -216,7 +291,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               else if (_repos.isEmpty)
                 const Expanded(
                   child: Center(
-                    child: Text("No repositories yet. Tap + to start.", 
+                    child: Text("No repositories yet. Tap + to start.",
+                      style: TextStyle(color: AppTheme.textDim)),
+                  ),
+                )
+              else if (_filteredRepos.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Text("No repos match your search.",
                       style: TextStyle(color: AppTheme.textDim)),
                   ),
                 )
@@ -224,9 +306,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _repos.length,
+                    itemCount: _filteredRepos.length,
                     itemBuilder: (context, index) {
-                      return _buildRepoCard(context, index);
+                      return _buildRepoCard(context, index, _filteredRepos[index]);
                     },
                   ),
                 ),
@@ -242,8 +324,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRepoCard(BuildContext context, int index) {
-    final repo = _repos[index];
+  Widget _buildRepoCard(BuildContext context, int index,
+      [Map<String, String>? repoOverride]) {
+    final repo = repoOverride ?? _repos[index];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
