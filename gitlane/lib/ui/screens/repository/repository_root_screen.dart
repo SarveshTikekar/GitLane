@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../theme/app_theme.dart';
-import '../../services/git_service.dart';
+import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 import '../repository/repository_root_screen.dart';
-import '../../services/git_service.dart';
+import '../../../services/git_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

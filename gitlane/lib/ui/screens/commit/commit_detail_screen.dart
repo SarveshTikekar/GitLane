@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../services/git_service.dart';
+import '../../../services/git_service.dart';
 
 class CommitDetailScreen extends StatefulWidget {
   final String commitHash;
