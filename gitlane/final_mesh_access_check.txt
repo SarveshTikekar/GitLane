@@ -1,0 +1,24 @@
+Running Gradle task 'assembleDebug'...                          
+lib/services/local_sync_service.dart:148:37: Error: The method 'readAsBytes' isn't defined for the type 'Request'.
+ - 'Request' is from 'package:shelf/src/request.dart' ('/C:/Users/ojhaa/AppData/Local/Pub/Cache/hosted/pub.dev/shelf-1.4.2/lib/src/request.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'readAsBytes'.
+        final bytes = await request.readAsBytes();
+                                    ^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command 'E:\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 27s
+Running Gradle task 'assembleDebug'...                             27.5s
+Gradle task assembleDebug failed with exit code 1
