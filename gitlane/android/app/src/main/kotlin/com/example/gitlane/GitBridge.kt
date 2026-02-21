@@ -46,6 +46,8 @@ class GitBridge {
     external fun stashSave(path: String, message: String): Int
     external fun stashPop(path: String, index: Int): Int
     external fun getStashes(path: String): String
+    external fun pushRepository(path: String, token: String): Int
+    external fun pullRepository(path: String, token: String): Int
 
     companion object {
         init {

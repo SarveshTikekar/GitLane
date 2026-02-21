@@ -149,6 +149,22 @@ class MainActivity : FlutterActivity() {
                         result.success(bridge.getStashes(path))
                     }
 
+                    "pushRepository" -> {
+                        val path  = call.argument<String>("path")
+                        val token = call.argument<String>("token")
+                        if (path == null || token == null) { result.error("INVALID_ARG", "path and token required", null); return@setMethodCallHandler }
+                        val code = bridge.pushRepository(path, token)
+                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "pushRepository failed: $code", code)
+                    }
+
+                    "pullRepository" -> {
+                        val path  = call.argument<String>("path")
+                        val token = call.argument<String>("token")
+                        if (path == null || token == null) { result.error("INVALID_ARG", "path and token required", null); return@setMethodCallHandler }
+                        val code = bridge.pullRepository(path, token)
+                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "pullRepository failed: $code", code)
+                    }
+
                     else -> result.notImplemented()
                 }
             }

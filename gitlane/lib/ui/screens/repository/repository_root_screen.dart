@@ -31,6 +31,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
 
   List<FileSystemEntity> _currentFiles = [];
   String _currentDir = "";
+  
+  String? _personalAccessToken;
 
   @override
   void initState() {
@@ -173,6 +175,87 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showCredentialDialog({required Function(String token) onConfirm}) async {
+    final controller = TextEditingController(text: _personalAccessToken);
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceSlate,
+        title: const Text("Git Credentials", style: TextStyle(color: AppTheme.accentCyan)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Personal Access Token (PAT)",
+              style: TextStyle(color: AppTheme.textDim, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              autofocus: true,
+              style: const TextStyle(color: AppTheme.textLight),
+              decoration: const InputDecoration(
+                hintText: "ghp_xxxxxxxxxxxx",
+                hintStyle: TextStyle(color: AppTheme.surfaceSlate),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Note: Your token is only stored for this session.",
+              style: TextStyle(color: AppTheme.textDim, fontSize: 10, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+            onPressed: () {
+              final token = controller.text.trim();
+              if (token.isNotEmpty) {
+                _personalAccessToken = token;
+                Navigator.pop(context);
+                onConfirm(token);
+              }
+            },
+            child: const Text("Confirm", style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pullRepo() async {
+    await _showCredentialDialog(onConfirm: (token) async {
+      setState(() => _isLoading = true);
+      final code = await GitService.pullRepository(widget.repoPath, token);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(code == 0 ? "Pull successful!" : "Pull failed (code: $code)"))
+        );
+        _fetchData();
+        _listRepoFiles();
+      }
+    });
+  }
+
+  Future<void> _pushRepo() async {
+    await _showCredentialDialog(onConfirm: (token) async {
+      setState(() => _isLoading = true);
+      final code = await GitService.pushRepository(widget.repoPath, token);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(code == 0 ? "Push successful!" : "Push failed (code: $code)"))
+        );
+        _fetchData();
+      }
+    });
   }
 
   Future<void> _showCommitDialog() async {
@@ -514,6 +597,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
               _fetchData();
               _listRepoFiles();
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.download_rounded),
+            tooltip: "Pull",
+            onPressed: _pullRepo,
+          ),
+          IconButton(
+            icon: const Icon(Icons.upload_rounded),
+            tooltip: "Push",
+            onPressed: _pushRepo,
           ),
           IconButton(
             icon: const Icon(Icons.inventory_2_outlined),

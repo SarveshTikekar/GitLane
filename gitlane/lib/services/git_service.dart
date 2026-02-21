@@ -191,4 +191,24 @@ class GitService {
       return [];
     }
   }
+
+  /// Pushes changes to the remote repository.
+  static Future<int> pushRepository(String path, String token) async {
+    try {
+      return await _channel.invokeMethod('pushRepository', {'path': path, 'token': token});
+    } on PlatformException catch (e) {
+      print("Failed to push: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Pulls changes from the remote repository.
+  static Future<int> pullRepository(String path, String token) async {
+    try {
+      return await _channel.invokeMethod('pullRepository', {'path': path, 'token': token});
+    } on PlatformException catch (e) {
+      print("Failed to pull: '${e.message}'.");
+      return -1;
+    }
+  }
 }

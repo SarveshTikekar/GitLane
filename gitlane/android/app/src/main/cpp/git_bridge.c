@@ -1053,3 +1053,116 @@ Java_com_example_gitlane_GitBridge_getStashes(
     git_libgit2_shutdown();
     return result_str;
 }
+
+/* ─── Callback: Credentials (PAT) ──────────────────────────────────────── */
+static int cred_acquire_cb(git_cred **out, const char *url, const char *user_from_url,
+                           unsigned int allowed_types, void *payload) {
+    const char *token = (const char *)payload;
+    LOGI("Acquiring credentials for: %s", url);
+    return git_cred_userpass_plaintext_new(out, "git", token);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 18. pushRepository(path: String, token: String): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_pushRepository(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jtoken) {
+
+    git_libgit2_init();
+    const char *path  = (*env)->GetStringUTFChars(env, jpath,  NULL);
+    const char *token = (*env)->GetStringUTFChars(env, jtoken, NULL);
+
+    git_repository *repo = NULL;
+    git_remote     *remote = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_push;
+    if (git_remote_lookup(&remote, repo, "origin") < 0) goto cleanup_push;
+
+    git_push_options opts = GIT_PUSH_OPTIONS_INIT;
+    opts.callbacks.credentials = cred_acquire_cb;
+    opts.callbacks.payload = (void *)token;
+    opts.callbacks.certificate_check = certificate_check_cb;
+
+    /* Push current branch to its remote tracking branch */
+    char *refspec = "refs/heads/main:refs/heads/main"; // Defaulting to main for now, can be improved
+    git_strarray refs = { &refspec, 1 };
+
+    result = git_remote_push(remote, &refs, &opts);
+    if (result < 0) LOGE("Push failed: %s", git_error_str(result));
+
+cleanup_push:
+    if (remote) git_remote_free(remote);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jtoken, token);
+    git_libgit2_shutdown();
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 19. pullRepository(path: String, token: String): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_pullRepository(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jtoken) {
+
+    git_libgit2_init();
+    const char *path  = (*env)->GetStringUTFChars(env, jpath,  NULL);
+    const char *token = (*env)->GetStringUTFChars(env, jtoken, NULL);
+
+    git_repository *repo = NULL;
+    git_remote     *remote = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_pull;
+    if (git_remote_lookup(&remote, repo, "origin") < 0) goto cleanup_pull;
+
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    fetch_opts.callbacks.credentials = cred_acquire_cb;
+    fetch_opts.callbacks.payload = (void *)token;
+    fetch_opts.callbacks.certificate_check = certificate_check_cb;
+
+    result = git_remote_fetch(remote, NULL, &fetch_opts, NULL);
+    if (result < 0) {
+        LOGE("Fetch failed: %s", git_error_str(result));
+        goto cleanup_pull;
+    }
+
+    /* Merge logic (Fast-Forward only for simplicity in hackathon) */
+    git_annotated_commit *heads[1];
+    git_reference *remote_ref = NULL;
+    if (git_reference_lookup(&remote_ref, repo, "refs/remotes/origin/main") == 0) {
+        git_annotated_commit_from_ref(&heads[0], repo, remote_ref);
+        
+        git_merge_analysis_t analysis;
+        git_merge_preference_t preference;
+        git_merge_analysis(&analysis, &preference, repo, (const git_annotated_commit **)heads, 1);
+
+        if (analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) {
+            /* Implement FF merge */
+            git_reference *head_ref = NULL;
+            git_repository_head(&head_ref, repo);
+            git_reference_set_target(&head_ref, git_annotated_commit_id(heads[0]), "pull: fast-forward");
+            git_checkout_options ckout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+            ckout_opts.checkout_strategy = GIT_CHECKOUT_FORCE;
+            git_checkout_head(repo, &ckout_opts);
+            git_reference_free(head_ref);
+        } else if (analysis & GIT_MERGE_ANALYSIS_NORMAL) {
+            /* Normal merge would need full implementation, skipping for now */
+            LOGI("Normal merge required, skipping for hackathon prototype.");
+        }
+        
+        git_annotated_commit_free(heads[0]);
+        git_reference_free(remote_ref);
+    }
+
+cleanup_pull:
+    if (remote) git_remote_free(remote);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jtoken, token);
+    git_libgit2_shutdown();
+    return (jint) result;
+}
