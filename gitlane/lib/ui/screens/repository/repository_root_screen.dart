@@ -116,6 +116,125 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     }
   }
 
+  Future<void> _showCommitDialog() async {
+    final TextEditingController controller = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceSlate,
+        title: const Text("Commit Changes", style: TextStyle(color: AppTheme.accentCyan)),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          style: const TextStyle(color: AppTheme.textLight),
+          decoration: const InputDecoration(
+            hintText: "Commit message",
+            hintStyle: TextStyle(color: AppTheme.textDim),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.textDim)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(color: AppTheme.textDim)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isEmpty) return;
+              Navigator.pop(context, true);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.black),
+            child: const Text("Commit"),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      setState(() => _isLoading = true);
+      final code = await GitService.commitAll(widget.repoPath, controller.text.trim());
+      if (mounted) {
+        if (code == 0) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Commit successful!")));
+          _fetchData(); // Refresh history and status
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Commit failed (code: $code)")));
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _showBranchDialog() async {
+    final TextEditingController controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceSlate,
+        title: const Text("Git Branches", style: TextStyle(color: AppTheme.accentCyan)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Only 'main' is tracked currently in this UI view, but you can create a new one:", 
+              style: TextStyle(color: AppTheme.textDim, fontSize: 12)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              style: const TextStyle(color: AppTheme.textLight),
+              decoration: const InputDecoration(
+                hintText: "Branch name (to create or merge)",
+                hintStyle: TextStyle(color: AppTheme.textDim),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty) return;
+                  Navigator.pop(context);
+                  setState(() => _isLoading = true);
+                  final code = await GitService.mergeBranch(widget.repoPath, name);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(code >= 0 ? "Merged '$name'!" : "Merge failed (code: $code)"))
+                    );
+                    _fetchData();
+                  }
+                },
+                child: const Text("Merge", style: TextStyle(color: Colors.orange)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty) return;
+                  Navigator.pop(context);
+                  setState(() => _isLoading = true);
+                  final code = await GitService.createBranch(widget.repoPath, name);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(code == 0 ? "Branch '$name' created!" : "Failed to create branch (code: $code)"))
+                    );
+                    _fetchData();
+                  }
+                },
+                child: const Text("Create", style: TextStyle(color: AppTheme.accentCyan)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Close", style: TextStyle(color: AppTheme.textDim)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final relativePath = _currentDir.length > widget.repoPath.length 
@@ -156,7 +275,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.account_tree_outlined),
-            onPressed: () {},
+            onPressed: _showBranchDialog,
           ),
         ],
       ),
@@ -199,6 +318,15 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
                 ),
               ],
             ),
+      floatingActionButton: (_selectedIndex == 2 && _statusFiles.isNotEmpty && !_isLoading)
+          ? FloatingActionButton.extended(
+              onPressed: _showCommitDialog,
+              icon: const Icon(Icons.check),
+              label: const Text("Commit"),
+              backgroundColor: AppTheme.accentCyan,
+              foregroundColor: Colors.black,
+            )
+          : null,
     );
   }
 
