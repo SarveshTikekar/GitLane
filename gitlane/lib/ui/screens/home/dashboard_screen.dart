@@ -28,15 +28,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final dir = await getApplicationDocumentsDirectory();
     setState(() {
       _docsPath = dir.path;
-      _repos = [
-        {
-          'title': 'GitLane-Core',
-          'desc': 'Current native bridge and UI project',
-          'path': '${dir.path}/gitlane-core',
-        }
-      ];
+      _repos = []; // Start fresh, no hardcoded entries
       _initializing = false;
     });
+  }
+
+  void _showGitActionDialog() {
+    final urlController = TextEditingController();
+    final nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceSlate,
+        title: const Text('New Repository', style: TextStyle(color: AppTheme.accentCyan)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Local Name',
+                labelStyle: TextStyle(color: AppTheme.textDim),
+              ),
+              style: const TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: urlController,
+              decoration: const InputDecoration(
+                labelText: 'Clone URL (optional)',
+                labelStyle: TextStyle(color: AppTheme.textDim),
+                hintText: 'https://github.com/user/repo.git',
+              ),
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textDim)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+            onPressed: () async {
+              final name = nameController.text.trim();
+              final url = urlController.text.trim();
+              if (name.isEmpty) return;
+
+              Navigator.pop(context);
+              setState(() => _initializing = true);
+
+              final path = '$_docsPath/$name';
+              int result;
+
+              if (url.isNotEmpty) {
+                result = await GitService.cloneRepository(url, path);
+              } else {
+                await Directory(path).create(recursive: true);
+                result = await GitService.initRepository(path);
+              }
+
+              if (mounted) {
+                if (result == 0) {
+                  setState(() {
+                    _repos.add({
+                      'title': name,
+                      'desc': url.isNotEmpty ? 'Cloned from $url' : 'Local Git Repository',
+                      'path': path,
+                    });
+                  });
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result == 0 ? "Success: $name established" : "Failed: code $result")),
+                );
+                setState(() => _initializing = false);
+              }
+            },
+            child: const Text('Create', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -83,6 +157,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             if (_initializing)
               const Expanded(child: Center(child: CircularProgressIndicator(color: AppTheme.accentCyan)))
+            else if (_repos.isEmpty)
+              const Expanded(
+                child: Center(
+                  child: Text("No repositories yet. Tap + to start.", 
+                    style: TextStyle(color: AppTheme.textDim)),
+                ),
+              )
             else
               Expanded(
                 child: ListView.builder(
@@ -97,31 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          if (_docsPath == null) return;
-          
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final newRepoPath = '$_docsPath/new-repo-$timestamp';
-          
-          // Ensure directory exists for init (libgit2 needs it for non-bare)
-          await Directory(newRepoPath).create(recursive: true);
-          
-          final result = await GitService.initRepository(newRepoPath);
-          if (context.mounted) {
-            if (result == 0) {
-               setState(() {
-                 _repos.add({
-                   'title': 'New Repo $timestamp',
-                   'desc': 'Freshly initialized repository',
-                   'path': newRepoPath,
-                 });
-               });
-            }
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result == 0 ? "Repo initialized at $newRepoPath" : "Init failed: code $result")),
-            );
-          }
-        },
+        onPressed: _showGitActionDialog,
         icon: const Icon(Icons.add),
         label: const Text('New Repo'),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
@@ -23,10 +24,53 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   List<dynamic> _statusFiles = [];
   bool _isStatusLoading = false;
 
+  List<FileSystemEntity> _currentFiles = [];
+  String _currentDir = "";
+
   @override
   void initState() {
     super.initState();
+    _currentDir = widget.repoPath;
     _fetchData();
+    _listRepoFiles();
+  }
+
+  void _listRepoFiles() {
+    try {
+      final dir = Directory(_currentDir);
+      if (dir.existsSync()) {
+        setState(() {
+          // List files and directories, excluding the .git folder
+          _currentFiles = dir.listSync().where((entity) {
+            final name = entity.path.split(Platform.pathSeparator).last;
+            return name != ".git";
+          }).toList();
+          
+          // Sort: Directories first, then alphabetical
+          _currentFiles.sort((a, b) {
+            if (a is Directory && b is File) return -1;
+            if (a is File && b is Directory) return 1;
+            return a.path.split(Platform.pathSeparator).last.toLowerCase()
+                .compareTo(b.path.split(Platform.pathSeparator).last.toLowerCase());
+          });
+        });
+      }
+    } catch (e) {
+      debugPrint("Error listing files: $e");
+    }
+  }
+
+  void _onItemTapped(FileSystemEntity entity) {
+    if (entity is Directory) {
+      setState(() {
+        _currentDir = entity.path;
+        _listRepoFiles();
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Selected: ${entity.path.split(Platform.pathSeparator).last}")),
+      );
+    }
   }
 
   Future<void> _fetchData() async {
@@ -74,22 +118,41 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final relativePath = _currentDir.length > widget.repoPath.length 
+        ? _currentDir.substring(widget.repoPath.length) 
+        : "";
+
     return Scaffold(
       appBar: AppBar(
+        leading: _currentDir != widget.repoPath 
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                setState(() {
+                  _currentDir = Directory(_currentDir).parent.path;
+                  _listRepoFiles();
+                });
+              },
+            )
+          : null,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.repoName),
-            Text(
-              widget.repoPath,
-              style: const TextStyle(fontSize: 10, color: AppTheme.textDim),
-            ),
+            if (relativePath.isNotEmpty)
+              Text(
+                relativePath,
+                style: const TextStyle(fontSize: 10, color: AppTheme.textDim),
+              ),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _fetchData,
+            onPressed: () {
+              _fetchData();
+              _listRepoFiles();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.account_tree_outlined),
@@ -140,25 +203,27 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   }
 
   Widget _buildExplorerView() {
-    final files = [
-      {'name': 'lib', 'isDir': true},
-      {'name': 'assets', 'isDir': true},
-      {'name': 'pubspec.yaml', 'isDir': false},
-      {'name': 'README.md', 'isDir': false},
-    ];
+    if (_currentFiles.isEmpty) {
+      return const Center(
+        child: Text("Empty directory", style: TextStyle(color: AppTheme.textDim)),
+      );
+    }
 
     return ListView.builder(
-      itemCount: files.length,
+      itemCount: _currentFiles.length,
       itemBuilder: (context, index) {
-        final item = files[index];
+        final entity = _currentFiles[index];
+        final name = entity.path.split(Platform.pathSeparator).last;
+        final isDir = entity is Directory;
+
         return ListTile(
           leading: Icon(
-            item['isDir'] as bool ? Icons.folder : Icons.description_outlined,
-            color: item['isDir'] as bool ? AppTheme.accentCyan : AppTheme.textDim,
+            isDir ? Icons.folder : Icons.description_outlined,
+            color: isDir ? AppTheme.accentCyan : AppTheme.textDim,
           ),
-          title: Text(item['name'] as String),
+          title: Text(name),
           trailing: const Icon(Icons.chevron_right, size: 16, color: AppTheme.textDim),
-          onTap: () {},
+          onTap: () => _onItemTapped(entity),
         );
       },
     );
