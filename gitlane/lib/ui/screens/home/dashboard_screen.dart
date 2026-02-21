@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 import '../repository/repository_root_screen.dart';
@@ -12,6 +14,31 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  String? _docsPath;
+  List<Map<String, String>> _repos = [];
+  bool _initializing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initStorage();
+  }
+
+  Future<void> _initStorage() async {
+    final dir = await getApplicationDocumentsDirectory();
+    setState(() {
+      _docsPath = dir.path;
+      _repos = [
+        {
+          'title': 'GitLane-Core',
+          'desc': 'Current native bridge and UI project',
+          'path': '${dir.path}/gitlane-core',
+        }
+      ];
+      _initializing = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,25 +81,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: 1, // Let's show the current project as first repo
-                itemBuilder: (context, index) {
-                  return _buildRepoCard(context, index);
-                },
+            if (_initializing)
+              const Expanded(child: Center(child: CircularProgressIndicator(color: AppTheme.accentCyan)))
+            else
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _repos.length,
+                  itemBuilder: (context, index) {
+                    return _buildRepoCard(context, index);
+                  },
+                ),
               ),
-            ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          // Placeholder for Init Repo
-          final result = await GitService.initRepository('.');
+          if (_docsPath == null) return;
+          
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final newRepoPath = '$_docsPath/new-repo-$timestamp';
+          
+          // Ensure directory exists for init (libgit2 needs it for non-bare)
+          await Directory(newRepoPath).create(recursive: true);
+          
+          final result = await GitService.initRepository(newRepoPath);
           if (context.mounted) {
+            if (result == 0) {
+               setState(() {
+                 _repos.add({
+                   'title': 'New Repo $timestamp',
+                   'desc': 'Freshly initialized repository',
+                   'path': newRepoPath,
+                 });
+               });
+            }
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result == 0 ? "Repo initialized!" : "Init failed")),
+              SnackBar(content: Text(result == 0 ? "Repo initialized at $newRepoPath" : "Init failed: code $result")),
             );
           }
         },
@@ -83,9 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildRepoCard(BuildContext context, int index) {
-    final titles = ['GitLane-Core'];
-    final descs = ['Current native bridge and UI project'];
-    final paths = ['.']; // Using current directory as sample
+    final repo = _repos[index];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
@@ -98,8 +142,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => RepositoryRootScreen(
-                  repoName: titles[index],
-                  repoPath: paths[index],
+                  repoName: repo['title']!,
+                  repoPath: repo['path']!,
                 ),
               ),
             );
@@ -113,7 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      titles[index],
+                      repo['title']!,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -125,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  descs[index],
+                  repo['desc']!,
                   style: const TextStyle(color: AppTheme.textDim),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

@@ -18,10 +18,32 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   List<dynamic> _commits = [];
   bool _isLoading = false;
 
+  List<dynamic> _statusFiles = [];
+  bool _isStatusLoading = false;
+
   @override
   void initState() {
     super.initState();
     _fetchHistory();
+    _fetchStatus();
+  }
+
+  Future<void> _fetchStatus() async {
+    setState(() => _isStatusLoading = true);
+    final statusJson = await GitService.getRepositoryStatus(widget.repoPath);
+    if (statusJson != null) {
+      try {
+        final decoded = jsonDecode(statusJson);
+        if (decoded is List) {
+          setState(() {
+            _statusFiles = decoded;
+          });
+        }
+      } catch (e) {
+        debugPrint("Status parsing error: $e");
+      }
+    }
+    setState(() => _isStatusLoading = false);
   }
 
   Future<void> _fetchHistory() async {
@@ -29,9 +51,17 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     final logJson = await GitService.getCommitLog(widget.repoPath);
     if (logJson != null) {
       try {
-        setState(() {
-          _commits = jsonDecode(logJson);
-        });
+        final decoded = jsonDecode(logJson);
+        if (decoded is List) {
+          setState(() {
+            _commits = decoded;
+          });
+        } else if (decoded is Map && decoded.containsKey('error')) {
+          debugPrint("Bridge error: ${decoded['error']}");
+          setState(() {
+            _commits = [];
+          });
+        }
       } catch (e) {
         debugPrint("Parsing error: $e");
       }
@@ -56,7 +86,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _fetchHistory,
+            onPressed: () {
+              _fetchHistory();
+              _fetchStatus();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.account_tree_outlined),
@@ -165,6 +198,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
             builder: (context) => CommitDetailScreen(
               commitHash: hash,
               message: msg,
+              repoPath: widget.repoPath,
             ),
           ),
         );
@@ -224,8 +258,60 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   }
 
   Widget _buildStatusView() {
-    return const Center(
-      child: Text('No changes staged for commit', style: TextStyle(color: AppTheme.textDim)),
+    if (_isStatusLoading) {
+      return const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan));
+    }
+    if (_statusFiles.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline, size: 48, color: AppTheme.accentCyan),
+            SizedBox(height: 16),
+            Text("Worktree clean", style: TextStyle(color: AppTheme.textDim)),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      itemCount: _statusFiles.length,
+      itemBuilder: (context, index) {
+        final file = _statusFiles[index];
+        final fileName = file['path'] ?? 'Unknown';
+        final status = file['status'] ?? 'unknown';
+        
+        return ListTile(
+          leading: Icon(
+            _getStatusIcon(status),
+            color: _getStatusColor(status),
+          ),
+          title: Text(fileName),
+          subtitle: Text(status, style: const TextStyle(fontSize: 10, color: AppTheme.textDim)),
+          trailing: status.contains('untracked') || status.contains('modified') 
+            ? IconButton(
+                icon: const Icon(Icons.add, color: AppTheme.accentCyan, size: 20),
+                onPressed: () async {
+                   await GitService.gitAddFile(widget.repoPath, fileName);
+                   _fetchStatus();
+                },
+              ) 
+            : const Icon(Icons.check, color: Colors.green, size: 16),
+        );
+      },
     );
+  }
+
+  IconData _getStatusIcon(String status) {
+    if (status.contains('new')) return Icons.add_box_outlined;
+    if (status.contains('modified')) return Icons.edit_note;
+    if (status.contains('deleted')) return Icons.delete_outline;
+    return Icons.help_outline;
+  }
+
+  Color _getStatusColor(String status) {
+    if (status.contains('staged')) return Colors.green;
+    if (status.contains('modified')) return Colors.orange;
+    if (status.contains('untracked')) return AppTheme.accentCyan;
+    return AppTheme.textDim;
   }
 }
