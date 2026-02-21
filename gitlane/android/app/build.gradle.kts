@@ -13,7 +13,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.18.1"
+            version = "3.22.1"
         }
     }
 
@@ -36,8 +36,15 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
+        externalNativeBuild {
+            cmake {
+                abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
+            }
+        }
+
         ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64")
+            abiFilters.clear()
+            abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
     }
 

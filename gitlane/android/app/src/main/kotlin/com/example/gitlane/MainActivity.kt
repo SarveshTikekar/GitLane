@@ -69,8 +69,21 @@ class MainActivity : FlutterActivity() {
                     "getCommitLog" -> {
                         val path = call.argument<String>("path")
                         if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        val json = bridge.getCommitLog(path)
-                        result.success(json)
+                        result.success(bridge.getCommitLog(path))
+                    }
+
+                    "getRepositoryStatus" -> {
+                        val path = call.argument<String>("path")
+                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
+                        result.success(bridge.getRepositoryStatus(path))
+                    }
+
+                    "gitAddFile" -> {
+                        val path     = call.argument<String>("path")
+                        val filePath = call.argument<String>("filePath")
+                        if (path == null || filePath == null) { result.error("INVALID_ARG", "path and filePath are required", null); return@setMethodCallHandler }
+                        val code = bridge.gitAddFile(path, filePath)
+                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "gitAddFile failed: $code", code)
                     }
 
                     else -> result.notImplemented()

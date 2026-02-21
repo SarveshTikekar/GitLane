@@ -35,6 +35,8 @@ class GitBridge {
      * Returns `{"error":"..."}` on failure.
      */
     external fun getCommitLog(path: String): String
+    external fun getRepositoryStatus(path: String): String
+    external fun gitAddFile(path: String, filePath: String): Int
 
     companion object {
         init {
