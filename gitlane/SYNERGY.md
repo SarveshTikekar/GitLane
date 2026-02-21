@@ -16,7 +16,7 @@ This document provides clear hand-off points for each feature area. If you are a
 | **History** | `getCommitLog` | ✅ Stable | Build the Commit History list view. |
 | **Diffs** | `getCommitDiff(hash)` | ✅ Stable | Build a "Diff View" using the returned patch text. |
 | **Changes**| `getRepositoryStatus`, `gitAddFile` | ✅ Stable | Build the "Staging Area" UI (checkboxes for files). |
-| **Cloning** | `cloneRepository(url, path)` | 🚧 In Progress | Prepare "Clone Repo" dialog with URL input. |
+| **Cloning** | `cloneRepository(url, path)` | 🚧 Local-Only | Handled in JNI; HTTPS support requires libgit2 rebuild. |
 
 ---
 
@@ -34,10 +34,11 @@ final String commitLogJson = await platform.invokeMethod('getCommitLog', {'path'
 ### 3. Build Requirements
 - Android NDK 26.x
 - CMake 3.22.x
-- **Note:** Native code is targets `arm64-v8a` and `x86_64`.
+- **Note:** Native code targets `arm64-v8a` and `x86_64`.
 
 ---
 
-## 🎯 Current Milestone: Repository Cloning
-- **Current Blocker:** HTTPS transport setup (mbedTLS). Once fixed, `cloneRepository` will support regular GitHub URLs.
-- **Handoff:** UI agents should assume `cloneRepository` returns `0` on success and prepare the directory selection logic.
+## 🎯 Current Milestone: Stability Merge
+- **Status:** All core local operations are merged to `main`.
+- **Handoff:** UI agents should assume `main` is the stable reference. 
+- **Next Task:** Revisit mbedTLS integration for `https://` clones.
