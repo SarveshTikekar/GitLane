@@ -8,9 +8,14 @@ import '../../theme/app_theme.dart';
 import '../../theme/responsive.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
+import 'package:file_picker/file_picker.dart';
+import 'file_editor_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
 import '../commit/commit_graph_screen.dart';
+import 'native_terminal_screen.dart';
 import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
@@ -846,6 +851,43 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     _showSnack('Unstage not yet supported via bridge', AppTheme.accentYellow);
   }
 
+  Future<void> _shareRepo() async {
+    final url = await GitService.getRemoteUrl(widget.repoPath);
+    if (!mounted) return;
+    if (url.startsWith('http') || url.startsWith('git@')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
+        ),
+      );
+    } else {
+      _showSnack('No remote origin set', AppTheme.accentYellow);
+    }
+  }
+
+  Future<void> _uploadFile() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    if (result != null) {
+      for (var file in result.files) {
+        if (file.path != null) {
+          final targetPath =
+              "$_currentDir${Platform.pathSeparator}${file.name}";
+          await File(file.path!).copy(targetPath);
+          await GitService.gitAddFile(widget.repoPath, file.name);
+        }
+      }
+      _fetchData();
+      _listRepoFiles();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Uploaded ${result.count} files")),
+        );
+      }
+    }
+  }
+
   // ── Overflow menu ─────────────────────────────────────────────────────────────
   void _showOverflowMenu(BuildContext anchorContext) async {
     final buttonObject = anchorContext.findRenderObject();
@@ -911,6 +953,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           'Share (QR)',
           AppTheme.textSecondary,
         ),
+        _menuItem(
+          'upload',
+          Icons.upload_file_rounded,
+          'Import File',
+          AppTheme.accentCyan,
+        ),
       ],
     );
 
@@ -953,19 +1001,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         );
         break;
       case 'share':
-        final url = await GitService.getRemoteUrl(widget.repoPath);
-        if (!mounted) return;
-        if (url.startsWith('http') || url.startsWith('git@')) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
-            ),
-          );
-        } else {
-          _showSnack('No remote origin set', AppTheme.accentYellow);
-        }
+        _shareRepo();
+        break;
+      case 'upload':
+        _uploadFile();
         break;
     }
   }
@@ -1354,6 +1393,22 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 setState(() {
                   _currentDir = entity.path;
                   _listRepoFiles();
+                });
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FileEditorScreen(
+                      filePath: entity.path,
+                      fileName: name,
+                      repoPath: widget.repoPath,
+                    ),
+                  ),
+                ).then((value) {
+                  if (value == true) {
+                    _fetchData();
+                    _listRepoFiles();
+                  }
                 });
               }
             },
