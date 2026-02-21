@@ -306,6 +306,19 @@ class GitService {
     }
   }
 
+  /// Fetches remote updates without merging.
+  static Future<int> fetchRemote(String path, String token) async {
+    try {
+      return await _channel.invokeMethod('fetchRemote', {
+        'path': path,
+        'token': token,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to fetch: '${e.message}'.");
+      return -1;
+    }
+  }
+
   /// Pulls changes from the remote repository.
   static Future<int> pullRepository(String path, String token) async {
     try {

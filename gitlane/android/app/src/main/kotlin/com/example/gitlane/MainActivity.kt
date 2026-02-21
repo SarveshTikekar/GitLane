@@ -113,6 +113,11 @@ class MainActivity : FlutterActivity() {
                                     val token = call.argument<String>("token")!!
                                     bridge.pushRepository(path, token)
                                 }
+                                "fetchRemote" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val token = call.argument<String>("token")!!
+                                    bridge.fetchRemote(path, token)
+                                }
                                 "pullRepository" -> {
                                     val path = call.argument<String>("path")!!
                                     val token = call.argument<String>("token")!!

@@ -11,6 +11,7 @@ import '../../widgets/glass_card.dart';
 import 'package:file_picker/file_picker.dart';
 import 'file_editor_screen.dart';
 import '../../../services/git_service.dart';
+import '../../../services/git_sync_service.dart';
 import '../commit/commit_detail_screen.dart';
 import '../commit/commit_graph_screen.dart';
 import 'native_terminal_screen.dart';
@@ -398,10 +399,24 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           }
         }
         if (pushAfter && _personalAccessToken != null) {
-          await GitService.pushRepository(
-            widget.repoPath,
-            _personalAccessToken!,
-          );
+          try {
+            final pushResult = await GitSyncService.startPush(
+              widget.repoPath,
+              _personalAccessToken!,
+            );
+            if (mounted) {
+              _showSnack(
+                pushResult == 0
+                    ? '⬆ Push successful or reconciled'
+                    : 'Push failed ($pushResult)',
+                pushResult == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+              );
+            }
+          } on PushAlreadyRunningException catch (e) {
+            if (mounted) _showSnack(e.message, AppTheme.accentYellow);
+          } catch (e) {
+            if (mounted) _showSnack('Unexpected error: $e', AppTheme.accentRed);
+          }
         } else if (pushAfter) {
           _showSnack(
             'Push failed: No PAT stored for this session',
@@ -974,14 +989,31 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   Future<void> _pushRepo() => _showCredentialDialog(
     onConfirm: (token) async {
       setState(() => _isLoading = true);
-      final code = await GitService.pushRepository(widget.repoPath, token);
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showSnack(
-          code == 0 ? '⬆ Push successful' : 'Push failed ($code)',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      try {
+        final pushResult = await GitSyncService.startPush(
+          widget.repoPath,
+          token,
         );
-        _fetchData();
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showSnack(
+            pushResult == 0
+                ? '⬆ Push successful or reconciled'
+                : 'Push failed ($pushResult)',
+            pushResult == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+          );
+          _fetchData();
+        }
+      } on PushAlreadyRunningException catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showSnack(e.message, AppTheme.accentYellow);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showSnack('Unexpected error: $e', AppTheme.accentRed);
+        }
       }
     },
   );

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home/dashboard_screen.dart';
+import 'services/git_sync_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await GitSyncService.recoverPendingTxOnStartup();
   runApp(const GitLaneApp());
 }
 

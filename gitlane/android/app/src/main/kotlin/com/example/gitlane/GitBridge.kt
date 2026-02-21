@@ -51,6 +51,7 @@ class GitBridge {
     external fun stashDrop(path: String, index: Int): Int
     external fun getStashes(path: String): String
     external fun pushRepository(path: String, token: String): Int
+    external fun fetchRemote(path: String, token: String): Int
     external fun pullRepository(path: String, token: String): Int
     external fun getRemoteUrl(path: String): String
     external fun getReflog(path: String): String

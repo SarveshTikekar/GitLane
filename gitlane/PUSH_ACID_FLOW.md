@@ -59,7 +59,7 @@ That is enough. No extra intermediate states required.
 - Retry with exponential backoff only for `FAILED` tx.
 - Keep reconciliation logic identical for runtime failures and restart recovery.
 
-## Test Cases (2)
+## Expanded Test Matrix
 
 ### Test Case 1: Network down before remote update
 **Given** local commit `C1` ahead of remote.
@@ -82,3 +82,71 @@ That is enough. No extra intermediate states required.
 - tx transitions `PENDING -> DONE`
 - no duplicate commits
 - UI eventually shows synced state.
+
+### Test Case 3: App/process killed during push
+**Given** tx is in `PENDING` and push call was in progress.
+
+**When** app is force-killed and restarted.
+
+**Then**
+- startup recovery scans `PENDING` rows
+- reconciliation finalizes tx to `DONE` (if remote has head OID) or `FAILED`
+- no local commit loss.
+
+### Test Case 4: User taps Push twice quickly
+**Given** same repo+branch.
+
+**When** second push request arrives while first is active.
+
+**Then**
+- mutex blocks second execution
+- app returns `PUSH_ALREADY_RUNNING` (or queues it)
+- only one tx row is active
+- no race-induced inconsistent state.
+
+### Test Case 5: Auth failure (bad/expired token)
+**Given** invalid token.
+
+**When** push is attempted.
+
+**Then**
+- push returns auth error
+- tx transitions `PENDING -> FAILED`
+- commit remains local
+- UI prompts credential refresh (not blind retry loop).
+
+### Test Case 6: Branch changed mid-flow
+**Given** tx captured `branch=A`.
+
+**When** user/app switches to `branch=B` before retry/recovery.
+
+**Then**
+- recovery reconciles using stored `branch=A` only
+- no cross-branch corruption
+- tx for `A` finishes independently.
+
+## Architecture Simplified Further (Based on Test Matrix)
+
+The matrix shows we only need 3 persistent concepts:
+1. `PushTx` row (journal)
+2. `RepoBranchLock` (in-memory mutex)
+3. `Reconcile()` function (shared by failure path + startup recovery)
+
+Everything else can stay stateless.
+
+### Final Minimal Components
+- `startPush(repo, branch)`:
+  - create `PushTx(PENDING)`
+  - run native push under lock
+  - finalize via `finishOrReconcile(tx)`
+- `finishOrReconcile(tx)`:
+  - if push success -> `DONE`
+  - else -> fetch+ancestry check -> `DONE` or `FAILED`
+- `recoverPendingTxOnStartup()`:
+  - iterate `PENDING`
+  - call `finishOrReconcile(tx)`
+
+### Why this is enough
+- Handles network failures, crashes, duplicate taps, and ambiguous outcomes.
+- Keeps ACID guarantees without multi-state orchestration complexity.
+- Avoids destructive rollback and preserves local durability.

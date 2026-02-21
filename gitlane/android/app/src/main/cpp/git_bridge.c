@@ -1247,11 +1247,18 @@ Java_com_example_gitlane_GitBridge_getStashes(
 }
 
 /* ─── Callback: Credentials (PAT) ──────────────────────────────────────── */
-static int cred_acquire_cb(git_cred **out, const char *url, const char *user_from_url,
+static int cred_acquire_cb(git_cred **out, const char *url, const char *username_from_url,
                            unsigned int allowed_types, void *payload) {
     const char *token = (const char *)payload;
-    LOGI("Acquiring credentials for: %s", url);
-    return git_cred_userpass_plaintext_new(out, "git", token);
+    LOGI("Acquiring credentials for: %s with token: %s", url, token ? "provided" : "none");
+    if (!token || strlen(token) == 0) {
+        return -1; // No token provided
+    }
+    // Most remote git hosts use "git" or the username for the username, and the token for the password.
+    // For GitHub PATs or GitLab tokens, usually the username doesn't strictly matter as long as the token is right,
+    // but we'll use "git" if username_from_url is null.
+    const char *user = username_from_url ? username_from_url : "git";
+    return git_cred_userpass_plaintext_new(out, user, token);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1267,24 +1274,81 @@ Java_com_example_gitlane_GitBridge_pushRepository(
 
     git_repository *repo = NULL;
     git_remote     *remote = NULL;
+    git_reference  *head_ref = NULL;
     int result = 0;
 
     if (git_repository_open(&repo, path) < 0) goto cleanup_push;
     if (git_remote_lookup(&remote, repo, "origin") < 0) goto cleanup_push;
+    if (git_repository_head(&head_ref, repo) < 0) {
+        result = -210;
+        goto cleanup_push;
+    }
 
     git_push_options opts = GIT_PUSH_OPTIONS_INIT;
     opts.callbacks.credentials = cred_acquire_cb;
     opts.callbacks.payload = (void *)token;
     opts.callbacks.certificate_check = certificate_check_cb;
 
-    /* Push current branch to its remote tracking branch */
-    char *refspec = "refs/heads/main:refs/heads/main"; // Defaulting to main for now, can be improved
-    git_strarray refs = { &refspec, 1 };
+    /* Push current branch to same remote branch name */
+    const char *head_name = git_reference_name(head_ref); /* refs/heads/<branch> */
+    if (!head_name || strncmp(head_name, "refs/heads/", 11) != 0) {
+        result = -211;
+        goto cleanup_push;
+    }
+    const char *branch = head_name + 11;
+    char refspec[1024];
+    snprintf(refspec, sizeof(refspec), "refs/heads/%s:refs/heads/%s", branch, branch);
+    char *refspec_arr[1];
+    refspec_arr[0] = refspec;
+    git_strarray refs = { refspec_arr, 1 };
+
+    LOGI("Pushing to remote %s with token: %s", git_remote_url(remote), token ? "provided" : "none");
 
     result = git_remote_push(remote, &refs, &opts);
-    if (result < 0) LOGE("Push failed: %s", git_error_str(result));
+    if (result < 0) {
+        LOGE("Push failed: %s (code: %d)", git_error_str(result), result);
+    } else {
+        LOGI("Push successful!");
+    }
 
 cleanup_push:
+    if (head_ref) git_reference_free(head_ref);
+    if (remote) git_remote_free(remote);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jtoken, token);
+    git_libgit2_shutdown();
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 18a. fetchRemote(path: String, token: String): Int
+ *      Fetches origin without merge.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_fetchRemote(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jtoken) {
+
+    git_libgit2_init();
+    const char *path  = (*env)->GetStringUTFChars(env, jpath,  NULL);
+    const char *token = (*env)->GetStringUTFChars(env, jtoken, NULL);
+
+    git_repository *repo = NULL;
+    git_remote     *remote = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_fetch;
+    if (git_remote_lookup(&remote, repo, "origin") < 0) goto cleanup_fetch;
+
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    fetch_opts.callbacks.credentials = cred_acquire_cb;
+    fetch_opts.callbacks.payload = (void *)token;
+    fetch_opts.callbacks.certificate_check = certificate_check_cb;
+
+    result = git_remote_fetch(remote, NULL, &fetch_opts, NULL);
+    if (result < 0) LOGE("Fetch failed: %s", git_error_str(result));
+
+cleanup_fetch:
     if (remote) git_remote_free(remote);
     if (repo) git_repository_free(repo);
     (*env)->ReleaseStringUTFChars(env, jpath, path);
