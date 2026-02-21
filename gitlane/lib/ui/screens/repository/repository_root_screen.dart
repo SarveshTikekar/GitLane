@@ -1959,11 +1959,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                       ],
                     ),
                     const SizedBox(height: 6),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final narrow = constraints.maxWidth < 290;
-
-                        final authorChip = Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
@@ -1988,20 +1989,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                author,
-                                style: GoogleFonts.inter(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              author,
+                              style: GoogleFonts.inter(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
                               ),
                             ),
                           ],
-                        );
-
-                        final hashChip = Container(
+                        ),
+                        Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 2,
@@ -2017,48 +2014,15 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                               fontSize: 10,
                             ),
                           ),
-                        );
-
-                        if (narrow) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              authorChip,
-                              const SizedBox(height: 6),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 6,
-                                children: [
-                                  hashChip,
-                                  Text(
-                                    timeAgo,
-                                    style: GoogleFonts.inter(
-                                      color: AppTheme.textMuted,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          children: [
-                            Expanded(child: authorChip),
-                            const SizedBox(width: 8),
-                            hashChip,
-                            const SizedBox(width: 8),
-                            Text(
-                              timeAgo,
-                              style: GoogleFonts.inter(
-                                color: AppTheme.textMuted,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                        ),
+                        Text(
+                          timeAgo,
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
