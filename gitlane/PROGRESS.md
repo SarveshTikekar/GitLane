@@ -17,12 +17,15 @@ This file tracks the status of the native Git engine. Teammates should check thi
 | Method | Description | Return |
 |---|---|---|
 | `initRepository` | Creates a new `.git` repo | Int (0=Success) |
+| `cloneRepository`| Clones from GitHub/GitLab (HTTPS) | Int (0=Success) |
 | `commitAll` | Stages all files and creates a commit | Int (0=Success) |
 | `createBranch`| Creates a new branch from current HEAD | Int (0=Success) |
+| `deleteBranch`| Deletes a local branch | Int (0=Success) |
 | `checkoutBranch`| Switches to a different branch | Int (0=Success) |
 | `mergeBranch` | Merges branch into current (FF or Commit) | Int (0=Success) |
 | `getCommitLog` | Returns the commit history | JSON String |
 | `getRepositoryStatus` | Summary of modified/staged files | JSON String |
+| `getConflicts` | List files with merge conflicts | JSON String |
 | `gitAddFile` | Stages a specific file (git add) | Int (0=Success) |
 | `getCommitDiff` | Returns patch text for a commit hash | String (Patch) |
 
@@ -31,13 +34,13 @@ This file tracks the status of the native Git engine. Teammates should check thi
 ## 🛠️ WHAT NEEDS TO BE DONE (Current Focus)
 
 ### 📂 Phase 5: Enhanced Local Operations
+- [ ] **Stash Management**: Native support for `git stash` operations (save, pop, list).
 - [ ] **Partial Staging**: Support staging Hunk/Line level changes via native API.
-- [ ] **Stash Management**: Native support for `git stash` operations.
 
-### 🌐 Phase 6: Remote Operations (Requires Network Backend)
-- [ ] **HTTPS Integration**: Re-enable HTTPS backend (OpenSSL/MbedTLS) to support remotes.
-- [ ] **`cloneRepository(url, path)`**: Support cloning from GitHub/GitLab.
-- [ ] **`push`/`pull`**: Support syncing with remotes.
+### 🌐 Phase 6: Remote Operations
+- [x] **HTTPS Integration**: Re-enabled HTTPS backend (MbedTLS) supporting remotes.
+- [x] **`cloneRepository(url, path)`**: Support cloning from GitHub/GitLab.
+- [ ] **`push`/`pull`**: Support syncing with remotes (requires auth helper).
 - [ ] **SSH Support**: Support cloning/pushing via SSH keys.
 
 ### 🔒 Phase 7: App Security & Performance
