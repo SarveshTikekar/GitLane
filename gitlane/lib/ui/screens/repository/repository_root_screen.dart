@@ -235,6 +235,71 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     );
   }
 
+  Future<void> _showNewFileDialog() async {
+    final nameController = TextEditingController();
+    final contentController = TextEditingController();
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceSlate,
+        title: const Text("Create New File", style: TextStyle(color: AppTheme.accentCyan)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              style: const TextStyle(color: AppTheme.textLight),
+              decoration: const InputDecoration(
+                hintText: "example.txt",
+                hintStyle: TextStyle(color: AppTheme.textDim),
+                labelText: "File Name",
+                labelStyle: TextStyle(color: AppTheme.textDim),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: contentController,
+              maxLines: 5,
+              style: const TextStyle(color: AppTheme.textLight),
+              decoration: const InputDecoration(
+                hintText: "File content here...",
+                hintStyle: TextStyle(color: AppTheme.textDim),
+                labelText: "Content",
+                labelStyle: TextStyle(color: AppTheme.textDim),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: AppTheme.textDim)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) return;
+              
+              final file = File("${_currentDir}${Platform.pathSeparator}$name");
+              await file.writeAsString(contentController.text);
+              
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Created $name")));
+                _fetchData();
+                _listRepoFiles();
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.black),
+            child: const Text("Create"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final relativePath = _currentDir.length > widget.repoPath.length 
@@ -318,15 +383,25 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
                 ),
               ],
             ),
-      floatingActionButton: (_selectedIndex == 2 && _statusFiles.isNotEmpty && !_isLoading)
-          ? FloatingActionButton.extended(
-              onPressed: _showCommitDialog,
-              icon: const Icon(Icons.check),
-              label: const Text("Commit"),
-              backgroundColor: AppTheme.accentCyan,
-              foregroundColor: Colors.black,
-            )
-          : null,
+      floatingActionButton: _isNotGitRepo || _isLoading 
+          ? null 
+          : _selectedIndex == 0
+              ? FloatingActionButton.extended(
+                  onPressed: _showNewFileDialog,
+                  icon: const Icon(Icons.add_comment_outlined),
+                  label: const Text("New File"),
+                  backgroundColor: AppTheme.accentCyan,
+                  foregroundColor: Colors.black,
+                )
+              : _selectedIndex == 2 && _statusFiles.isNotEmpty
+                  ? FloatingActionButton.extended(
+                      onPressed: _showCommitDialog,
+                      icon: const Icon(Icons.check),
+                      label: const Text("Commit"),
+                      backgroundColor: AppTheme.accentCyan,
+                      foregroundColor: Colors.black,
+                    )
+                  : null,
     );
   }
 
