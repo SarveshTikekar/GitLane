@@ -7,6 +7,7 @@ import 'package:highlight/languages/cpp.dart';
 import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
+import '../../../services/indexer_service.dart';
 
 class FileEditorScreen extends StatefulWidget {
   final String filePath;
@@ -113,10 +114,15 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             decoration: const InputDecoration(hintText: "Enter commit message"),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentCyan,
+              ),
               child: const Text("Commit", style: TextStyle(color: Colors.black)),
             ),
           ],
@@ -124,11 +130,129 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
       );
 
       if (confirmed == true) {
-        final msg = commitController.text.trim().isEmpty ? "Update ${widget.fileName}" : commitController.text;
+        final msg =
+            commitController.text.trim().isEmpty
+                ? "Update ${widget.fileName}"
+                : commitController.text;
         await GitService.commitAll(widget.repoPath, msg);
         if (mounted) Navigator.pop(context, true);
       }
     }
+  }
+
+  void _handleSymbolInteraction() {
+    final selection = _codeController.selection;
+    if (selection.isCollapsed && selection.baseOffset < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Place cursor on a symbol or select text")),
+      );
+      return;
+    }
+
+    String? symbol;
+    if (!selection.isCollapsed) {
+      symbol = _codeController.text.substring(selection.start, selection.end);
+    } else {
+      final text = _codeController.text;
+      final offset = selection.baseOffset;
+      symbol = IndexerService.getSymbolAt(text, offset);
+    }
+
+    if (symbol == null || symbol.isEmpty) return;
+
+    final loc = IndexerService.findSymbol(symbol);
+    if (loc == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Definition not found for '$symbol'")),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.bg1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder:
+          (context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.code_rounded,
+                  color: AppTheme.accentCyan,
+                ),
+                title: Text(
+                  "Go to Definition: $symbol",
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  loc.path.split(Platform.pathSeparator).last,
+                  style: const TextStyle(color: AppTheme.textMuted),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (loc.path == widget.filePath) {
+                    _codeController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _getOffsetForLine(loc.line)),
+                    );
+                    _scrollController.animateTo(
+                      (loc.line - 1) * 19.0, // Rough estimation of line height
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => FileEditorScreen(
+                              filePath: loc.path,
+                              fileName:
+                                  loc.path.split(Platform.pathSeparator).last,
+                              repoPath: widget.repoPath,
+                            ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              if (loc.documentation != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceSlate,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.border),
+                    ),
+                    child: Text(
+                      loc.documentation!,
+                      style: const TextStyle(
+                        color: AppTheme.textLight,
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+    );
+  }
+
+  int _getOffsetForLine(int line) {
+    if (line <= 1) return 0;
+    final text = _codeController.text;
+    final lines = text.split('\n');
+    int offset = 0;
+    for (int i = 0; i < line - 1 && i < lines.length; i++) {
+      offset += lines[i].length + 1;
+    }
+    return offset;
   }
 
   @override
@@ -145,6 +269,11 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             ),
             tooltip: "Git Blame",
             onPressed: _toggleBlame,
+          ),
+          IconButton(
+            icon: const Icon(Icons.bolt_rounded, color: AppTheme.accentOrange),
+            tooltip: "LSP Code Intel",
+            onPressed: _handleSymbolInteraction,
           ),
           IconButton(
             icon: const Icon(Icons.check_circle_outline_rounded),

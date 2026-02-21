@@ -1,0 +1,47 @@
+Analyzing gitlane...                                            
+
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:13:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:24:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:35:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:49:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:59:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:69:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:79:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:89:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:99:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:109:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:124:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:134:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:148:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:158:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:168:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:178:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:188:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:198:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:210:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:220:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:230:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:239:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:248:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:258:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:268:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:277:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:286:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:300:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:314:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:327:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:339:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:353:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:366:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:380:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:395:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:410:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:423:7 - avoid_print
+  error - The getter 'accentPink' isn't defined for the type 'AppTheme' - lib\ui\screens\repository\file_editor_screen.dart:240:16 - undefined_getter
+warning - Unused import: 'hunk_staging_screen.dart' - lib\ui\screens\repository\repository_root_screen.dart:23:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:2101:33 - use_build_context_synchronously
+   info - The private field _selections could be 'final' - lib\ui\screens\repository\visual_merge_editor.dart:21:20 - prefer_final_fields
+   info - The imported package 'path_provider_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:5:8 - depend_on_referenced_packages
+   info - The imported package 'plugin_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:6:8 - depend_on_referenced_packages
+
+43 issues found. (ran in 3.3s)

@@ -1414,10 +1414,19 @@ Java_com_example_gitlane_GitBridge_getConflictChunks(
         if (f) {
             char line[1024];
             int mode = 0; // 0=normal, 1=local, 2=remote
-            char local_buf[4096] = "", remote_buf[4096] = "";
+            char local_buf[8192] = "", remote_buf[8192] = "";
             
             while (fgets(line, sizeof(line), f)) {
-                if (strncmp(line, "<<<<<<<", 7) == 0) mode = 1;
+                if (strncmp(line, "<<<<<<<", 7) == 0) {
+                    // Flush normal content if exists
+                    if (strlen(local_buf) > 0) {
+                        pos += snprintf(json + pos, 65536 - pos, 
+                               "{\"local\":\"%s\",\"remote\":\"%s\"},", 
+                               local_buf, remote_buf);
+                        local_buf[0] = '\0'; remote_buf[0] = '\0';
+                    }
+                    mode = 1;
+                }
                 else if (strncmp(line, "=======", 7) == 0) mode = 2;
                 else if (strncmp(line, ">>>>>>>", 7) == 0) {
                     pos += snprintf(json + pos, 65536 - pos, 
@@ -1426,8 +1435,19 @@ Java_com_example_gitlane_GitBridge_getConflictChunks(
                     mode = 0;
                     local_buf[0] = '\0'; remote_buf[0] = '\0';
                 }
+                else if (mode == 0) {
+                    // In normal mode, local and remote are identical
+                    strncat(local_buf, line, sizeof(local_buf) - strlen(local_buf) - 1);
+                    strncat(remote_buf, line, sizeof(remote_buf) - strlen(remote_buf) - 1);
+                }
                 else if (mode == 1) strncat(local_buf, line, sizeof(local_buf) - strlen(local_buf) - 1);
                 else if (mode == 2) strncat(remote_buf, line, sizeof(remote_buf) - strlen(remote_buf) - 1);
+            }
+            // Final flush
+            if (strlen(local_buf) > 0) {
+                pos += snprintf(json + pos, 65536 - pos, 
+                       "{\"local\":\"%s\",\"remote\":\"%s\"},", 
+                       local_buf, remote_buf);
             }
             fclose(f);
         }
@@ -1987,3 +2007,147 @@ cleanup_apply:
     return (jint) result;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 36. Rebase Suite (init, next, commit, abort, finish)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_rebaseInit(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jupstream, jstring jonto) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *upstream_name = (*env)->GetStringUTFChars(env, jupstream, NULL);
+    const char *onto_name = (*env)->GetStringUTFChars(env, jonto, NULL);
+
+    git_repository *repo = NULL;
+    git_rebase *rebase = NULL;
+    git_annotated_commit *upstream_commit = NULL, *onto_commit = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_rebase_init; }
+
+    if (git_annotated_commit_from_revspec(&upstream_commit, repo, upstream_name) < 0) { result = -2; goto cleanup_rebase_init; }
+    if (git_annotated_commit_from_revspec(&onto_commit, repo, onto_name) < 0) { result = -3; goto cleanup_rebase_init; }
+
+    git_rebase_options opts = GIT_REBASE_OPTIONS_INIT;
+    result = git_rebase_init(&rebase, repo, NULL, upstream_commit, onto_commit, &opts);
+
+cleanup_rebase_init:
+    if (rebase) git_rebase_free(rebase);
+    if (upstream_commit) git_annotated_commit_free(upstream_commit);
+    if (onto_commit) git_annotated_commit_free(onto_commit);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jupstream, upstream_name);
+    (*env)->ReleaseStringUTFChars(env, jonto, onto_name);
+    git_libgit2_shutdown();
+    return result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_rebaseNext(
+        JNIEnv *env, jobject obj, jstring jpath) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+    git_rebase *rebase = NULL;
+    git_rebase_operation *op = NULL;
+    char *json = (char *)malloc(1024);
+    json[0] = '\0';
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_rebase_next;
+    if (git_rebase_open(&rebase, repo, NULL) < 0) goto cleanup_rebase_next;
+
+    if (git_rebase_next(&op, rebase) == 0) {
+        char oid[GIT_OID_HEXSZ + 1];
+        git_oid_tostr(oid, sizeof(oid), &op->id);
+        snprintf(json, 1024, "{\"type\":%d,\"hash\":\"%s\"}", (int)op->type, oid);
+    } else {
+        snprintf(json, 1024, "{\"finished\":true}");
+    }
+
+cleanup_rebase_next:
+    if (rebase) git_rebase_free(rebase);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    jstring jres = (*env)->NewStringUTF(env, json[0] ? json : "{\"error\":\"failed\"}");
+    free(json);
+    return jres;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_rebaseCommit(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jname, jstring jemail, jstring jmsg) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *name = (*env)->GetStringUTFChars(env, jname, NULL);
+    const char *email = (*env)->GetStringUTFChars(env, jemail, NULL);
+    const char *msg = (*env)->GetStringUTFChars(env, jmsg, NULL);
+
+    git_repository *repo = NULL;
+    git_rebase *rebase = NULL;
+    git_signature *sig = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_rebase_commit; }
+    if (git_rebase_open(&rebase, repo, NULL) < 0) { result = -2; goto cleanup_rebase_commit; }
+
+    git_signature_now(&sig, name, email);
+    result = git_rebase_commit(NULL, rebase, NULL, sig, NULL, msg);
+
+cleanup_rebase_commit:
+    if (sig) git_signature_free(sig);
+    if (rebase) git_rebase_free(rebase);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jname, name);
+    (*env)->ReleaseStringUTFChars(env, jemail, email);
+    (*env)->ReleaseStringUTFChars(env, jmsg, msg);
+    git_libgit2_shutdown();
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_rebaseAbort(
+        JNIEnv *env, jobject obj, jstring jpath) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+    git_rebase *rebase = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_rebase_abort; }
+    if (git_rebase_open(&rebase, repo, NULL) < 0) { result = -2; goto cleanup_rebase_abort; }
+
+    result = git_rebase_abort(rebase);
+
+cleanup_rebase_abort:
+    if (rebase) git_rebase_free(rebase);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_rebaseFinish(
+        JNIEnv *env, jobject obj, jstring jpath) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+    git_rebase *rebase = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_rebase_finish; }
+    if (git_rebase_open(&rebase, repo, NULL) < 0) { result = -2; goto cleanup_rebase_finish; }
+
+    result = git_rebase_finish(rebase, NULL);
+
+cleanup_rebase_finish:
+    if (rebase) git_rebase_free(rebase);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    return result;
+}

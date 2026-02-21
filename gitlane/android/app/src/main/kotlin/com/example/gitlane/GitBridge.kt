@@ -66,6 +66,11 @@ class GitBridge {
     external fun getBlame(path: String, filePath: String): String
     external fun getDiffHunks(path: String, filePath: String): String
     external fun applyPatchToIndex(path: String, patch: String): Int
+    external fun rebaseInit(path: String, upstream: String, onto: String): Int
+    external fun rebaseNext(path: String): String
+    external fun rebaseCommit(path: String, authorName: String, authorEmail: String, message: String): Int
+    external fun rebaseAbort(path: String): Int
+    external fun rebaseFinish(path: String): Int
 
     companion object {
         init {

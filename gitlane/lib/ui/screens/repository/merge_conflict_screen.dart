@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
+import 'visual_merge_editor.dart';
 
 class MergeConflictScreen extends StatefulWidget {
   final String repoPath;
@@ -43,65 +44,22 @@ class _MergeConflictScreenState extends State<MergeConflictScreen> {
   }
 
   Future<void> _openResolver(String fileName) async {
-    final filePath = "${widget.repoPath}${Platform.pathSeparator}$fileName";
-    final file = File(filePath);
-    if (!await file.exists()) return;
-
-    String content = await file.readAsString();
-    final controller = TextEditingController(text: content);
-
-    if (!mounted) return;
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceSlate,
-        title: Text(
-          "Resolve: $fileName",
-          style: const TextStyle(color: AppTheme.accentCyan, fontSize: 16),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: TextField(
-            controller: controller,
-            maxLines: 20,
-            style: const TextStyle(
-              color: AppTheme.textLight,
-              fontSize: 12,
-              fontFamily: 'monospace',
+    final confirmed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => VisualMergeEditor(
+              repoPath: widget.repoPath,
+              filePath: fileName,
             ),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: "Edit markers and save...",
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(color: AppTheme.textDim),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await file.writeAsString(controller.text);
-              // Adding the file resolves the conflict in Git
-              await GitService.gitAddFile(widget.repoPath, fileName);
-              if (!mounted) return;
-              Navigator.of(this.context).pop();
-              _refresh();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan,
-              foregroundColor: Colors.black,
-            ),
-            child: const Text("Save & Stage"),
-          ),
-        ],
       ),
     );
+
+    if (confirmed == true) {
+      // Adding the file resolves the conflict in Git
+      await GitService.gitAddFile(widget.repoPath, fileName);
+      _refresh();
+    }
   }
 
   @override

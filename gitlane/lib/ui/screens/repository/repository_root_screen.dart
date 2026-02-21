@@ -21,6 +21,11 @@ import 'reflog_screen.dart';
 import 'analytics_screen.dart';
 import 'remotes_screen.dart';
 import 'hunk_staging_screen.dart';
+import '../../../services/indexer_service.dart';
+import 'ssh_workbench_screen.dart';
+import 'rebase_workbench.dart';
+import 'semantic_search_screen.dart';
+import 'git_hooks_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -60,6 +65,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   void initState() {
     super.initState();
     _currentDir = widget.repoPath;
+    IndexerService.indexRepository(widget.repoPath);
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -1098,10 +1104,28 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentCyan,
         ),
         _menuItem(
+          'rebase',
+          Icons.swap_calls_rounded,
+          'Interactive Rebase',
+          AppTheme.accentCyan,
+        ),
+        _menuItem(
           'remotes',
           Icons.settings_input_component_rounded,
           'Manage Remotes',
           AppTheme.accentPurple,
+        ),
+        _menuItem(
+          'ssh',
+          Icons.vpn_key_rounded,
+          'SSH Workbench',
+          AppTheme.accentPurple,
+        ),
+        _menuItem(
+          'hooks',
+          Icons.webhook_rounded,
+          'Git Hooks',
+          AppTheme.accentGreen,
         ),
         _menuItem(
           'share',
@@ -1172,6 +1196,33 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         break;
       case 'share':
         _shareRepo();
+        break;
+      case 'ssh':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SSHWorkbenchScreen()),
+        );
+        break;
+      case 'rebase':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RebaseWorkbench(
+              repoPath: widget.repoPath,
+              currentBranch: _currentBranch,
+            ),
+          ),
+        ).then((res) {
+          if (res == true) _fetchData();
+        });
+        break;
+      case 'hooks':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GitHooksScreen(repoPath: widget.repoPath),
+          ),
+        );
         break;
     }
   }
@@ -1342,6 +1393,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.manage_search_rounded, size: 20),
+              tooltip: 'Semantic Search',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SemanticSearchScreen(repoPath: widget.repoPath),
+                ),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.terminal_rounded, size: 20),
               tooltip: 'Terminal',

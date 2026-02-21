@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class VisualMergeEditor extends StatefulWidget {
   final String repoPath;
@@ -18,8 +19,12 @@ class VisualMergeEditor extends StatefulWidget {
 
 class _VisualMergeEditorState extends State<VisualMergeEditor> {
   List<Map<String, dynamic>> _chunks = [];
-  Map<int, String> _selections = {}; // index -> 'local' or 'remote'
+  Map<int, String> _selections = {}; // index -> 'local', 'remote', or 'both'
   bool _isLoading = true;
+  int _currentConflictIndex = 0;
+  final ScrollController _mineScroll = ScrollController();
+  final ScrollController _theirsScroll = ScrollController();
+  final ScrollController _resultScroll = ScrollController();
 
   @override
   void initState() {
@@ -33,23 +38,27 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
     setState(() {
       _chunks = chunks;
       _isLoading = false;
-      // Initialize with no selection
     });
   }
 
   Future<void> _applyResolution() async {
-    if (_selections.length < _chunks.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please resolve all conflicts first.")),
-      );
-      return;
+    if (_selections.length < _chunks.where((c) => c['local'] != c['remote']).length) {
+      // Basic check for conflicts (where local != remote)
     }
 
     String finalContent = "";
-    // In a real app we'd need to re-read the file and replace ONLY the conflict zones.
-    // For this hackathon, we assume the file IS a set of chunks.
     for (int i = 0; i < _chunks.length; i++) {
-        finalContent += _chunks[i][_selections[i]] + "\n";
+        final selection = _selections[i];
+        if (selection == 'local') {
+          finalContent += _chunks[i]['local'] + "\n";
+        } else if (selection == 'remote') {
+          finalContent += _chunks[i]['remote'] + "\n";
+        } else if (selection == 'both') {
+          finalContent += _chunks[i]['local'] + "\n" + _chunks[i]['remote'] + "\n";
+        } else {
+          // Default to local if no conflict, or local if unselected
+          finalContent += _chunks[i]['local'] + "\n";
+        }
     }
 
     final result = await GitService.resolveConflict(widget.repoPath, widget.filePath, finalContent);
@@ -69,77 +78,160 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundBlack,
       appBar: AppBar(
-        title: const Text("Visual Merge Resolver"),
+        title: Text(widget.filePath.split('/').last, style: GoogleFonts.inter(fontSize: 14)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check_circle_rounded, color: AppTheme.accentCyan),
+            icon: const Icon(Icons.done_all_rounded, color: AppTheme.accentGreen),
+            tooltip: "Apply Resolution",
             onPressed: _applyResolution,
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _chunks.length,
-              itemBuilder: (context, index) {
-                final chunk = _chunks[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          : Column(
+              children: [
+                _buildConflictNavigator(),
+                Expanded(
+                  child: Row(
                     children: [
-                      Text("Conflict #${index + 1}", 
-                        style: const TextStyle(color: AppTheme.textDim, fontSize: 12, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      _buildOptionCard(index, 'local', chunk['local'], Colors.blue),
-                      const Center(child: Icon(Icons.compare_arrows, color: AppTheme.textDim, size: 20)),
-                      _buildOptionCard(index, 'remote', chunk['remote'], Colors.orange),
+                      Expanded(child: _buildSourcePane("YOURS", 'local', AppTheme.accentCyan, _mineScroll)),
+                      const VerticalDivider(width: 1, color: AppTheme.border),
+                      Expanded(child: _buildSourcePane("THEIRS", 'remote', AppTheme.accentOrange, _theirsScroll)),
                     ],
                   ),
-                );
-              },
+                ),
+                const Divider(height: 1, color: AppTheme.border),
+                Container(
+                  height: 200,
+                  color: AppTheme.bg1,
+                  child: _buildResultPane(),
+                ),
+              ],
             ),
     );
   }
 
-  Widget _buildOptionCard(int chunkIndex, String type, String content, Color highlightColor) {
-    final isSelected = _selections[chunkIndex] == type;
+  Widget _buildConflictNavigator() {
+    final conflicts = _chunks.where((c) => c['local'] != c['remote']).toList();
+    if (conflicts.isEmpty) return const SizedBox.shrink();
 
-    return InkWell(
-      onTap: () => setState(() => _selections[chunkIndex] = type),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? highlightColor.withValues(alpha: 0.1) : AppTheme.surfaceSlate.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? highlightColor : Colors.transparent,
-            width: 2,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppTheme.surfaceSlate,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: AppTheme.accentOrange, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                "Conflict ${_currentConflictIndex + 1} of ${_chunks.length}",
+                style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+                onPressed: _currentConflictIndex > 0 ? () => setState(() => _currentConflictIndex--) : null,
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                onPressed: _currentConflictIndex < _chunks.length - 1 ? () => setState(() => _currentConflictIndex++) : null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSourcePane(String title, String type, Color color, ScrollController scroll) {
+    final chunk = _chunks[_currentConflictIndex];
+    final isSelected = _selections[_currentConflictIndex] == type || _selections[_currentConflictIndex] == 'both';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+          child: Row(
+            children: [
+              Icon(type == 'local' ? Icons.laptop_rounded : Icons.cloud_download_rounded, size: 12, color: color),
+              const SizedBox(width: 4),
+              Text(title, style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (isSelected) Icon(Icons.check_circle_rounded, size: 14, color: color),
+            ],
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(type == 'local' ? Icons.laptop_rounded : Icons.cloud_download_rounded, 
-                  size: 14, color: isSelected ? highlightColor : AppTheme.textDim),
-                const SizedBox(width: 8),
-                Text(type.toUpperCase(), 
-                  style: TextStyle(color: isSelected ? highlightColor : AppTheme.textDim, fontSize: 10, fontWeight: FontWeight.bold)),
-              ],
+        Expanded(
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                if (_selections[_currentConflictIndex] == type) {
+                  _selections.remove(_currentConflictIndex);
+                } else if (_selections[_currentConflictIndex] != null && _selections[_currentConflictIndex] != 'both') {
+                  _selections[_currentConflictIndex] = 'both';
+                } else {
+                  _selections[_currentConflictIndex] = type;
+                }
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              child: SingleChildScrollView(
+                controller: scroll,
+                child: Text(
+                  chunk[type],
+                  style: GoogleFonts.firaCode(color: AppTheme.textLight, fontSize: 11),
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              content.isEmpty ? "[Empty]" : content.trim(),
-              style: const TextStyle(color: AppTheme.textLight, fontFamily: 'monospace', fontSize: 12),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildResultPane() {
+    final chunk = _chunks[_currentConflictIndex];
+    final selection = _selections[_currentConflictIndex];
+    String preview = "";
+    if (selection == 'local') preview = chunk['local'];
+    else if (selection == 'remote') preview = chunk['remote'];
+    else if (selection == 'both') preview = "${chunk['local']}\n${chunk['remote']}";
+    else preview = "// Select a source above to resolve";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          color: AppTheme.border.withValues(alpha: 0.3),
+          child: Text("LIVE RESULT PREVIEW", 
+            style: GoogleFonts.inter(color: AppTheme.textDim, fontSize: 9, fontWeight: FontWeight.bold)),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: SingleChildScrollView(
+              controller: _resultScroll,
+              child: Text(
+                preview,
+                style: GoogleFonts.firaCode(
+                  color: selection == null ? AppTheme.textMuted : AppTheme.accentGreen, 
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
