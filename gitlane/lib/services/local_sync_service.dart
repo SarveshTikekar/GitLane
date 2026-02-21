@@ -12,21 +12,22 @@ enum PeerStatus { pending, approved, denied }
 class Peer {
   final String id;
   final String name;
-  PeerRole role;
   PeerStatus status;
+  // RepoID -> PeerRole
+  final Map<String, PeerRole> repoRoles;
 
   Peer({
     required this.id,
     required this.name,
-    this.role = PeerRole.read,
     this.status = PeerStatus.pending,
-  });
+    Map<String, PeerRole>? repoRoles,
+  }) : repoRoles = repoRoles ?? {};
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
-    'role': role.index,
     'status': status.index,
+    'repoRoles': repoRoles.map((key, value) => MapEntry(key, value.index)),
   };
 }
 
@@ -36,32 +37,33 @@ class LocalSyncService {
   LocalSyncService._internal();
 
   HttpServer? _server;
-  String? _servingRepoPath;
-  String? _servingRepoName;
+  // RepoID -> RepoPath
+  final Map<String, String> _servingRepos = {};
   
   final Map<String, Peer> _peers = {};
   
   bool get isRunning => _server != null;
-  String? get currentRepo => _servingRepoName;
+  List<String> get sharedRepos => _servingRepos.keys.toList();
   List<Peer> get peers => _peers.values.toList();
 
   Future<String?> getLocalIP() async {
     return await NetworkInfo().getWifiIP();
   }
 
-  void updatePeerStatus(String id, PeerStatus status, [PeerRole? role]) {
+  void updatePeerStatus(String id, PeerStatus status) {
     if (_peers.containsKey(id)) {
       _peers[id]!.status = status;
-      if (role != null) _peers[id]!.role = role;
     }
   }
 
-  Future<int> startHub(String repoPath, String repoName) async {
-    if (_server != null) return _server!.port;
+  void updatePeerRepoRole(String id, String repoId, PeerRole role) {
+    if (_peers.containsKey(id)) {
+      _peers[id]!.repoRoles[repoId] = role;
+    }
+  }
 
-    _servingRepoPath = repoPath;
-    _servingRepoName = repoName;
-    _peers.clear();
+  Future<int> startHub() async {
+    if (_server != null) return _server!.port;
 
     final handler = const Pipeline()
         .addMiddleware(logRequests())
@@ -71,20 +73,31 @@ class LocalSyncService {
     return _server!.port;
   }
 
+  void registerRepo(String repoId, String repoPath) {
+    _servingRepos[repoId] = repoPath;
+  }
+
+  void unregisterRepo(String repoId) {
+    _servingRepos.remove(repoId);
+  }
+
   Future<void> stopHub() async {
     await _server?.close();
     _server = null;
-    _servingRepoPath = null;
-    _servingRepoName = null;
+    _servingRepos.clear();
     _peers.clear();
   }
 
   Future<Response> _handleRequest(Request request) async {
-    final path = request.url.path;
+    final pathSegments = request.url.pathSegments;
     final deviceId = request.headers['x-device-id'];
 
+    if (pathSegments.isEmpty) return Response.notFound('Not Found');
+
+    final action = pathSegments[0];
+
     // Handshake (No Auth needed yet)
-    if (path == 'handshake') {
+    if (action == 'handshake') {
       final body = await request.readAsString();
       final data = jsonDecode(body);
       final id = data['id'];
@@ -107,54 +120,75 @@ class LocalSyncService {
     if (peer.status == PeerStatus.pending) return Response.forbidden('Approval pending');
     if (peer.status == PeerStatus.denied) return Response.forbidden('Access denied');
 
-    if (path == 'info') {
+    if (action == 'repos') {
       return Response.ok(
         jsonEncode({
-          'repoName': _servingRepoName,
+          'repos': _servingRepos.keys.toList(),
           'timestamp': DateTime.now().toIso8601String(),
-          'role': peer.role.index,
         }),
         headers: {'content-type': 'application/json'},
       );
     }
 
-    // Pull (Read access required)
-    if (path == 'sync') {
-      if (_servingRepoPath == null) return Response.notFound('No repo');
-      
-      try {
-        final tempDir = await getTemporaryDirectory();
-        final zipPath = '${tempDir.path}/sync_${DateTime.now().millisecondsSinceEpoch}.zip';
-        final result = await GitService.createBundle(_servingRepoPath!, zipPath);
-        
-        if (result == 0) {
-          final file = File(zipPath);
-          final bytes = await file.readAsBytes();
-          await file.delete();
-          return Response.ok(bytes, headers: {'content-type': 'application/zip'});
-        }
-        return Response.internalServerError(body: 'Git error: $result');
-      } catch (e) {
-        return Response.internalServerError(body: 'Sync error: $e');
+    if (action == 'repo' && pathSegments.length >= 3) {
+      final repoId = pathSegments[1];
+      final repoAction = pathSegments[2];
+
+      if (!_servingRepos.containsKey(repoId)) {
+        return Response.notFound('Repo not found');
       }
-    }
 
-    // Push (Write access required)
-    if (path == 'push') {
-      if (peer.role == PeerRole.read) return Response.forbidden('Read-only access');
-      if (_servingRepoPath == null) return Response.notFound('No repo');
+      final repoPath = _servingRepos[repoId]!;
+      final role = peer.repoRoles[repoId];
 
-      try {
-        final bytes = await request.read().fold<List<int>>(<int>[], (a, b) => a..addAll(b));
-        final tempDir = await getTemporaryDirectory();
-        final zipPath = '${tempDir.path}/push_${DateTime.now().millisecondsSinceEpoch}.zip';
-        await File(zipPath).writeAsBytes(bytes);
+      if (role == null) {
+        return Response.forbidden('No access to this repository');
+      }
 
-        // Logic to extract and merge/apply changes would go here
-        // For now, let's pretend we applied it for the simulation
-        return Response.ok('Changes received and integrated');
-      } catch (e) {
-        return Response.internalServerError(body: 'Push error: $e');
+      if (repoAction == 'info') {
+        return Response.ok(
+          jsonEncode({
+            'repoName': repoId,
+            'role': role.index,
+          }),
+          headers: {'content-type': 'application/json'},
+        );
+      }
+
+      // Pull (Read access required)
+      if (repoAction == 'sync') {
+        try {
+          final tempDir = await getTemporaryDirectory();
+          final zipPath = '${tempDir.path}/sync_${repoId}_${DateTime.now().millisecondsSinceEpoch}.zip';
+          final result = await GitService.createBundle(repoPath, zipPath);
+          
+          if (result == 0) {
+            final file = File(zipPath);
+            final bytes = await file.readAsBytes();
+            await file.delete();
+            return Response.ok(bytes, headers: {'content-type': 'application/zip'});
+          }
+          return Response.internalServerError(body: 'Git error: $result');
+        } catch (e) {
+          return Response.internalServerError(body: 'Sync error: $e');
+        }
+      }
+
+      // Push (Write access required)
+      if (repoAction == 'push') {
+        if (role == PeerRole.read) return Response.forbidden('Read-only access');
+
+        try {
+          final bytes = await request.read().fold<List<int>>(<int>[], (a, b) => a..addAll(b));
+          final tempDir = await getTemporaryDirectory();
+          final zipPath = '${tempDir.path}/push_${repoId}_${DateTime.now().millisecondsSinceEpoch}.zip';
+          await File(zipPath).writeAsBytes(bytes);
+
+          // Logic to apply changes would go here
+          return Response.ok('Changes received and integrated');
+        } catch (e) {
+          return Response.internalServerError(body: 'Push error: $e');
+        }
       }
     }
 

@@ -72,7 +72,8 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
     if (_syncService.isRunning) {
       await _syncService.stopHub();
     } else {
-      await _syncService.startHub(widget.repoPath, widget.repoName);
+      await _syncService.startHub();
+      _syncService.registerRepo(widget.repoName, widget.repoPath);
       await _loadIP();
     }
     setState(() {});
@@ -84,15 +85,29 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
       builder: (context) => const QRScannerDialog(),
     );
 
-    if (result != null && result.isNotEmpty) {
-      _syncFromHub(result);
+    if (result != null && result.startsWith('gitlane://hub/')) {
+      _processScannedUrl(result);
+    } else if (result != null && result.startsWith('http')) {
+      _syncFromHub(result, widget.repoName);
     }
   }
 
-  Future<void> _syncFromHub(String hubUrl) async {
+  void _processScannedUrl(String url) {
+    // gitlane://hub/<ip>:<port>/repo/<repoId>
+    final uri = Uri.parse(url.replaceFirst('gitlane://hub/', 'http://'));
+    final ipPort = "${uri.host}:${uri.port}";
+    final hubUrl = "http://$ipPort";
+    final repoId = uri.pathSegments.length >= 2 ? uri.pathSegments[1] : null;
+
+    if (repoId != null) {
+      _syncFromHub(hubUrl, repoId);
+    }
+  }
+
+  Future<void> _syncFromHub(String hubUrl, String repoId) async {
     setState(() {
       _isSyncing = true;
-      _hubInfo = "Performing Handshake...";
+      _hubInfo = "Handshake with Hub...";
     });
 
     try {
@@ -111,22 +126,20 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
         final peerData = jsonDecode(handshakeResp.body);
         if (peerData['status'] == PeerStatus.pending.index) {
           setState(() => _hubInfo = "Waiting for Host approval...");
-          // In a real app, we might poll or use WebSockets.
-          // For now, let's just wait a bit or try again.
           return;
         }
 
         final infoResp = await http.get(
-          Uri.parse('$hubUrl/info'),
+          Uri.parse('$hubUrl/repo/$repoId/info'),
           headers: {'x-device-id': _deviceId ?? ''},
         );
         
         if (infoResp.statusCode == 200) {
           final info = jsonDecode(infoResp.body);
-          setState(() => _hubInfo = "Syncing from ${info['repoName']}...");
+          setState(() => _hubInfo = "Syncing ${info['repoName']}...");
           
           final syncResp = await http.get(
-            Uri.parse('$hubUrl/sync'),
+            Uri.parse('$hubUrl/repo/$repoId/sync'),
             headers: {'x-device-id': _deviceId ?? ''},
           );
           
@@ -143,7 +156,7 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
                 Directory('${widget.repoPath}/../$filename').createSync(recursive: true);
               }
             }
-            if (mounted) _snack('✓ Sync complete!', AppTheme.accentGreen);
+            if (mounted) _snack('✓ Sync complete: $repoId', AppTheme.accentGreen);
           }
         } else {
           _snack('Access Denied: ${infoResp.body}', AppTheme.accentRed);
@@ -162,15 +175,44 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
     }
   }
 
+  void _showRepoQR(String repoId) {
+    if (_localIP == null) return;
+    final qrData = 'gitlane://hub/$_localIP:8080/repo/$repoId';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.bg1,
+        title: Text('Share: $repoId', style: GoogleFonts.inter(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 200,
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.all(12),
+            ),
+            const SizedBox(height: 16),
+            Text(qrData, style: GoogleFonts.firaMono(color: AppTheme.accentCyan, fontSize: 10), textAlign: TextAlign.center),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isHosting = _syncService.isRunning;
-    final hubUrl = _localIP != null ? 'http://$_localIP:8080' : null;
 
     return Scaffold(
       backgroundColor: AppTheme.bg0,
       appBar: AppBar(
-        title: Text('Quantum Mesh', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        title: Text('Quantum Mesh Hub', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         backgroundColor: AppTheme.bg0,
       ),
       body: SingleChildScrollView(
@@ -180,10 +222,12 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
           children: [
             _buildHeader(),
             const SizedBox(height: 32),
-            _buildHostCard(isHosting, hubUrl),
+            _buildHostCard(isHosting),
             if (isHosting) ...[
               const SizedBox(height: 32),
-              _buildPeerList(),
+              _buildSharedReposList(),
+              const SizedBox(height: 32),
+              _buildPeerManagement(),
             ],
             const SizedBox(height: 32),
             _buildJoinCard(),
@@ -203,55 +247,87 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.security_rounded, color: AppTheme.accentPurple, size: 20),
+            const Icon(Icons.hub_rounded, color: AppTheme.accentCyan, size: 24),
             const SizedBox(width: 12),
             Text(
-              'Secure Collaboration Hub',
-              style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+              'Mesh Distribution Hub',
+              style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Text(
-          'Manage peer access and sync repositories locally with role-based permissions.',
+          'Share multiple repositories over your local network with granular peer access.',
           style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 13),
         ),
       ],
     );
   }
 
-  Widget _buildHostCard(bool isHosting, String? hubUrl) {
+  Widget _buildHostCard(bool isHosting) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       accentBorder: isHosting ? AppTheme.accentGreen : AppTheme.accentCyan,
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(isHosting ? 'Hub Active' : 'Start Hosting', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-                    Text(isHosting ? 'Approve peers to allow access' : 'Host a local collaboration session', style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 11)),
-                  ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(isHosting ? 'Hub Active' : 'Offline Hub', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(
+                  isHosting ? 'Serving ${_syncService.sharedRepos.length} repositories' : 'Start hosting to share repositories',
+                  style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 11),
                 ),
-              ),
-              Switch(value: isHosting, onChanged: (_) => _toggleHub(), activeColor: AppTheme.accentGreen),
-            ],
+              ],
+            ),
           ),
-          if (isHosting && hubUrl != null) ...[
-            const Divider(height: 32, color: AppTheme.border),
-            QrImageView(data: hubUrl, version: QrVersions.auto, size: 160, backgroundColor: Colors.white, padding: const EdgeInsets.all(12)),
-            const SizedBox(height: 12),
-            Text(hubUrl, style: GoogleFonts.firaMono(color: AppTheme.accentCyan, fontSize: 14)),
-          ],
+          Switch(value: isHosting, onChanged: (_) => _toggleHub(), activeColor: AppTheme.accentGreen),
         ],
       ),
     );
   }
 
-  Widget _buildPeerList() {
+  Widget _buildSharedReposList() {
+    final shared = _syncService.sharedRepos;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('SHARED REPOSITORIES', style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...shared.map((id) => Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(color: AppTheme.bg1, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.border)),
+          child: Row(
+            children: [
+              const Icon(Icons.folder_rounded, color: AppTheme.accentBlue, size: 18),
+              const SizedBox(width: 12),
+              Expanded(child: Text(id, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600))),
+              IconButton(
+                icon: const Icon(Icons.qr_code_2_rounded, color: AppTheme.accentCyan, size: 20),
+                onPressed: () => _showRepoQR(id),
+                tooltip: 'Show QR Code',
+              ),
+            ],
+          ),
+        )),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: () {
+            // Ideally a repo picker here, but for now we'll just re-register current if needed
+            _syncService.registerRepo(widget.repoName, widget.repoPath);
+            setState(() {});
+          },
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text('Add Current Repository'),
+          style: TextButton.styleFrom(foregroundColor: AppTheme.accentCyan),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPeerManagement() {
     final peers = _syncService.peers;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,23 +337,42 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
         if (peers.isEmpty) 
           Text('No peers connected yet', style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 12, fontStyle: FontStyle.italic)),
         ...peers.map((p) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: AppTheme.bg1, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.border)),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(backgroundColor: p.status == PeerStatus.approved ? AppTheme.accentGreen : AppTheme.accentOrange, radius: 4),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(p.name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                Text(p.id, style: const TextStyle(color: AppTheme.textMuted, fontSize: 10)),
-              ])),
-              if (p.status == PeerStatus.pending) ...[
-                IconButton(icon: const Icon(Icons.check_circle_rounded, color: AppTheme.accentGreen, size: 20), onPressed: () => _updatePeer(p.id, PeerStatus.approved)),
-                IconButton(icon: const Icon(Icons.cancel_rounded, color: AppTheme.accentRed, size: 20), onPressed: () => _updatePeer(p.id, PeerStatus.denied)),
-              ] else ...[
-                _roleChip(p),
-                IconButton(icon: const Icon(Icons.delete_rounded, color: AppTheme.textMuted, size: 18), onPressed: () => _updatePeer(p.id, PeerStatus.pending)),
+              Row(
+                children: [
+                  CircleAvatar(backgroundColor: p.status == PeerStatus.approved ? AppTheme.accentGreen : AppTheme.accentOrange, radius: 4),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(p.name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                    Text(p.id, style: const TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                  ])),
+                  if (p.status == PeerStatus.pending) ...[
+                    IconButton(icon: const Icon(Icons.check_circle_rounded, color: AppTheme.accentGreen, size: 20), onPressed: () => _updatePeerStatus(p.id, PeerStatus.approved)),
+                    IconButton(icon: const Icon(Icons.cancel_rounded, color: AppTheme.accentRed, size: 20), onPressed: () => _updatePeerStatus(p.id, PeerStatus.denied)),
+                  ] else ...[
+                    TextButton(onPressed: () => _updatePeerStatus(p.id, PeerStatus.pending), child: const Text('Reset', style: TextStyle(fontSize: 10))),
+                  ],
+                ],
+              ),
+              if (p.status == PeerStatus.approved) ...[
+                const Divider(height: 24, color: AppTheme.border),
+                Text('GRANULAR ACCESS', style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ..._syncService.sharedRepos.map((repoId) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(repoId, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      _roleChip(p, repoId),
+                    ],
+                  ),
+                )),
               ],
             ],
           ),
@@ -286,26 +381,38 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
     );
   }
 
-  Widget _roleChip(Peer p) {
+  Widget _roleChip(Peer p, String repoId) {
+    final role = p.repoRoles[repoId];
     return PopupMenuButton<PeerRole>(
-      onSelected: (r) => _updatePeer(p.id, PeerStatus.approved, r),
+      onSelected: (r) {
+        _syncService.updatePeerRepoRole(p.id, repoId, r);
+        setState(() {});
+      },
       itemBuilder: (context) => [
         const PopupMenuItem(value: PeerRole.read, child: Text('Read Only')),
         const PopupMenuItem(value: PeerRole.write, child: Text('Read & Write')),
         const PopupMenuItem(value: PeerRole.admin, child: Text('Admin')),
+        PopupMenuItem(
+          onTap: () {
+            _syncService.updatePeerRepoRole(p.id, repoId, PeerRole.read); // default back
+            p.repoRoles.remove(repoId);
+            setState(() {});
+          },
+          child: const Text('Revoke Access', style: TextStyle(color: AppTheme.accentRed)),
+        ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: _getRoleColor(p.role).withOpacity(0.1),
+          color: role != null ? _getRoleColor(role).withOpacity(0.1) : AppTheme.border.withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: _getRoleColor(p.role).withOpacity(0.3)),
+          border: Border.all(color: role != null ? _getRoleColor(role).withOpacity(0.3) : AppTheme.border),
         ),
         child: Text(
-          p.role.name.toUpperCase(),
+          role?.name.toUpperCase() ?? 'NO ACCESS',
           style: TextStyle(
-            color: _getRoleColor(p.role),
-            fontSize: 9,
+            color: role != null ? _getRoleColor(role) : AppTheme.textMuted,
+            fontSize: 8,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -321,8 +428,8 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
     }
   }
 
-  void _updatePeer(String id, PeerStatus s, [PeerRole? r]) {
-    _syncService.updatePeerStatus(id, s, r);
+  void _updatePeerStatus(String id, PeerStatus s) {
+    _syncService.updatePeerStatus(id, s);
     setState(() {});
   }
 
