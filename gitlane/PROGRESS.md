@@ -40,7 +40,8 @@ This file tracks the status of the native Git engine. Teammates should check thi
 ### 🌐 Phase 6: Remote Operations
 - [x] **HTTPS Integration**: Re-enabled HTTPS backend (MbedTLS) supporting remotes.
 - [x] **`cloneRepository(url, path)`**: Support cloning from GitHub/GitLab.
-- [ ] **`push`/`pull`**: Support syncing with remotes (requires auth helper).
+- [x] **`pushRepository`**: Support pushing to remotes (Requires PAT).
+- [x] **`pullRepository`**: Support fetching and fast-forward merging from remotes.
 - [ ] **SSH Support**: Support cloning/pushing via SSH keys.
 
 ### 🔒 Phase 7: App Security & Performance
