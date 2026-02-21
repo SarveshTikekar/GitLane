@@ -14,6 +14,7 @@ import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
 import '../commit/commit_graph_screen.dart';
 import 'native_terminal_screen.dart';
+import 'quantum_hub_screen.dart';
 import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
@@ -1137,6 +1138,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentCyan,
         ),
         _menuItem(
+          'quantum',
+          Icons.hub_rounded,
+          'Quantum Mesh',
+          AppTheme.accentCyan,
+        ),
+        _menuItem(
           'gpg',
           Icons.verified_user_rounded,
           'GPG Workbench',
@@ -1256,6 +1263,17 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           context,
           MaterialPageRoute(
             builder: (_) => CollaborationDashboard(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'quantum':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuantumHubScreen(
+              repoPath: widget.repoPath,
+              repoName: widget.repoName,
+            ),
           ),
         );
         break;
