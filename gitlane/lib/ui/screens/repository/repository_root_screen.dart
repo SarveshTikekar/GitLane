@@ -20,6 +20,9 @@ import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'reflog_screen.dart';
+import 'file_editor_screen.dart';
+import 'native_terminal_screen.dart';
+import 'package:file_picker/file_picker.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -50,12 +53,26 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
 
   String? _personalAccessToken;
 
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _currentDir = widget.repoPath;
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
     _fetchData();
     _listRepoFiles();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   // ── File system ─────────────────────────────────────────────────────────────
@@ -129,6 +146,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   List<CommitNode> _graphNodesFromCommits() {
     if (_commits.isEmpty) return [];
     final nodes = <CommitNode>[];
+    final lanes = <String?>[];
 
     for (var i = 0; i < _commits.length; i++) {
       final current = _commits[i];
@@ -137,12 +155,52 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       final hash = (current['hash'] ?? '').toString();
       if (hash.isEmpty) continue;
 
-      String parentHash = '';
-      if (i + 1 < _commits.length) {
-        final parent = _commits[i + 1];
-        if (parent is Map) {
-          parentHash = (parent['hash'] ?? '').toString();
+      final parents = <String>[];
+      if (current.containsKey('parents') && current['parents'] is List) {
+        for (final p in current['parents']) {
+          parents.add(p.toString());
         }
+      } else {
+        // Fallback for old C bridge
+        if (i + 1 < _commits.length) {
+          final parent = _commits[i + 1];
+          if (parent is Map) {
+            final ph = (parent['hash'] ?? '').toString();
+            if (ph.isNotEmpty) parents.add(ph);
+          }
+        }
+      }
+
+      int myLane = lanes.indexOf(hash);
+      if (myLane == -1) {
+        myLane = lanes.indexOf(null);
+        if (myLane == -1) {
+          myLane = lanes.length;
+          lanes.add(hash);
+        } else {
+          lanes[myLane] = hash;
+        }
+      }
+
+      if (parents.isNotEmpty) {
+        if (lanes.contains(parents[0])) {
+          lanes[myLane] = null;
+        } else {
+          lanes[myLane] = parents[0];
+        }
+
+        for (int p = 1; p < parents.length; p++) {
+          if (!lanes.contains(parents[p])) {
+            int newLane = lanes.indexOf(null);
+            if (newLane == -1) {
+              lanes.add(parents[p]);
+            } else {
+              lanes[newLane] = parents[p];
+            }
+          }
+        }
+      } else {
+        lanes[myLane] = null;
       }
 
       final ts = current['time'];
@@ -153,13 +211,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       nodes.add(
         CommitNode(
           id: hash,
-          parentIds: parentHash.isEmpty ? const [] : [parentHash],
+          parentIds: parents,
           message: (current['message'] ?? 'No message').toString(),
           timestamp: DateTime.fromMillisecondsSinceEpoch(
             unix * 1000,
             isUtc: true,
           ).toLocal(),
-          lane: 0,
+          lane: myLane,
         ),
       );
     }
@@ -948,6 +1006,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.textSecondary,
         ),
         _menuItem(
+          'import',
+          Icons.upload_file_rounded,
+          'Import File',
+          AppTheme.accentBlue,
+        ),
+        _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
@@ -1000,12 +1064,45 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
         break;
-      case 'share':
-        _shareRepo();
-        break;
+      case 'import':
       case 'upload':
         _uploadFile();
         break;
+      case 'share':
+        _shareRepo();
+        break;
+    }
+  }
+
+  Future<void> _shareRepo() async {
+    final url = await GitService.getRemoteUrl(widget.repoPath);
+    if (!mounted) return;
+    if (url.startsWith('http') || url.startsWith('git@')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
+        ),
+      );
+    } else {
+      _showSnack('No remote origin set', AppTheme.accentYellow);
+    }
+  }
+
+  Future<void> _uploadFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles();
+      if (result != null && result.files.single.path != null) {
+        final sourceFile = File(result.files.single.path!);
+        final fileName = result.files.single.name;
+        final targetPath = '$_currentDir${Platform.pathSeparator}$fileName';
+        await sourceFile.copy(targetPath);
+        _fetchData();
+        _listRepoFiles();
+        _showSnack("File '$fileName' imported successfully.", AppTheme.accentGreen);
+      }
+    } catch (e) {
+      _showSnack("Error importing file: $e", AppTheme.accentRed);
     }
   }
 
@@ -1159,6 +1256,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
           actions: [
             IconButton(
+              icon: const Icon(Icons.terminal_rounded, size: 20),
+              tooltip: 'Terminal',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NativeTerminalScreen(repoPath: widget.repoPath),
+                  ),
+                );
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.refresh_rounded, size: 20),
               tooltip: 'Refresh',
               onPressed: () {
@@ -1256,24 +1365,66 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
 
   // ── Explorer Tab ───────────────────────────────────────────────────────────────
   Widget _buildExplorerView() {
-    if (_currentFiles.isEmpty) {
-      return EmptyState(
-        icon: Icons.folder_open_rounded,
-        title: 'Empty directory',
-        subtitle: 'Create a new file to get started',
-        action: ElevatedButton.icon(
-          onPressed: _showNewFileDialog,
-          icon: const Icon(Icons.add_rounded, size: 16),
-          label: const Text('New File'),
+    final filteredFiles = _searchQuery.isEmpty 
+        ? _currentFiles 
+        : _currentFiles.where((e) {
+            final name = e.path.split(Platform.pathSeparator).last.toLowerCase();
+            return name.contains(_searchQuery);
+          }).toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: TextField(
+            controller: _searchController,
+            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'Search files...',
+              hintStyle: const TextStyle(color: AppTheme.textMuted),
+              prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppTheme.textMuted),
+              suffixIcon: _searchQuery.isNotEmpty 
+                  ? IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 16, color: AppTheme.textMuted),
+                      onPressed: () => _searchController.clear(),
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              filled: true,
+              fillColor: AppTheme.surfaceSlate,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+              ),
+            ),
+          ),
         ),
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _currentFiles.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, indent: 52),
-      itemBuilder: (context, index) {
-        final entity = _currentFiles[index];
+        Expanded(
+          child: filteredFiles.isEmpty
+              ? EmptyState(
+                  icon: Icons.folder_open_rounded,
+                  title: _currentFiles.isEmpty ? 'Empty directory' : 'No matching files',
+                  subtitle: _currentFiles.isEmpty ? 'Create a new file to get started' : 'Try a different search term',
+                  action: _currentFiles.isEmpty ? ElevatedButton.icon(
+                    onPressed: _showNewFileDialog,
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('New File'),
+                  ) : null,
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: filteredFiles.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, indent: 52),
+                  itemBuilder: (context, index) {
+                    final entity = filteredFiles[index];
         final name = entity.path.split(Platform.pathSeparator).last;
         final isDir = entity is Directory;
         final ext = isDir ? '' : _fileExt(name);
@@ -1398,17 +1549,15 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => FileEditorScreen(
+                    builder: (_) => FileEditorScreen(
                       filePath: entity.path,
                       fileName: name,
                       repoPath: widget.repoPath,
                     ),
                   ),
-                ).then((value) {
-                  if (value == true) {
-                    _fetchData();
-                    _listRepoFiles();
-                  }
+                ).then((_) {
+                  _fetchData();
+                  _listRepoFiles();
                 });
               }
             },
@@ -1448,6 +1597,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
       },
+    ),
+        ),
+      ],
     );
   }
 

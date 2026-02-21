@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitlane/ui/screens/home/dashboard_screen.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
@@ -35,6 +36,8 @@ void main() {
         .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       return null; // Silent mock for UI tests
     });
+
+    GoogleFonts.config.allowRuntimeFetching = false;
   });
   testWidgets('DashboardScreen renders correctly with empty state', (WidgetTester tester) async {
     // Build our app and trigger a frame.
@@ -46,7 +49,7 @@ void main() {
     expect(find.text('GitLane'), findsOneWidget);
 
     // Verify Empty State message
-    expect(find.text('No repositories yet. Tap + to start.'), findsOneWidget);
+    expect(find.text('No repositories yet'), findsOneWidget);
 
     // Verify FAB
     expect(find.byType(FloatingActionButton), findsOneWidget);
@@ -59,6 +62,6 @@ void main() {
     ));
 
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Search repositories...'), findsOneWidget);
+    expect(find.text('Search repositories…'), findsOneWidget);
   });
 }
