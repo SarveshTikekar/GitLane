@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 import '../repository/repository_root_screen.dart';
+import '../commit/commit_graph_screen.dart';
 import '../../../services/git_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   String? _docsPath;
   List<Map<String, String>> _repos = [];
+  String _searchQuery = '';
   bool _initializing = true;
 
   @override
@@ -41,7 +43,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surfaceSlate,
-        title: const Text('New Repository', style: TextStyle(color: AppTheme.accentCyan)),
+        title: const Text(
+          'New Repository',
+          style: TextStyle(color: AppTheme.accentCyan),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -68,10 +73,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.textDim)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textDim),
+            ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentCyan,
+            ),
             onPressed: () async {
               final name = nameController.text.trim();
               final url = urlController.text.trim();
@@ -95,13 +105,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   setState(() {
                     _repos.add({
                       'title': name,
-                      'desc': url.isNotEmpty ? 'Cloned from $url' : 'Local Git Repository',
+                      'desc': url.isNotEmpty
+                          ? 'Cloned from $url'
+                          : 'Local Git Repository',
                       'path': path,
                     });
                   });
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result == 0 ? "Success: $name established" : "Failed: code $result")),
+                  SnackBar(
+                    content: Text(
+                      result == 0
+                          ? "Success: $name established"
+                          : "Failed: code $result",
+                    ),
+                  ),
                 );
                 setState(() => _initializing = false);
               }
@@ -115,13 +133,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredRepos = _repos.where((repo) {
+      if (_searchQuery.isEmpty) return true;
+      final query = _searchQuery.toLowerCase();
+      return repo['title']!.toLowerCase().contains(query) ||
+          repo['desc']!.toLowerCase().contains(query) ||
+          repo['path']!.toLowerCase().contains(query);
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('GitLane'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.account_tree_outlined),
+            tooltip: 'Commit Graph',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CommitGraphScreen(commits: demoCommits),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            onPressed: _showSettingsSheet,
           ),
         ],
       ),
@@ -132,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             end: Alignment.bottomRight,
             colors: [
               AppTheme.backgroundBlack,
-              AppTheme.primaryNavy.withOpacity(0.8),
+              AppTheme.primaryNavy.withValues(alpha: 0.8),
               AppTheme.backgroundBlack,
             ],
           ),
@@ -146,31 +184,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   hintText: 'Search repositories...',
                   prefixIcon: const Icon(Icons.search, color: AppTheme.textDim),
                   filled: true,
-                  fillColor: AppTheme.surfaceSlate.withOpacity(0.5),
+                  fillColor: AppTheme.surfaceSlate.withValues(alpha: 0.5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                   hintStyle: const TextStyle(color: AppTheme.textDim),
                 ),
+                onChanged: (value) {
+                  setState(() => _searchQuery = value.trim());
+                },
               ),
             ),
             if (_initializing)
-              const Expanded(child: Center(child: CircularProgressIndicator(color: AppTheme.accentCyan)))
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(color: AppTheme.accentCyan),
+                ),
+              )
             else if (_repos.isEmpty)
               const Expanded(
                 child: Center(
-                  child: Text("No repositories yet. Tap + to start.", 
-                    style: TextStyle(color: AppTheme.textDim)),
+                  child: Text(
+                    "No repositories yet. Tap + to start.",
+                    style: TextStyle(color: AppTheme.textDim),
+                  ),
                 ),
               )
             else
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _repos.length,
+                  itemCount: filteredRepos.length,
                   itemBuilder: (context, index) {
-                    return _buildRepoCard(context, index);
+                    return _buildRepoCard(context, filteredRepos[index]);
                   },
                 ),
               ),
@@ -185,9 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRepoCard(BuildContext context, int index) {
-    final repo = _repos[index];
-
+  Widget _buildRepoCard(BuildContext context, Map<String, String> repo) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: GlassCard(
@@ -257,6 +302,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
           style: const TextStyle(fontSize: 12, color: AppTheme.textDim),
         ),
       ],
+    );
+  }
+
+  void _showSettingsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surfaceSlate,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.folder_open,
+                  color: AppTheme.accentCyan,
+                ),
+                title: const Text('Storage Location'),
+                subtitle: Text(_docsPath ?? 'Loading...'),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.info_outline,
+                  color: AppTheme.textDim,
+                ),
+                title: const Text('About GitLane'),
+                subtitle: const Text('Flutter + libgit2 client'),
+                onTap: () {
+                  Navigator.pop(context);
+                  showAboutDialog(
+                    context: this.context,
+                    applicationName: 'GitLane',
+                    applicationVersion: '0.1.0',
+                    applicationLegalese: 'GitLane Hackathon Build',
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
