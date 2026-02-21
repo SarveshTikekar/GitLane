@@ -1,0 +1,57 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ─── Native-Core (NDK) ──────────────────────────────
+# Prebuilt libgit2 static libs — regenerate with build_libgit2_android.ps1
+android/app/src/main/cpp/jniLibs/**/*.a
+
+# NDK CMake build artifacts
+.externalNativeBuild/
+android/app/.cxx/
+
+# Diagnostic scripts (not needed by teammates)
+diag_build.ps1
+check_std.ps1
