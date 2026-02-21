@@ -19,6 +19,8 @@ import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'reflog_screen.dart';
 import 'analytics_screen.dart';
+import 'remotes_screen.dart';
+import 'hunk_staging_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -1096,6 +1098,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentCyan,
         ),
         _menuItem(
+          'remotes',
+          Icons.settings_input_component_rounded,
+          'Manage Remotes',
+          AppTheme.accentPurple,
+        ),
+        _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
@@ -1147,6 +1155,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           context,
           MaterialPageRoute(
             builder: (_) => ContributorAnalyticsScreen(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'remotes':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RemotesScreen(repoPath: widget.repoPath),
           ),
         );
         break;
@@ -2317,16 +2333,38 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     visualDensity: VisualDensity.compact,
                     onPressed: () => _unstageFile(fileName),
                   )
-                : IconButton(
-                    icon: const Icon(
-                      Icons.add_circle_outline_rounded,
-                      size: 18,
-                      color: AppTheme.accentGreen,
-                    ),
-                    tooltip: 'Stage file',
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _stageFile(fileName),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.playlist_add_rounded,
+                            color: AppTheme.accentCyan, size: 20),
+                        tooltip: "Partial Stage",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => HunkStagingScreen(
+                                repoPath: widget.repoPath,
+                                filePath: '${widget.repoPath}/$fileName',
+                                fileName: fileName,
+                              ),
+                            ),
+                          ).then((_) => _fetchData());
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.add_circle_outline_rounded,
+                          size: 18,
+                          color: AppTheme.accentGreen,
+                        ),
+                        tooltip: 'Stage file',
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _stageFile(fileName),
+                      ),
+                    ],
                   ),
           ),
         ),

@@ -1643,3 +1643,347 @@ cleanup_dtag:
     return (jint) result;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 29. getRemotes(path: String): String
+ *     Returns JSON array of remotes: [{ "name": "...", "url": "..." }]
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getRemotes(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository *repo = NULL;
+    git_strarray    remotes = {0};
+    char           *json = (char *)malloc(1024 * 4); // 4KB for remotes
+    int             pos = 0;
+
+    if (!json) goto cleanup_remotes;
+
+    if (git_repository_open(&repo, path) < 0) {
+        snprintf(json, 512, "{\"error\":\"Repo not found\"}");
+        goto log_remotes;
+    }
+
+    if (git_remote_list(&remotes, repo) < 0) {
+        snprintf(json, 512, "{\"error\":\"Failed to list remotes\"}");
+        goto log_remotes;
+    }
+
+    pos += snprintf(json + pos, 4096 - pos, "[");
+    for (size_t i = 0; i < remotes.count; i++) {
+        git_remote *remote = NULL;
+        if (git_remote_lookup(&remote, repo, remotes.strings[i]) == 0) {
+            const char *name = remotes.strings[i];
+            const char *url  = git_remote_url(remote);
+            pos += snprintf(json + pos, 4096 - pos,
+                            "%s{\"name\":\"%s\",\"url\":\"%s\"}",
+                            (i == 0 ? "" : ","), name, url ? url : "");
+            git_remote_free(remote);
+        }
+    }
+    snprintf(json + pos, 4096 - pos, "]");
+
+log_remotes:
+cleanup_remotes:
+    git_strarray_free(&remotes);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    jstring jres = (*env)->NewStringUTF(env, json ? json : "[]");
+    if (json) free(json);
+    return jres;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 30. addRemote(path: String, name: String, url: String): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_addRemote(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jname, jstring jurl) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *name = (*env)->GetStringUTFChars(env, jname, NULL);
+    const char *url  = (*env)->GetStringUTFChars(env, jurl,  NULL);
+
+    git_repository *repo = NULL;
+    git_remote     *remote = NULL;
+    int             result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_add_remote; }
+
+    result = git_remote_create(&remote, repo, name, url);
+
+cleanup_add_remote:
+    if (remote) git_remote_free(remote);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jname, name);
+    (*env)->ReleaseStringUTFChars(env, jurl,  url);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 31. deleteRemote(path: String, name: String): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_deleteRemote(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jname) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *name = (*env)->GetStringUTFChars(env, jname, NULL);
+
+    git_repository *repo = NULL;
+    int             result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_del_remote; }
+
+    result = git_remote_delete(repo, name);
+
+cleanup_del_remote:
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jname, name);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 32. setRemoteUrl(path: String, name: String, url: String): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_setRemoteUrl(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jname, jstring jurl) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *name = (*env)->GetStringUTFChars(env, jname, NULL);
+    const char *url  = (*env)->GetStringUTFChars(env, jurl,  NULL);
+
+    git_repository *repo = NULL;
+    int             result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_set_remote; }
+
+    result = git_remote_set_url(repo, name, url);
+
+cleanup_set_remote:
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jname, name);
+    (*env)->ReleaseStringUTFChars(env, jurl,  url);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 33. getBlame(path: String, filePath: String): String
+ *     Returns JSON array of blame info per line: 
+ *     [{ "author": "...", "summary": "...", "time": "...", "id": "..." }]
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getBlame(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jfile) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *file = (*env)->GetStringUTFChars(env, jfile, NULL);
+
+    git_repository *repo = NULL;
+    git_blame      *blame = NULL;
+    char           *json = (char *)malloc(1024 * 128); // 128KB for blame
+    int             pos = 0;
+
+    if (!json) goto cleanup_blame;
+    json[0] = '\0';
+
+    if (git_repository_open(&repo, path) < 0) {
+        snprintf(json, 512, "{\"error\":\"Repo not found\"}");
+        goto log_blame;
+    }
+
+    git_blame_options opts = GIT_BLAME_OPTIONS_INIT;
+    if (git_blame_file(&blame, repo, file, &opts) < 0) {
+        snprintf(json, 512, "{\"error\":\"Failed to blame file\"}");
+        goto log_blame;
+    }
+
+    pos += snprintf(json + pos, 131072 - pos, "[");
+    uint32_t hunk_count = git_blame_get_hunk_count(blame);
+    
+    // We need to iterate over humks and expand them to lines for easy Dart consumption
+    int line_idx = 1;
+    for (uint32_t i = 0; i < hunk_count; i++) {
+        const git_blame_hunk *hunk = git_blame_get_hunk_byindex(blame, i);
+        
+        // Get commit info for this hunk
+        git_commit *commit = NULL;
+        git_commit_lookup(&commit, repo, &hunk->final_commit_id);
+        const char *author = commit ? git_commit_author(commit)->name : "unknown";
+        const char *summary = commit ? git_commit_summary(commit) : "none";
+        git_time_t time = commit ? git_commit_time(commit) : 0;
+        
+        char id_str[GIT_OID_SHA1_HEXSIZE + 1];
+        git_oid_tostr(id_str, sizeof(id_str), &hunk->final_commit_id);
+
+        for (size_t l = 0; l < hunk->lines_in_hunk; l++) {
+            pos += snprintf(json + pos, 131072 - pos,
+                            "%s{\"author\":\"%s\",\"summary\":\"%s\",\"time\":%lld,\"id\":\"%s\"}",
+                            (line_idx == 1 ? "" : ","), author, summary ? summary : "", (long long)time, id_str);
+            line_idx++;
+        }
+        
+        if (commit) git_commit_free(commit);
+    }
+    snprintf(json + pos, 131072 - pos, "]");
+
+log_blame:
+cleanup_blame:
+    if (blame) git_blame_free(blame);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jfile, file);
+    git_libgit2_shutdown();
+
+    jstring jres = (*env)->NewStringUTF(env, json ? json : "[]");
+    if (json) free(json);
+    return jres;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 34. getDiffHunks(path: String, filePath: String): String
+ *     Returns JSON: [{ "header": "...", "lines": [{ "content": "...", "type": "+/- " }] }]
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct {
+    char *json;
+    int pos;
+    int size;
+    int first_hunk;
+    int first_line;
+} diff_payload;
+
+static int diff_hunk_cb(const git_diff_delta *delta, const git_diff_hunk *hunk, void *payload) {
+    diff_payload *p = (diff_payload *)payload;
+    if (!p->first_hunk) {
+        // Close previous lines array and hunk object
+        p->pos += snprintf(p->json + p->pos, p->size - p->pos, "]%s", "},");
+    }
+    p->pos += snprintf(p->json + p->pos, p->size - p->pos,
+                       "{\"header\":\"%s\",\"lines\":[", hunk->header);
+    p->first_hunk = 0;
+    p->first_line = 1;
+    return 0;
+}
+
+static int diff_line_cb(const git_diff_delta *delta, const git_diff_hunk *hunk, const git_diff_line *line, void *payload) {
+    diff_payload *p = (diff_payload *)payload;
+    char type = line->origin; // '+', '-', ' '
+    char *content = strndup(line->content, line->content_len);
+    
+    // Simple JSON escape for content
+    for (size_t i = 0; i < strlen(content); i++) {
+        if (content[i] == '"') content[i] = '\'';
+        if (content[i] == '\n' || content[i] == '\r') content[i] = ' ';
+    }
+
+    p->pos += snprintf(p->json + p->pos, p->size - p->pos,
+                       "%s{\"type\":\"%c\",\"content\":\"%s\"}",
+                       (p->first_line ? "" : ","), type, content);
+    p->first_line = 0;
+    free(content);
+    return 0;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getDiffHunks(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jfile) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *file = (*env)->GetStringUTFChars(env, jfile, NULL);
+
+    git_repository *repo = NULL;
+    git_diff       *diff = NULL;
+    char           *json = (char *)malloc(1024 * 128); 
+    diff_payload    payload = { json, 0, 131072, 1, 1 };
+
+    if (!json) goto cleanup_hunks;
+    json[0] = '['; payload.pos = 1;
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_hunks;
+
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+    git_strarray pathspec = { (char **)&file, 1 };
+    opts.pathspec = pathspec;
+
+    if (git_diff_index_to_workdir(&diff, repo, NULL, &opts) < 0) goto cleanup_hunks;
+
+    git_diff_foreach(diff, NULL, NULL, diff_hunk_cb, diff_line_cb, &payload);
+    
+    if (!payload.first_hunk) {
+        payload.pos += snprintf(json + payload.pos, 131072 - payload.pos, "]}]");
+    } else {
+        payload.pos += snprintf(json + payload.pos, 131072 - payload.pos, "]");
+    }
+
+cleanup_hunks:
+    if (diff) git_diff_free(diff);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jfile, file);
+    git_libgit2_shutdown();
+
+    jstring jres = (*env)->NewStringUTF(env, json ? json : "[]");
+    if (json) free(json);
+    return jres;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+ * 35. applyPatchToIndex(path: String, patch: String): Int
+ *     Applies a diff patch string specifically to the repository index.
+ * \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_applyPatchToIndex(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jpatch) {
+
+    git_libgit2_init();
+    const char *path  = (*env)->GetStringUTFChars(env, jpath,  NULL);
+    const char *patch = (*env)->GetStringUTFChars(env, jpatch, NULL);
+
+    git_repository *repo = NULL;
+    git_diff       *diff = NULL;
+    int             result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_apply; }
+
+    result = git_diff_from_buffer(&diff, patch, strlen(patch));
+    if (result < 0) {
+        LOGE("Failed to parse patch: %s", git_error_str(result));
+        goto cleanup_apply;
+    }
+
+    git_apply_options opts = GIT_APPLY_OPTIONS_INIT;
+    result = git_apply(repo, diff, GIT_APPLY_LOCATION_INDEX, &opts);
+    if (result < 0) {
+        LOGE("Failed to apply patch: %s", git_error_str(result));
+    }
+
+cleanup_apply:
+    if (diff) git_diff_free(diff);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath,  path);
+    (*env)->ReleaseStringUTFChars(env, jpatch, patch);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+

@@ -27,6 +27,10 @@ class FileEditorScreen extends StatefulWidget {
 class _FileEditorScreenState extends State<FileEditorScreen> {
   late CodeController _codeController;
   bool _isDirty = false;
+  bool _showBlame = false;
+  List<Map<String, dynamic>> _blameData = [];
+  bool _isBlameLoading = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -52,7 +56,28 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
   @override
   void dispose() {
     _codeController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleBlame() async {
+    if (_showBlame) {
+      setState(() => _showBlame = false);
+      return;
+    }
+
+    setState(() {
+      _isBlameLoading = true;
+      _showBlame = true;
+    });
+
+    final data = await GitService.getBlame(widget.repoPath, widget.fileName);
+    if (mounted) {
+      setState(() {
+        _blameData = data;
+        _isBlameLoading = false;
+      });
+    }
   }
 
   Future<void> _saveFile() async {
@@ -113,11 +138,14 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
       appBar: AppBar(
         title: Text(widget.fileName),
         actions: [
-          if (_isDirty)
-            IconButton(
-              icon: const Icon(Icons.save_rounded, color: AppTheme.accentCyan),
-              onPressed: _saveFile,
+          IconButton(
+            icon: Icon(
+              _showBlame ? Icons.person_off_rounded : Icons.person_search_rounded,
+              color: _showBlame ? AppTheme.accentCyan : null,
             ),
+            tooltip: "Git Blame",
+            onPressed: _toggleBlame,
+          ),
           IconButton(
             icon: const Icon(Icons.check_circle_outline_rounded),
             tooltip: "Save & Commit",
@@ -125,16 +153,93 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
           ),
         ],
       ),
-      body: CodeTheme(
-        data: CodeThemeData(styles: _getEditorStyles()),
-        child: SingleChildScrollView(
-          child: CodeField(
-            controller: _codeController,
-            textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_showBlame) _buildBlameGutter(),
+          Expanded(
+            child: CodeTheme(
+              data: CodeThemeData(styles: _getEditorStyles()),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: CodeField(
+                  controller: _codeController,
+                  textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  Widget _buildBlameGutter() {
+    if (_isBlameLoading) {
+      return Container(
+        width: 80,
+        decoration: const BoxDecoration(
+          color: AppTheme.bg1,
+          border: Border(right: BorderSide(color: AppTheme.border)),
+        ),
+        child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+      );
+    }
+
+    return Container(
+      width: 100,
+      decoration: const BoxDecoration(
+        color: AppTheme.bg1,
+        border: Border(right: BorderSide(color: AppTheme.border)),
+      ),
+      child: ListView.builder(
+        controller: _scrollController, // Sync with code field
+        padding: const EdgeInsets.only(top: 10), // Match CodeField padding if any
+        itemCount: _blameData.length,
+        itemBuilder: (context, index) {
+          final blame = _blameData[index];
+          final author = blame['author'] ?? 'unknown';
+          final firstLetter = author.isNotEmpty ? author[0].toUpperCase() : '?';
+
+          return Container(
+            height: 19, // Approximation for 13px mono font + line spacing
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                Text(
+                  firstLetter,
+                  style: TextStyle(
+                    color: _getAuthorColor(author),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    author,
+                    style: const TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _getAuthorColor(String name) {
+    final colors = [
+      AppTheme.accentCyan,
+      AppTheme.accentPurple,
+      AppTheme.accentOrange,
+      AppTheme.accentGreen,
+      AppTheme.accentPurple,
+    ];
+    return colors[name.hashCode % colors.length];
   }
 
   Map<String, TextStyle> _getEditorStyles() {

@@ -152,6 +152,42 @@ class MainActivity : FlutterActivity() {
                                     val tagName = call.argument<String>("tagName")!!
                                     bridge.deleteTag(path, tagName)
                                 }
+                                "getRemotes" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getRemotes(path)
+                                }
+                                "addRemote" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val name = call.argument<String>("name")!!
+                                    val url = call.argument<String>("url")!!
+                                    bridge.addRemote(path, name, url)
+                                }
+                                "deleteRemote" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val name = call.argument<String>("name")!!
+                                    bridge.deleteRemote(path, name)
+                                }
+                                "setRemoteUrl" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val name = call.argument<String>("name")!!
+                                    val url = call.argument<String>("url")!!
+                                    bridge.setRemoteUrl(path, name, url)
+                                }
+                                "getBlame" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    bridge.getBlame(path, filePath)
+                                }
+                                "getDiffHunks" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    bridge.getDiffHunks(path, filePath)
+                                }
+                                "applyPatchToIndex" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val patch = call.argument<String>("patch")!!
+                                    bridge.applyPatchToIndex(path, patch)
+                                }
                                 else -> "NOT_IMPLEMENTED"
                             }
                         } catch (e: Exception) {

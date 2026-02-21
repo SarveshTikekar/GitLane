@@ -328,4 +328,100 @@ class GitService {
       return -1;
     }
   }
+
+  /// Returns a list of remotes.
+  static Future<List<Map<String, dynamic>>> getRemotes(String path) async {
+    try {
+      final String? jsonVal = await _channel.invokeMethod('getRemotes', {'path': path});
+      if (jsonVal == null) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
+    } on PlatformException catch (e) {
+      print("Failed to get remotes: '${e.message}'.");
+      return [];
+    }
+  }
+
+  /// Adds a new remote.
+  static Future<int> addRemote(String path, String name, String url) async {
+    try {
+      return await _channel.invokeMethod('addRemote', {
+        'path': path,
+        'name': name,
+        'url': url,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to add remote: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Deletes a remote.
+  static Future<int> deleteRemote(String path, String name) async {
+    try {
+      return await _channel.invokeMethod('deleteRemote', {
+        'path': path,
+        'name': name,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to delete remote: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Sets the URL for a remote.
+  static Future<int> setRemoteUrl(String path, String name, String url) async {
+    try {
+      return await _channel.invokeMethod('setRemoteUrl', {
+        'path': path,
+        'name': name,
+        'url': url,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to set remote URL: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Returns blame info for a file.
+  static Future<List<Map<String, dynamic>>> getBlame(String path, String filePath) async {
+    try {
+      final String? jsonVal = await _channel.invokeMethod('getBlame', {
+        'path': path,
+        'filePath': filePath,
+      });
+      if (jsonVal == null) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
+    } on PlatformException catch (e) {
+      print("Failed to get blame: '${e.message}'.");
+      return [];
+    }
+  }
+
+  /// Returns structural diff hunks for a file.
+  static Future<List<Map<String, dynamic>>> getDiffHunks(String path, String filePath) async {
+    try {
+      final String? jsonVal = await _channel.invokeMethod('getDiffHunks', {
+        'path': path,
+        'filePath': filePath,
+      });
+      if (jsonVal == null) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
+    } on PlatformException catch (e) {
+      print("Failed to get diff hunks: '${e.message}'.");
+      return [];
+    }
+  }
+
+  /// Applies a patch to the repository index.
+  static Future<int> applyPatchToIndex(String path, String patch) async {
+    try {
+      return await _channel.invokeMethod('applyPatchToIndex', {
+        'path': path,
+        'patch': patch,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to apply patch to index: '${e.message}'.");
+      return -1;
+    }
+  }
 }
