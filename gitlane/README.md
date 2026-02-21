@@ -1,16 +1,37 @@
-# gitlane
+# GitLane
 
-A new Flutter project.
+A premium Git client for mobile, powered by a native C bridge.
+
+## Project Structure
+
+- **lib/main.dart**: Entry point for the Flutter application.
+- **lib/services/**: contains `GitService`, the bridge to the native Git implementation.
+- **lib/ui/**: Premium UI components and screens.
+    - **screens/home/**: Dashboard for repository management.
+    - **screens/repository/**: Repository management hub (Explorer, History, Status).
+    - **screens/commit/**: Detailed diff viewer and commit information.
+    - **theme/**: Custom dark theme with glassmorphism support.
+    - **widgets/**: Reusable UI components like `GlassCard`.
+
+## Key Features
+
+- **Native Git Bridge**: Efficient Git operations via `MethodChannel` to a custom C library.
+- **Premium UI**: Modern dark theme with glassmorphic effects and dynamic gradients.
+- **Diff Viewer**: Stylized, color-coded visualization of code changes.
+- **Conflict Resolution**: Integrated 3-way merge interface.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+1. **Install Git LFS**: Ensure Git Large File Storage is installed on your system.
+2. **Setup Flutter**: Run `flutter pub get` in the `gitlane` directory.
+3. **Run Application**: Use `flutter run` or launch via Android Studio/VS Code.
 
-A few resources to get you started if this is your first Flutter project:
+## Development
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+This project unifies the work from `flutter-ui` (Interface) and `native-core` (Backend Logic).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Architecture**: The UI communicates with `GitService` which invokes native methods via the `git_channel`.
+- **Assets**: Large native binaries and assets are managed via Git LFS.
+
+---
+Part of the Saasuke-Clan project.

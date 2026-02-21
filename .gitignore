@@ -1,0 +1,54 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android
+.gradle/
+local.properties
+*.keystore
+*.jks
+*.properties
+android/app/build/
+android/app/src/main/res/drawable-*/
+android/app/src/main/res/mipmap-*/
+
+# iOS/macOS
+.generated/
+DerivedData/
+Runner.xcworkspace/
+xcuserdata/
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcworkspace
+!default.xcworkspace
+*.xccheckout
+*.moved-aside
+*.pin
+*.xcuserstate
+Pods/
+Podfile.lock
+
+# Web
+.web/
+
+# Windows
+mobile_app/windows/flutter/ephemeral/
+gitlane/windows/flutter/ephemeral/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+
+# Git LFS
+*.so
+*.aar
+*.zip
+*.jar
+*.dll
