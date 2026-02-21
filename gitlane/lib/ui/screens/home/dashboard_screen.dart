@@ -369,31 +369,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentGreen.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: AppTheme.accentGreen.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              'v1.0',
-                              style: GoogleFonts.firaMono(
-                                color: AppTheme.accentGreen,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 14),
