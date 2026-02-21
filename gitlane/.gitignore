@@ -55,3 +55,7 @@ android/app/.cxx/
 # Diagnostic scripts (not needed by teammates)
 diag_build.ps1
 check_std.ps1
+
+# ─── macOS Platform (Windows teammates don't need this) ──────────────────────
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
