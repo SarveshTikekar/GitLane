@@ -1143,12 +1143,14 @@ Java_com_example_gitlane_GitBridge_pullRepository(
         if (analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) {
             /* Implement FF merge */
             git_reference *head_ref = NULL;
+            git_reference *new_head_ref = NULL;
             git_repository_head(&head_ref, repo);
-            git_reference_set_target(&head_ref, git_annotated_commit_id(heads[0]), "pull: fast-forward");
+            git_reference_set_target(&new_head_ref, head_ref, git_annotated_commit_id(heads[0]), "pull: fast-forward");
             git_checkout_options ckout_opts = GIT_CHECKOUT_OPTIONS_INIT;
             ckout_opts.checkout_strategy = GIT_CHECKOUT_FORCE;
             git_checkout_head(repo, &ckout_opts);
             git_reference_free(head_ref);
+            git_reference_free(new_head_ref);
         } else if (analysis & GIT_MERGE_ANALYSIS_NORMAL) {
             /* Normal merge would need full implementation, skipping for now */
             LOGI("Normal merge required, skipping for hackathon prototype.");

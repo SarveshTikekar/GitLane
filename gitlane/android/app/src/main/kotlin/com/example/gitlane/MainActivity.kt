@@ -3,19 +3,12 @@ package com.example.gitlane
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.*
 
-/**
- * MainActivity.kt
- * GitLane — Flutter MethodChannel Host
- *
- * Registers the "git_channel" MethodChannel and routes all 6 Git method calls
- * to GitBridge (JNI → C → libgit2).
- *
- * STRICT SCOPE: Channel routing only. No UI logic.
- */
 class MainActivity : FlutterActivity() {
 
     private val CHANNEL = "git_channel"
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -24,149 +17,125 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
-                when (call.method) {
-
-                    "initRepository" -> {
-                        val path = call.argument<String>("path")
-                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        val code = bridge.initRepository(path)
-                        if (code == 0) result.success(code) else result.error("GIT_ERROR", "initRepository failed: $code", code)
+                scope.launch {
+                    val response = withContext(Dispatchers.IO) {
+                        try {
+                            when (call.method) {
+                                "initRepository" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.initRepository(path)
+                                }
+                                "commitAll" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val message = call.argument<String>("message")!!
+                                    bridge.commitAll(path, message)
+                                }
+                                "createBranch" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val branchName = call.argument<String>("branchName")!!
+                                    bridge.createBranch(path, branchName)
+                                }
+                                "checkoutBranch" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val branchName = call.argument<String>("branchName")!!
+                                    bridge.checkoutBranch(path, branchName)
+                                }
+                                "mergeBranch" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val branchName = call.argument<String>("branchName")!!
+                                    bridge.mergeBranch(path, branchName)
+                                }
+                                "getCommitLog" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getCommitLog(path)
+                                }
+                                "getRepositoryStatus" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getRepositoryStatus(path)
+                                }
+                                "gitAddFile" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    bridge.gitAddFile(path, filePath)
+                                }
+                                "getCommitDiff" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val hash = call.argument<String>("commitHash")!!
+                                    bridge.getCommitDiff(path, hash)
+                                }
+                                "cloneRepository" -> {
+                                    val url = call.argument<String>("url")!!
+                                    val path = call.argument<String>("path")!!
+                                    bridge.cloneRepository(url, path)
+                                }
+                                "getBranches" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getBranches(path)
+                                }
+                                "getCurrentBranch" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getCurrentBranch(path)
+                                }
+                                "deleteBranch" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val branchName = call.argument<String>("branchName")!!
+                                    bridge.deleteBranch(path, branchName)
+                                }
+                                "getConflicts" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getConflicts(path)
+                                }
+                                "stashSave" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val message = call.argument<String>("message")!!
+                                    bridge.stashSave(path, message)
+                                }
+                                "stashPop" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val index = call.argument<Int>("index")!!
+                                    bridge.stashPop(path, index)
+                                }
+                                "getStashes" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getStashes(path)
+                                }
+                                "pushRepository" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val token = call.argument<String>("token")!!
+                                    bridge.pushRepository(path, token)
+                                }
+                                "pullRepository" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val token = call.argument<String>("token")!!
+                                    bridge.pullRepository(path, token)
+                                }
+                                else -> "NOT_IMPLEMENTED"
+                            }
+                        } catch (e: Exception) {
+                            e
+                        }
                     }
 
-                    "commitAll" -> {
-                        val path    = call.argument<String>("path")
-                        val message = call.argument<String>("message")
-                        if (path == null || message == null) { result.error("INVALID_ARG", "path and message are required", null); return@setMethodCallHandler }
-                        val code = bridge.commitAll(path, message)
-                        if (code == 0) result.success(code) else result.error("GIT_ERROR", "commitAll failed: $code", code)
+                    // On Main Thread
+                    when (response) {
+                        "NOT_IMPLEMENTED" -> result.notImplemented()
+                        is Exception -> result.error("KOTLIN_ERROR", response.message, null)
+                        is Int -> {
+                            if (response >= 0 || (call.method == "mergeBranch" && response == -100)) {
+                                result.success(response)
+                            } else {
+                                result.error("GIT_ERROR", "${call.method} failed: $response", response)
+                            }
+                        }
+                        is String -> result.success(response)
+                        else -> result.success(response)
                     }
-
-                    "createBranch" -> {
-                        val path       = call.argument<String>("path")
-                        val branchName = call.argument<String>("branchName")
-                        if (path == null || branchName == null) { result.error("INVALID_ARG", "path and branchName are required", null); return@setMethodCallHandler }
-                        val code = bridge.createBranch(path, branchName)
-                        if (code == 0) result.success(code) else result.error("GIT_ERROR", "createBranch failed: $code", code)
-                    }
-
-                    "checkoutBranch" -> {
-                        val path       = call.argument<String>("path")
-                        val branchName = call.argument<String>("branchName")
-                        if (path == null || branchName == null) { result.error("INVALID_ARG", "path and branchName are required", null); return@setMethodCallHandler }
-                        val code = bridge.checkoutBranch(path, branchName)
-                        if (code == 0) result.success(code) else result.error("GIT_ERROR", "checkoutBranch failed: $code", code)
-                    }
-
-                    "mergeBranch" -> {
-                        val path       = call.argument<String>("path")
-                        val branchName = call.argument<String>("branchName")
-                        if (path == null || branchName == null) { result.error("INVALID_ARG", "path and branchName are required", null); return@setMethodCallHandler }
-                        val code = bridge.mergeBranch(path, branchName)
-                        // 0 = merged, 1 = already up-to-date
-                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "mergeBranch failed: $code", code)
-                    }
-
-                    "getCommitLog" -> {
-                        val path = call.argument<String>("path")
-                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        result.success(bridge.getCommitLog(path))
-                    }
-
-                    "getRepositoryStatus" -> {
-                        val path = call.argument<String>("path")
-                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        result.success(bridge.getRepositoryStatus(path))
-                    }
-
-                    "gitAddFile" -> {
-                        val path     = call.argument<String>("path")
-                        val filePath = call.argument<String>("filePath")
-                        if (path == null || filePath == null) { result.error("INVALID_ARG", "path and filePath are required", null); return@setMethodCallHandler }
-                        val code = bridge.gitAddFile(path, filePath)
-                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "gitAddFile failed: $code", code)
-                    }
-
-                    "getCommitDiff" -> {
-                        val path = call.argument<String>("path")
-                        val hash = call.argument<String>("commitHash")
-                        if (path == null || hash == null) { result.error("INVALID_ARG", "path and commitHash are required", null); return@setMethodCallHandler }
-                        result.success(bridge.getCommitDiff(path, hash))
-                    }
-
-                    "cloneRepository" -> {
-                        val url  = call.argument<String>("url")
-                        val path = call.argument<String>("path")
-                        if (url == null || path == null) { result.error("INVALID_ARG", "url and path are required", null); return@setMethodCallHandler }
-                        val code = bridge.cloneRepository(url, path)
-                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "cloneRepository failed: $code", code)
-                    }
-                    
-                    "getBranches" -> {
-                        val path = call.argument<String>("path")
-                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        result.success(bridge.getBranches(path))
-                    }
-                    
-                    "getCurrentBranch" -> {
-                        val path = call.argument<String>("path")
-                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        result.success(bridge.getCurrentBranch(path))
-                    }
-                    
-                    "deleteBranch" -> {
-                        val path       = call.argument<String>("path")
-                        val branchName = call.argument<String>("branchName")
-                        if (path == null || branchName == null) { result.error("INVALID_ARG", "path and branchName are required", null); return@setMethodCallHandler }
-                        val code = bridge.deleteBranch(path, branchName)
-                        if (code == 0) result.success(code) else result.error("GIT_ERROR", "deleteBranch failed: $code", code)
-                    }
-                    
-                    "getConflicts" -> {
-                        val path = call.argument<String>("path")
-                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        result.success(bridge.getConflicts(path))
-                    }
-
-                    "stashSave" -> {
-                        val path    = call.argument<String>("path")
-                        val message = call.argument<String>("message")
-                        if (path == null || message == null) { result.error("INVALID_ARG", "path and message required", null); return@setMethodCallHandler }
-                        val code = bridge.stashSave(path, message)
-                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "stashSave failed: $code", code)
-                    }
-
-                    "stashPop" -> {
-                        val path  = call.argument<String>("path")
-                        val index = call.argument<Int>("index")
-                        if (path == null || index == null) { result.error("INVALID_ARG", "path and index required", null); return@setMethodCallHandler }
-                        val code = bridge.stashPop(path, index)
-                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "stashPop failed: $code", code)
-                    }
-
-                    "getStashes" -> {
-                        val path = call.argument<String>("path")
-                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
-                        result.success(bridge.getStashes(path))
-                    }
-
-                    "pushRepository" -> {
-                        val path  = call.argument<String>("path")
-                        val token = call.argument<String>("token")
-                        if (path == null || token == null) { result.error("INVALID_ARG", "path and token required", null); return@setMethodCallHandler }
-                        val code = bridge.pushRepository(path, token)
-                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "pushRepository failed: $code", code)
-                    }
-
-                    "pullRepository" -> {
-                        val path  = call.argument<String>("path")
-                        val token = call.argument<String>("token")
-                        if (path == null || token == null) { result.error("INVALID_ARG", "path and token required", null); return@setMethodCallHandler }
-                        val code = bridge.pullRepository(path, token)
-                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "pullRepository failed: $code", code)
-                    }
-
-                    else -> result.notImplemented()
                 }
             }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
     }
 }

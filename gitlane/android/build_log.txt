@@ -1,0 +1,137 @@
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:compileKotlin UP-TO-DATE
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+> Task :app:DebugMinSdkCheck
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:compileFlutterBuildDebug
+> Task :app:packJniLibsflutterBuildDebug UP-TO-DATE
+> Task :path_provider_android:preBuild UP-TO-DATE
+> Task :path_provider_android:preDebugBuild UP-TO-DATE
+> Task :path_provider_android:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:cleanMergeDebugAssets
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :path_provider_android:mergeDebugShaders UP-TO-DATE
+> Task :path_provider_android:compileDebugShaders NO-SOURCE
+> Task :path_provider_android:generateDebugAssets UP-TO-DATE
+> Task :path_provider_android:mergeDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:copyFlutterAssetsDebug
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :path_provider_android:generateDebugResValues UP-TO-DATE
+> Task :path_provider_android:generateDebugResources UP-TO-DATE
+> Task :path_provider_android:packageDebugResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :path_provider_android:extractDeepLinksDebug UP-TO-DATE
+> Task :path_provider_android:processDebugManifest UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :path_provider_android:compileDebugLibraryResources UP-TO-DATE
+> Task :path_provider_android:parseDebugLocalResources UP-TO-DATE
+> Task :path_provider_android:generateDebugRFile UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :path_provider_android:javaPreCompileDebug UP-TO-DATE
+> Task :path_provider_android:compileDebugJavaWithJavac UP-TO-DATE
+> Task :path_provider_android:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :path_provider_android:processDebugJavaRes NO-SOURCE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:compressDebugAssets
+> Task :app:mergeDebugJavaResource
+> Task :path_provider_android:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :app:dexBuilderDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeProjectDexDebug UP-TO-DATE
+> Task :app:configureCMakeDebug[arm64-v8a]
+
+> Task :app:buildCMakeDebug[arm64-v8a] FAILED
+C/C++: ninja: Entering directory `E:\spitHackathon\gitlane\build\.cxx\debug\52e4t70q\arm64-v8a'
+C/C++: C:\Users\ojhaa\AppData\Local\Android\Sdk\ndk\27.0.12077973\toolchains\llvm\prebuilt\windows-x86_64\bin\clang.exe --target=aarch64-none-linux-android24 --sysroot=C:/Users/ojhaa/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dgit_bridge_EXPORTS -IE:/spitHackathon/gitlane/android/app/src/main/cpp/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -MD -MT CMakeFiles/git_bridge.dir/git_bridge.c.o -MF CMakeFiles\git_bridge.dir\git_bridge.c.o.d -o CMakeFiles/git_bridge.dir/git_bridge.c.o -c E:/spitHackathon/gitlane/android/app/src/main/cpp/git_bridge.c
+C/C++: E:/spitHackathon/gitlane/android/app/src/main/cpp/git_bridge.c:1147:104: error: too few arguments to function call, expected 4, have 3
+C/C++:  1147 |             git_reference_set_target(&head_ref, git_annotated_commit_id(heads[0]), "pull: fast-forward");
+C/C++:       |             ~~~~~~~~~~~~~~~~~~~~~~~~                                                                   ^
+C/C++: E:/spitHackathon/gitlane/android/app/src/main/cpp/include/git2/refs.h:352:17: note: 'git_reference_set_target' declared here
+C/C++:   352 | GIT_EXTERN(int) git_reference_set_target(
+C/C++:       |                 ^
+C/C++:   353 |         git_reference **out,
+C/C++:       |         ~~~~~~~~~~~~~~~~~~~~
+C/C++:   354 |         git_reference *ref,
+C/C++:       |         ~~~~~~~~~~~~~~~~~~~
+C/C++:   355 |         const git_oid *id,
+C/C++:       |         ~~~~~~~~~~~~~~~~~~
+C/C++:   356 |         const char *log_message);
+C/C++:       |         ~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: 1 error generated.
+
+> Task :app:mergeExtDexDebug
+
+[Incubating] Problems report is available at: file:///E:/spitHackathon/gitlane/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:buildCMakeDebug[arm64-v8a]'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `E:\spitHackathon\gitlane\build\.cxx\debug\52e4t70q\arm64-v8a'
+  [1/2] Building C object CMakeFiles/git_bridge.dir/git_bridge.c.o
+  FAILED: CMakeFiles/git_bridge.dir/git_bridge.c.o 
+  C:\Users\ojhaa\AppData\Local\Android\Sdk\ndk\27.0.12077973\toolchains\llvm\prebuilt\windows-x86_64\bin\clang.exe --target=aarch64-none-linux-android24 --sysroot=C:/Users/ojhaa/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dgit_bridge_EXPORTS -IE:/spitHackathon/gitlane/android/app/src/main/cpp/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -MD -MT CMakeFiles/git_bridge.dir/git_bridge.c.o -MF CMakeFiles\git_bridge.dir\git_bridge.c.o.d -o CMakeFiles/git_bridge.dir/git_bridge.c.o -c E:/spitHackathon/gitlane/android/app/src/main/cpp/git_bridge.c
+  E:/spitHackathon/gitlane/android/app/src/main/cpp/git_bridge.c:1147:104: error: too few arguments to function call, expected 4, have 3
+   1147 |             git_reference_set_target(&head_ref, git_annotated_commit_id(heads[0]), "pull: fast-forward");
+        |             ~~~~~~~~~~~~~~~~~~~~~~~~                                                                   ^
+  E:/spitHackathon/gitlane/android/app/src/main/cpp/include/git2/refs.h:352:17: note: 'git_reference_set_target' declared here
+    352 | GIT_EXTERN(int) git_reference_set_target(
+        |                 ^
+    353 |         git_reference **out,
+        |         ~~~~~~~~~~~~~~~~~~~~
+    354 |         git_reference *ref,
+        |         ~~~~~~~~~~~~~~~~~~~
+    355 |         const git_oid *id,
+        |         ~~~~~~~~~~~~~~~~~~
+    356 |         const char *log_message);
+        |         ~~~~~~~~~~~~~~~~~~~~~~~
+  1 error generated.
+  ninja: build stopped: subcommand failed.
+  
+  C++ build system [build] failed while executing:
+      @echo off
+      "C:\\Users\\ojhaa\\AppData\\Local\\Android\\sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+        -C ^
+        "E:\\spitHackathon\\gitlane\\build\\.cxx\\debug\\52e4t70q\\arm64-v8a" ^
+        git_bridge
+    from E:\spitHackathon\gitlane\android\app
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.12/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 14s
+53 actionable tasks: 10 executed, 43 up-to-date

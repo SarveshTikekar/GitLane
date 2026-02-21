@@ -44,6 +44,9 @@ This file tracks the status of the native Git engine. Teammates should check thi
 - [x] **`pullRepository`**: Support fetching and fast-forward merging from remotes.
 - [ ] **SSH Support**: Support cloning/pushing via SSH keys.
 
+### ⚡ Phase 7: Performance & Responsiveness
+- [x] **Background Threading**: All JNI calls move to `Dispatchers.IO` to keep Flutter buttery smooth.
+
 ### 🔒 Phase 7: App Security & Performance
 - [ ] **Background Threading**: Move JNI calls to background threads to keep Flutter UI buttery smooth.
 - [ ] **Memory Monitoring**: Stress test native memory allocation during large log parsing.
