@@ -55,6 +55,14 @@ This file tracks the status of the native Git engine. Teammates should check thi
 - [x] **QR Scanning**: Clone repositories instantly by scanning a QR code.
 - [x] **Action History (Reflog)**: Visual log of every Git action (reset, merge, checkout) for safety.
 
+### 🎨 Phase 9: UI Polish (Frontend Fixes)
+- [x] **AppBar Overflow Fix**: Moved 7 secondary actions into a `⋮` PopupMenuButton; moved sync badge inline into title `Row` with a compact widget; constrained branch pill to 70px — zero overflow banners.
+- [x] **Live Search**: Dashboard search bar now live-filters repositories as you type, with a `✕` clear button.
+- [x] **Settings Modal**: Settings icon opens an "About GitLane" bottom sheet with version info and feature highlights.
+- [x] **Visual Merge Editor**: 3-panel conflict resolution UI with Accept Mine / Accept Theirs / Edit per-hunk.
+- [x] **Smart Sync Dashboard**: Ahead/behind indicator with one-tap Pull / Push / Sync options.
+- [x] **Native Git Terminal**: In-app terminal with git command history and output display.
+
 ---
 **Status: 100% Complete & Submission Ready 🏆**
 gitlane-native-core-v1.0.0
