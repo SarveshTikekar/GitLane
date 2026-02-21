@@ -72,27 +72,46 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
     final controller = TextEditingController(text: _localIP ?? '');
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => Dialog(
         backgroundColor: AppTheme.bg1,
-        title: const Text('Manual IP Override', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'e.g. 192.168.1.5',
-            hintStyle: TextStyle(color: AppTheme.textMuted),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SizedBox(
+          width: 320,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Manual IP Override', style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. 192.168.1.5',
+                    hintStyle: TextStyle(color: AppTheme.textMuted),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _localIP = controller.text);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              setState(() => _localIP = controller.text);
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -213,26 +232,36 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => Dialog(
         backgroundColor: AppTheme.bg1,
-        title: Text('Share: $repoId', style: GoogleFonts.inter(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            QrImageView(
-              data: qrData,
-              version: QrVersions.auto,
-              size: 200,
-              backgroundColor: Colors.white,
-              padding: const EdgeInsets.all(12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SizedBox(
+          width: 300,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Share: $repoId', style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: QrImageView(
+                    data: qrData,
+                    version: QrVersions.auto,
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.all(12),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(qrData, style: GoogleFonts.firaMono(color: AppTheme.accentCyan, fontSize: 10), textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(qrData, style: GoogleFonts.firaMono(color: AppTheme.accentCyan, fontSize: 10), textAlign: TextAlign.center),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        ],
       ),
     );
   }

@@ -743,6 +743,15 @@ static int certificate_check_cb(git_cert *cert, int valid, const char *host, voi
  *     Clones a remote repository to a local path.
  *     Returns 0 on success, negative on failure.
  * ═══════════════════════════════════════════════════════════════════════════ */
+static int credential_cb(
+        git_credential **out,
+        const char *url,
+        const char *username_from_url,
+        unsigned int allowed_types,
+        void *payload) {
+    /* For public HTTPS repos, return an empty default credential */
+    return git_credential_default_new(out);
+}
 JNIEXPORT jint JNICALL
 Java_com_example_gitlane_GitBridge_cloneRepository(
         JNIEnv *env, jobject obj, jstring jurl, jstring jpath) {
@@ -759,6 +768,7 @@ Java_com_example_gitlane_GitBridge_cloneRepository(
     /* Set up callbacks */
     fetch_opts.callbacks.transfer_progress = fetch_progress_cb;
     fetch_opts.callbacks.certificate_check = certificate_check_cb;
+    fetch_opts.callbacks.credentials = credential_cb;
     clone_opts.fetch_opts = fetch_opts;
 
     checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;

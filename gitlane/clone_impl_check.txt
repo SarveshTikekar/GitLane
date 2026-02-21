@@ -1,0 +1,36 @@
+Running Gradle task 'assembleDebug'...                          
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:buildCMakeDebug[arm64-v8a]'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `E:\spitHackathon\gitlane\build\.cxx\debug\52e4t70q\arm64-v8a'
+  [1/2] Building C object CMakeFiles/git_bridge.dir/git_bridge.c.o
+  FAILED: CMakeFiles/git_bridge.dir/git_bridge.c.o 
+  C:\Users\ojhaa\AppData\Local\Android\Sdk\ndk\27.0.12077973\toolchains\llvm\prebuilt\windows-x86_64\bin\clang.exe --target=aarch64-none-linux-android24 --sysroot=C:/Users/ojhaa/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dgit_bridge_EXPORTS -IE:/spitHackathon/gitlane/android/app/src/main/cpp/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -MD -MT CMakeFiles/git_bridge.dir/git_bridge.c.o -MF CMakeFiles\git_bridge.dir\git_bridge.c.o.d -o CMakeFiles/git_bridge.dir/git_bridge.c.o -c E:/spitHackathon/gitlane/android/app/src/main/cpp/git_bridge.c
+  E:/spitHackathon/gitlane/android/app/src/main/cpp/git_bridge.c:2283:1: error: redefinition of 'Java_com_example_gitlane_GitBridge_cloneRepository'
+   2283 | Java_com_example_gitlane_GitBridge_cloneRepository(
+        | ^
+  E:/spitHackathon/gitlane/android/app/src/main/cpp/git_bridge.c:747:1: note: previous definition is here
+    747 | Java_com_example_gitlane_GitBridge_cloneRepository(
+        | ^
+  1 error generated.
+  ninja: build stopped: subcommand failed.
+
+  C++ build system [build] failed while executing:
+      @echo off
+      "C:\\Users\\ojhaa\\AppData\\Local\\Android\\sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+        -C ^
+        "E:\\spitHackathon\\gitlane\\build\\.cxx\\debug\\52e4t70q\\arm64-v8a" ^
+        git_bridge
+    from E:\spitHackathon\gitlane\android\app
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 33s
+Running Gradle task 'assembleDebug'...                             34.0s
+Gradle task assembleDebug failed with exit code 1
