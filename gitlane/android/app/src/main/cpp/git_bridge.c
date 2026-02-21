@@ -553,34 +553,88 @@ Java_com_example_gitlane_GitBridge_getRepositoryStatus(
 
     size_t count = git_status_list_entrycount(status);
     int pos = 0;
+    int first = 1;
     pos += snprintf(json + pos, 32768 - pos, "[");
 
     for (size_t i = 0; i < count; i++) {
         const git_status_entry *entry = git_status_byindex(status, i);
-        const char *file_path = NULL;
-        const char *status_str = "unknown";
+        const unsigned int st = entry->status;
+
+        const char *staged_path = NULL;
+        const char *workdir_path = NULL;
 
         if (entry->head_to_index) {
-            file_path = entry->head_to_index->new_file.path;
-        } else if (entry->index_to_workdir) {
-            file_path = entry->index_to_workdir->new_file.path;
+            if ((st & GIT_STATUS_INDEX_DELETED) && entry->head_to_index->old_file.path) {
+                staged_path = entry->head_to_index->old_file.path;
+            } else if (entry->head_to_index->new_file.path) {
+                staged_path = entry->head_to_index->new_file.path;
+            } else {
+                staged_path = entry->head_to_index->old_file.path;
+            }
         }
 
-        /* Determine status string */
-        if (entry->status & GIT_STATUS_INDEX_NEW) status_str = "staged_new";
-        else if (entry->status & GIT_STATUS_INDEX_MODIFIED) status_str = "staged_modified";
-        else if (entry->status & GIT_STATUS_INDEX_DELETED) status_str = "staged_deleted";
-        else if (entry->status & GIT_STATUS_INDEX_RENAMED) status_str = "staged_renamed";
-        else if (entry->status & GIT_STATUS_WT_NEW) status_str = "untracked";
-        else if (entry->status & GIT_STATUS_WT_MODIFIED) status_str = "modified";
-        else if (entry->status & GIT_STATUS_WT_DELETED) status_str = "deleted";
-        else if (entry->status & GIT_STATUS_WT_RENAMED) status_str = "renamed";
+        if (entry->index_to_workdir) {
+            if ((st & GIT_STATUS_WT_DELETED) && entry->index_to_workdir->old_file.path) {
+                workdir_path = entry->index_to_workdir->old_file.path;
+            } else if (entry->index_to_workdir->new_file.path) {
+                workdir_path = entry->index_to_workdir->new_file.path;
+            } else {
+                workdir_path = entry->index_to_workdir->old_file.path;
+            }
+        }
 
-        if (file_path) {
-            if (i > 0) pos += snprintf(json + pos, 32768 - pos, ",");
-            pos += snprintf(json + pos, 32768 - pos, 
-                           "{\"path\":\"%s\",\"status\":\"%s\"}", 
-                           file_path, status_str);
+        if ((st & GIT_STATUS_INDEX_NEW) && staged_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"staged_new\",\"isStaged\":true}",
+                            first ? "" : ",", staged_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_INDEX_MODIFIED) && staged_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"staged_modified\",\"isStaged\":true}",
+                            first ? "" : ",", staged_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_INDEX_DELETED) && staged_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"staged_deleted\",\"isStaged\":true}",
+                            first ? "" : ",", staged_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_INDEX_RENAMED) && staged_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"staged_renamed\",\"isStaged\":true}",
+                            first ? "" : ",", staged_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_INDEX_TYPECHANGE) && staged_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"staged_typechange\",\"isStaged\":true}",
+                            first ? "" : ",", staged_path);
+            first = 0;
+        }
+
+        if ((st & GIT_STATUS_WT_NEW) && workdir_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"untracked\",\"isStaged\":false}",
+                            first ? "" : ",", workdir_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_WT_MODIFIED) && workdir_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"modified\",\"isStaged\":false}",
+                            first ? "" : ",", workdir_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_WT_DELETED) && workdir_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"deleted\",\"isStaged\":false}",
+                            first ? "" : ",", workdir_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_WT_RENAMED) && workdir_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"renamed\",\"isStaged\":false}",
+                            first ? "" : ",", workdir_path);
+            first = 0;
+        } else if ((st & GIT_STATUS_WT_TYPECHANGE) && workdir_path) {
+            pos += snprintf(json + pos, 32768 - pos,
+                            "%s{\"path\":\"%s\",\"status\":\"typechange\",\"isStaged\":false}",
+                            first ? "" : ",", workdir_path);
+            first = 0;
         }
     }
 
@@ -1508,7 +1562,152 @@ Java_com_example_gitlane_GitBridge_runGitCommand(
     output[0] = '\0';
 
     if (strcmp(cmd, "status") == 0) {
-        strcat(output, "On branch ...\nYour branch is up to date with 'origin/main'.\n\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n");
+        git_repository *repo = NULL;
+        git_reference *head_ref = NULL;
+        git_status_list *status = NULL;
+
+        if (git_repository_open(&repo, path) < 0) {
+            snprintf(output, 1024 * 32, "fatal: %s\n", git_error_str(-1));
+            goto run_command_cleanup;
+        }
+
+        const char *branch = "(detached HEAD)";
+        if (git_repository_head(&head_ref, repo) == 0) {
+            const char *bname = NULL;
+            if (git_branch_name(&bname, head_ref) == 0 && bname) {
+                branch = bname;
+            }
+        }
+
+        git_status_options opts = GIT_STATUS_OPTIONS_INIT;
+        opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
+        opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED |
+                     GIT_STATUS_OPT_RENAMES_HEAD_TO_INDEX |
+                     GIT_STATUS_OPT_SORT_CASE_SENSITIVELY;
+
+        if (git_status_list_new(&status, repo, &opts) < 0) {
+            snprintf(output, 1024 * 32, "fatal: %s\n", git_error_str(-1));
+            goto run_command_cleanup;
+        }
+
+        size_t staged_count = 0;
+        size_t unstaged_count = 0;
+        size_t untracked_count = 0;
+        int pos = 0;
+
+        char staged_buf[1024 * 8];
+        char unstaged_buf[1024 * 8];
+        char untracked_buf[1024 * 8];
+        staged_buf[0] = '\0';
+        unstaged_buf[0] = '\0';
+        untracked_buf[0] = '\0';
+        int staged_pos = 0;
+        int unstaged_pos = 0;
+        int untracked_pos = 0;
+
+        size_t count = git_status_list_entrycount(status);
+        for (size_t i = 0; i < count; i++) {
+            const git_status_entry *entry = git_status_byindex(status, i);
+            const unsigned int st = entry->status;
+
+            const char *staged_path = NULL;
+            const char *workdir_path = NULL;
+
+            if (entry->head_to_index) {
+                if ((st & GIT_STATUS_INDEX_DELETED) && entry->head_to_index->old_file.path) {
+                    staged_path = entry->head_to_index->old_file.path;
+                } else if (entry->head_to_index->new_file.path) {
+                    staged_path = entry->head_to_index->new_file.path;
+                } else {
+                    staged_path = entry->head_to_index->old_file.path;
+                }
+            }
+
+            if (entry->index_to_workdir) {
+                if ((st & GIT_STATUS_WT_DELETED) && entry->index_to_workdir->old_file.path) {
+                    workdir_path = entry->index_to_workdir->old_file.path;
+                } else if (entry->index_to_workdir->new_file.path) {
+                    workdir_path = entry->index_to_workdir->new_file.path;
+                } else {
+                    workdir_path = entry->index_to_workdir->old_file.path;
+                }
+            }
+
+            if ((st & GIT_STATUS_INDEX_NEW) && staged_path) {
+                staged_pos += snprintf(staged_buf + staged_pos, sizeof(staged_buf) - staged_pos,
+                                       "\tnew file:   %s\n", staged_path);
+                staged_count++;
+            } else if ((st & GIT_STATUS_INDEX_MODIFIED) && staged_path) {
+                staged_pos += snprintf(staged_buf + staged_pos, sizeof(staged_buf) - staged_pos,
+                                       "\tmodified:   %s\n", staged_path);
+                staged_count++;
+            } else if ((st & GIT_STATUS_INDEX_DELETED) && staged_path) {
+                staged_pos += snprintf(staged_buf + staged_pos, sizeof(staged_buf) - staged_pos,
+                                       "\tdeleted:    %s\n", staged_path);
+                staged_count++;
+            } else if ((st & GIT_STATUS_INDEX_RENAMED) && staged_path) {
+                staged_pos += snprintf(staged_buf + staged_pos, sizeof(staged_buf) - staged_pos,
+                                       "\trenamed:    %s\n", staged_path);
+                staged_count++;
+            } else if ((st & GIT_STATUS_INDEX_TYPECHANGE) && staged_path) {
+                staged_pos += snprintf(staged_buf + staged_pos, sizeof(staged_buf) - staged_pos,
+                                       "\ttypechange: %s\n", staged_path);
+                staged_count++;
+            }
+
+            if ((st & GIT_STATUS_WT_NEW) && workdir_path) {
+                untracked_pos += snprintf(untracked_buf + untracked_pos, sizeof(untracked_buf) - untracked_pos,
+                                          "\t%s\n", workdir_path);
+                untracked_count++;
+            } else if ((st & GIT_STATUS_WT_MODIFIED) && workdir_path) {
+                unstaged_pos += snprintf(unstaged_buf + unstaged_pos, sizeof(unstaged_buf) - unstaged_pos,
+                                         "\tmodified:   %s\n", workdir_path);
+                unstaged_count++;
+            } else if ((st & GIT_STATUS_WT_DELETED) && workdir_path) {
+                unstaged_pos += snprintf(unstaged_buf + unstaged_pos, sizeof(unstaged_buf) - unstaged_pos,
+                                         "\tdeleted:    %s\n", workdir_path);
+                unstaged_count++;
+            } else if ((st & GIT_STATUS_WT_RENAMED) && workdir_path) {
+                unstaged_pos += snprintf(unstaged_buf + unstaged_pos, sizeof(unstaged_buf) - unstaged_pos,
+                                         "\trenamed:    %s\n", workdir_path);
+                unstaged_count++;
+            } else if ((st & GIT_STATUS_WT_TYPECHANGE) && workdir_path) {
+                unstaged_pos += snprintf(unstaged_buf + unstaged_pos, sizeof(unstaged_buf) - unstaged_pos,
+                                         "\ttypechange: %s\n", workdir_path);
+                unstaged_count++;
+            }
+        }
+
+        pos += snprintf(output + pos, (1024 * 32) - pos, "On branch %s\n", branch);
+
+        if (staged_count == 0 && unstaged_count == 0 && untracked_count == 0) {
+            pos += snprintf(output + pos, (1024 * 32) - pos,
+                            "nothing to commit, working tree clean\n");
+        } else {
+            if (staged_count > 0) {
+                pos += snprintf(output + pos, (1024 * 32) - pos,
+                                "\nChanges to be committed:\n"
+                                "  (use \"git restore --staged <file>...\" to unstage)\n\n%s",
+                                staged_buf);
+            }
+            if (unstaged_count > 0) {
+                pos += snprintf(output + pos, (1024 * 32) - pos,
+                                "\nChanges not staged for commit:\n"
+                                "  (use \"git add <file>...\" to update what will be committed)\n\n%s",
+                                unstaged_buf);
+            }
+            if (untracked_count > 0) {
+                pos += snprintf(output + pos, (1024 * 32) - pos,
+                                "\nUntracked files:\n"
+                                "  (use \"git add <file>...\" to include in what will be committed)\n\n%s",
+                                untracked_buf);
+            }
+        }
+
+run_command_cleanup:
+        if (status) git_status_list_free(status);
+        if (head_ref) git_reference_free(head_ref);
+        if (repo) git_repository_free(repo);
     } else if (strcmp(cmd, "log") == 0) {
         strcat(output, "commit d3f8b9e... (HEAD -> main)\nAuthor: User <user@example.com>\nDate: Sat Feb 21 19:15:00 2026 +0530\n\n    Initial commit\n");
     } else if (strcmp(cmd, "help") == 0) {
@@ -1642,4 +1841,3 @@ cleanup_dtag:
 
     return (jint) result;
 }
-

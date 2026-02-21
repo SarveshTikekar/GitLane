@@ -45,7 +45,6 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   List<String> _branches = [];
   List<Map<String, dynamic>> _tags = [];
 
-
   List<FileSystemEntity> _currentFiles = [];
   String _currentDir = '';
 
@@ -120,7 +119,19 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         if (statusJson != null) {
           try {
             final d = jsonDecode(statusJson);
-            if (d is List) _statusFiles = d;
+            if (d is List) {
+              _statusFiles = d.map((raw) {
+                if (raw is! Map) return raw;
+                final normalized = Map<String, dynamic>.from(raw);
+                final status = (normalized['status'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                normalized['isStaged'] =
+                    normalized['isStaged'] == true ||
+                    status.startsWith('staged_');
+                return normalized;
+              }).toList();
+            }
           } catch (_) {}
         }
       }
@@ -217,7 +228,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             isUtc: true,
           ).toLocal(),
           lane: myLane,
-          tags: _tags.where((t) => t['hash'] == hash).map((t) => t['name'].toString()).toList(),
+          tags: _tags
+              .where((t) => t['hash'] == hash)
+              .map((t) => t['name'].toString())
+              .toList(),
         ),
       );
     }
@@ -311,22 +325,28 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               ),
               const SizedBox(height: 12),
               CheckboxListTile(
-                title: Text('Push after commit',
-                    style: GoogleFonts.inter(fontSize: 14)),
+                title: Text(
+                  'Push after commit',
+                  style: GoogleFonts.inter(fontSize: 14),
+                ),
                 value: pushAfter,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppTheme.accentCyan,
-                onChanged: (val) => setDialogState(() => pushAfter = val ?? false),
+                onChanged: (val) =>
+                    setDialogState(() => pushAfter = val ?? false),
               ),
               CheckboxListTile(
-                title: Text('Create tag',
-                    style: GoogleFonts.inter(fontSize: 14)),
+                title: Text(
+                  'Create tag',
+                  style: GoogleFonts.inter(fontSize: 14),
+                ),
                 value: createTag,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppTheme.accentCyan,
-                onChanged: (val) => setDialogState(() => createTag = val ?? false),
+                onChanged: (val) =>
+                    setDialogState(() => createTag = val ?? false),
               ),
               if (createTag)
                 TextField(
@@ -370,16 +390,23 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             if (decoded is List && decoded.isNotEmpty) {
               final headHash = decoded.first['hash'];
               await GitService.createTag(
-                  widget.repoPath, tagCtrl.text.trim(), headHash);
+                widget.repoPath,
+                tagCtrl.text.trim(),
+                headHash,
+              );
             }
           }
         }
         if (pushAfter && _personalAccessToken != null) {
           await GitService.pushRepository(
-              widget.repoPath, _personalAccessToken!);
+            widget.repoPath,
+            _personalAccessToken!,
+          );
         } else if (pushAfter) {
-          _showSnack('Push failed: No PAT stored for this session',
-              AppTheme.accentYellow);
+          _showSnack(
+            'Push failed: No PAT stored for this session',
+            AppTheme.accentYellow,
+          );
         }
       }
 
@@ -458,19 +485,28 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         ),
                         child: ListTile(
                           dense: true,
-                          onTap: isCurrent ? null : () async {
-                            Navigator.pop(context);
-                            setState(() => _isLoading = true);
-                            final code = await GitService.checkoutBranch(widget.repoPath, b);
-                            if (mounted) {
-                              _showSnack(
-                                code == 0 ? "Checked out '$b'" : "Checkout failed ($code)",
-                                code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-                              );
-                              _fetchData();
-                              _listRepoFiles();
-                            }
-                          },
+                          onTap: isCurrent
+                              ? null
+                              : () async {
+                                  Navigator.pop(context);
+                                  setState(() => _isLoading = true);
+                                  final code = await GitService.checkoutBranch(
+                                    widget.repoPath,
+                                    b,
+                                  );
+                                  if (mounted) {
+                                    _showSnack(
+                                      code == 0
+                                          ? "Checked out '$b'"
+                                          : "Checkout failed ($code)",
+                                      code == 0
+                                          ? AppTheme.accentGreen
+                                          : AppTheme.accentRed,
+                                    );
+                                    _fetchData();
+                                    _listRepoFiles();
+                                  }
+                                },
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 10,
                           ),
@@ -950,7 +986,6 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     },
   );
 
-
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -988,7 +1023,6 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     _showSnack('Unstage not yet supported via bridge', AppTheme.accentYellow);
   }
 
-
   Future<void> _uploadFile() async {
     final result = await FilePicker.platform.pickFiles(allowMultiple: true);
     if (result != null) {
@@ -1014,7 +1048,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     setState(() => _isLoading = true);
     for (var f in _statusFiles) {
       if (f['isStaged'] == false) {
-        await GitService.gitAddFile(widget.repoPath, f['file']);
+        await GitService.gitAddFile(widget.repoPath, f['path']);
       }
     }
     _fetchData();
@@ -1061,7 +1095,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         side: const BorderSide(color: AppTheme.border),
       ),
       items: [
-        _menuItem('pull', Icons.sync_rounded, 'Sync (Pull)', AppTheme.accentBlue),
+        _menuItem(
+          'pull',
+          Icons.sync_rounded,
+          'Sync (Pull)',
+          AppTheme.accentBlue,
+        ),
         _menuItem('push', Icons.upload_rounded, 'Push', AppTheme.accentBlue),
         const PopupMenuDivider(height: 1),
         _menuItem(
@@ -1146,7 +1185,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ContributorAnalyticsScreen(repoPath: widget.repoPath),
+            builder: (_) =>
+                ContributorAnalyticsScreen(repoPath: widget.repoPath),
           ),
         );
         break;
@@ -1167,15 +1207,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
+          builder: (_) =>
+              ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
         ),
       );
     } else {
       _showSnack('No remote origin set', AppTheme.accentYellow);
     }
   }
-
-
 
   PopupMenuItem<String> _menuItem(
     String value,
@@ -1333,7 +1372,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => NativeTerminalScreen(repoPath: widget.repoPath),
+                    builder: (_) =>
+                        NativeTerminalScreen(repoPath: widget.repoPath),
                   ),
                 );
               },
@@ -1442,10 +1482,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
 
   // ── Explorer Tab ───────────────────────────────────────────────────────────────
   Widget _buildExplorerView() {
-    final filteredFiles = _searchQuery.isEmpty 
-        ? _currentFiles 
+    final filteredFiles = _searchQuery.isEmpty
+        ? _currentFiles
         : _currentFiles.where((e) {
-            final name = e.path.split(Platform.pathSeparator).last.toLowerCase();
+            final name = e.path
+                .split(Platform.pathSeparator)
+                .last
+                .toLowerCase();
             return name.contains(_searchQuery);
           }).toList();
 
@@ -1459,14 +1502,25 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             decoration: InputDecoration(
               hintText: 'Search files...',
               hintStyle: const TextStyle(color: AppTheme.textMuted),
-              prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppTheme.textMuted),
-              suffixIcon: _searchQuery.isNotEmpty 
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: AppTheme.textMuted,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 16, color: AppTheme.textMuted),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppTheme.textMuted,
+                      ),
                       onPressed: () => _searchController.clear(),
                     )
                   : null,
-              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 0,
+                horizontal: 16,
+              ),
               filled: true,
               fillColor: AppTheme.surfaceSlate,
               border: OutlineInputBorder(
@@ -1479,7 +1533,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppTheme.accentCyan,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -1488,193 +1545,215 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           child: filteredFiles.isEmpty
               ? EmptyState(
                   icon: Icons.folder_open_rounded,
-                  title: _currentFiles.isEmpty ? 'Empty directory' : 'No matching files',
-                  subtitle: _currentFiles.isEmpty ? 'Create a new file to get started' : 'Try a different search term',
-                  action: _currentFiles.isEmpty ? ElevatedButton.icon(
-                    onPressed: _showNewFileDialog,
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: const Text('New File'),
-                  ) : null,
+                  title: _currentFiles.isEmpty
+                      ? 'Empty directory'
+                      : 'No matching files',
+                  subtitle: _currentFiles.isEmpty
+                      ? 'Create a new file to get started'
+                      : 'Try a different search term',
+                  action: _currentFiles.isEmpty
+                      ? ElevatedButton.icon(
+                          onPressed: _showNewFileDialog,
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('New File'),
+                        )
+                      : null,
                 )
               : ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: filteredFiles.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, indent: 52),
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, indent: 52),
                   itemBuilder: (context, index) {
                     final entity = filteredFiles[index];
-        final name = entity.path.split(Platform.pathSeparator).last;
-        final isDir = entity is Directory;
-        final ext = isDir ? '' : _fileExt(name);
-        final extColor = isDir ? AppTheme.accentCyan : _extColor(ext);
+                    final name = entity.path.split(Platform.pathSeparator).last;
+                    final isDir = entity is Directory;
+                    final ext = isDir ? '' : _fileExt(name);
+                    final extColor = isDir
+                        ? AppTheme.accentCyan
+                        : _extColor(ext);
 
-        return PopupMenuButton<String>(
-          color: AppTheme.bg2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: AppTheme.border),
-          ),
-          onSelected: (value) async {
-            if (value == 'delete') {
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete'),
-                  content: Text("Delete '$name'? This cannot be undone."),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text(
-                        'Delete',
-                        style: TextStyle(color: AppTheme.accentRed),
+                    return PopupMenuButton<String>(
+                      color: AppTheme.bg2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: AppTheme.border),
                       ),
-                    ),
-                  ],
+                      onSelected: (value) async {
+                        if (value == 'delete') {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete'),
+                              content: Text(
+                                "Delete '$name'? This cannot be undone.",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: AppTheme.accentRed),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (ok == true) {
+                            await entity.delete(recursive: isDir);
+                            _fetchData();
+                            _listRepoFiles();
+                          }
+                        } else if (value == 'rename') {
+                          final ctrl = TextEditingController(text: name);
+                          final newName = await showDialog<String>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Rename'),
+                              content: TextField(
+                                controller: ctrl,
+                                autofocus: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'New Name',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, ctrl.text.trim()),
+                                  child: const Text('Rename'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (newName != null &&
+                              newName.isNotEmpty &&
+                              newName != name) {
+                            final newPath =
+                                '${entity.parent.path}${Platform.pathSeparator}$newName';
+                            await entity.rename(newPath);
+                            _listRepoFiles();
+                          }
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'rename',
+                          height: 40,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.edit_rounded,
+                                size: 16,
+                                color: AppTheme.accentCyan,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Rename',
+                                style: GoogleFonts.inter(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          height: 40,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 16,
+                                color: AppTheme.accentRed,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Delete',
+                                style: GoogleFonts.inter(
+                                  color: AppTheme.accentRed,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      child: ListTile(
+                        onTap: () {
+                          if (isDir) {
+                            setState(() {
+                              _currentDir = entity.path;
+                              _listRepoFiles();
+                            });
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FileEditorScreen(
+                                  filePath: entity.path,
+                                  fileName: name,
+                                  repoPath: widget.repoPath,
+                                ),
+                              ),
+                            ).then((_) {
+                              _fetchData();
+                              _listRepoFiles();
+                            });
+                          }
+                        },
+                        leading: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: extColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            isDir
+                                ? Icons.folder_rounded
+                                : Icons.description_outlined,
+                            size: 18,
+                            color: extColor,
+                          ),
+                        ),
+                        title: Text(
+                          name,
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: !isDir && ext.isNotEmpty
+                            ? Text(
+                                ext,
+                                style: GoogleFonts.firaMono(
+                                  color: extColor,
+                                  fontSize: 10,
+                                ),
+                              )
+                            : null,
+                        trailing: isDir
+                            ? const Icon(
+                                Icons.chevron_right_rounded,
+                                color: AppTheme.textMuted,
+                                size: 18,
+                              )
+                            : null,
+                      ),
+                    );
+                  },
                 ),
-              );
-              if (ok == true) {
-                await entity.delete(recursive: isDir);
-                _fetchData();
-                _listRepoFiles();
-              }
-            } else if (value == 'rename') {
-              final ctrl = TextEditingController(text: name);
-              final newName = await showDialog<String>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Rename'),
-                  content: TextField(
-                    controller: ctrl,
-                    autofocus: true,
-                    decoration: const InputDecoration(labelText: 'New Name'),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-                      child: const Text('Rename'),
-                    ),
-                  ],
-                ),
-              );
-              if (newName != null && newName.isNotEmpty && newName != name) {
-                final newPath =
-                    '${entity.parent.path}${Platform.pathSeparator}$newName';
-                await entity.rename(newPath);
-                _listRepoFiles();
-              }
-            }
-          },
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: 'rename',
-              height: 40,
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.edit_rounded,
-                    size: 16,
-                    color: AppTheme.accentCyan,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Rename',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.textPrimary,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'delete',
-              height: 40,
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.delete_outline_rounded,
-                    size: 16,
-                    color: AppTheme.accentRed,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Delete',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.accentRed,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          child: ListTile(
-            onTap: () {
-              if (isDir) {
-                setState(() {
-                  _currentDir = entity.path;
-                  _listRepoFiles();
-                });
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FileEditorScreen(
-                      filePath: entity.path,
-                      fileName: name,
-                      repoPath: widget.repoPath,
-                    ),
-                  ),
-                ).then((_) {
-                  _fetchData();
-                  _listRepoFiles();
-                });
-              }
-            },
-            leading: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: extColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                isDir ? Icons.folder_rounded : Icons.description_outlined,
-                size: 18,
-                color: extColor,
-              ),
-            ),
-            title: Text(
-              name,
-              style: GoogleFonts.inter(
-                color: AppTheme.textPrimary,
-                fontSize: 14,
-              ),
-            ),
-            subtitle: !isDir && ext.isNotEmpty
-                ? Text(
-                    ext,
-                    style: GoogleFonts.firaMono(color: extColor, fontSize: 10),
-                  )
-                : null,
-            trailing: isDir
-                ? const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppTheme.textMuted,
-                    size: 18,
-                  )
-                : null,
-          ),
-        );
-      },
-    ),
         ),
       ],
     );
@@ -1782,41 +1861,45 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         ),
                         ..._tags
                             .where((t) => t['hash'] == hash)
-                            .map((t) => Container(
-                                  margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
+                            .map(
+                              (t) => Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentYellow.withValues(
+                                    alpha: 0.1,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.accentYellow
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: AppTheme.accentYellow
-                                          .withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: AppTheme.accentYellow.withValues(
+                                      alpha: 0.3,
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.local_offer_rounded,
-                                        size: 10,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.local_offer_rounded,
+                                      size: 10,
+                                      color: AppTheme.accentYellow,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      t['name'].toString(),
+                                      style: GoogleFonts.inter(
                                         color: AppTheme.accentYellow,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        t['name'].toString(),
-                                        style: GoogleFonts.inter(
-                                          color: AppTheme.accentYellow,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -1967,14 +2050,24 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         children: [
           const SizedBox(height: 16),
           if (staged.isNotEmpty) ...[
-            _sectionHeader('STAGED', staged.length, AppTheme.accentGreen,
-                onAction: _unstageAll, actionLabel: 'UNSTAGE ALL'),
+            _sectionHeader(
+              'STAGED',
+              staged.length,
+              AppTheme.accentGreen,
+              onAction: _unstageAll,
+              actionLabel: 'UNSTAGE ALL',
+            ),
             ...staged.map((f) => _buildStatusRow(f, isStaged: true)),
             const SizedBox(height: 20),
           ],
           if (unstaged.isNotEmpty) ...[
-            _sectionHeader('CHANGES', unstaged.length, AppTheme.accentYellow,
-                onAction: _stageAll, actionLabel: 'STAGE ALL'),
+            _sectionHeader(
+              'CHANGES',
+              unstaged.length,
+              AppTheme.accentYellow,
+              onAction: _stageAll,
+              actionLabel: 'STAGE ALL',
+            ),
             ...unstaged.map((f) => _buildStatusRow(f, isStaged: false)),
           ],
           const SizedBox(height: 100),
@@ -1989,7 +2082,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       return EmptyState(
         icon: Icons.local_offer_outlined,
         title: 'No tags found',
-        subtitle: 'Create a tag to mark important points in your project history',
+        subtitle:
+            'Create a tag to mark important points in your project history',
         action: ElevatedButton.icon(
           onPressed: _showCreateTagDialog,
           icon: const Icon(Icons.add_rounded, size: 16),
@@ -2018,8 +2112,11 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             ],
           ),
           child: ListTile(
-            leading: const Icon(Icons.local_offer_rounded,
-                color: AppTheme.accentCyan, size: 18),
+            leading: const Icon(
+              Icons.local_offer_rounded,
+              color: AppTheme.accentCyan,
+              size: 18,
+            ),
             title: Text(
               tagName,
               style: GoogleFonts.inter(
@@ -2027,8 +2124,11 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 fontWeight: FontWeight.w500,
               ),
             ),
-            trailing: const Icon(Icons.chevron_right_rounded,
-                color: AppTheme.textMuted, size: 18),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textMuted,
+              size: 18,
+            ),
             onTap: () {
               // Future: show tag details or commits at tag
             },
@@ -2080,14 +2180,23 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               final hash = hashCtrl.text.trim();
               if (name.isNotEmpty && hash.isNotEmpty) {
                 final res = await GitService.createTag(
-                    widget.repoPath, name, hash);
+                  widget.repoPath,
+                  name,
+                  hash,
+                );
                 if (mounted) {
                   Navigator.pop(context);
                   if (res == 0) {
-                    _showSnack('Tag created successfully', AppTheme.accentGreen);
+                    _showSnack(
+                      'Tag created successfully',
+                      AppTheme.accentGreen,
+                    );
                     _fetchTags();
                   } else {
-                    _showSnack('Failed to create tag ($res)', AppTheme.accentRed);
+                    _showSnack(
+                      'Failed to create tag ($res)',
+                      AppTheme.accentRed,
+                    );
                   }
                 }
               }
@@ -2130,7 +2239,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     }
   }
 
-  Widget _sectionHeader(String label, int count, Color color, {VoidCallback? onAction, String? actionLabel}) {
+  Widget _sectionHeader(
+    String label,
+    int count,
+    Color color, {
+    VoidCallback? onAction,
+    String? actionLabel,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
