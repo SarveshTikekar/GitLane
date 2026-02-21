@@ -32,7 +32,10 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
 
   Future<void> _fetchDiff() async {
     setState(() => _isLoading = true);
-    final diff = await GitService.getCommitDiff(widget.repoPath!, widget.commitHash);
+    final diff = await GitService.getCommitDiff(
+      widget.repoPath!,
+      widget.commitHash,
+    );
     setState(() {
       _diff = diff;
       _isLoading = false;
@@ -42,9 +45,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Commit Details'),
-      ),
+      appBar: AppBar(title: const Text('Commit Details')),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,23 +53,28 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
             _buildCommitHeader(),
             const Divider(color: AppTheme.surfaceSlate, height: 1),
             if (_isLoading)
-              const Center(child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: CircularProgressIndicator(color: AppTheme.accentCyan),
-              ))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(color: AppTheme.accentCyan),
+                ),
+              )
             else if (_diff != null)
               _buildDiffSection('Full Diff', _diff!)
             else
               const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text("No diff available (mock view)", style: TextStyle(color: AppTheme.textDim)),
+                child: Text(
+                  "No diff available (mock view)",
+                  style: TextStyle(color: AppTheme.textDim),
+                ),
               ),
-            
+
             // Mock sections for visualization if no real diff
             if (_diff == null) ...[
               _buildMockDiffSection('lib/main.dart'),
               _buildMockDiffSection('lib/ui/theme/app_theme.dart'),
-            ]
+            ],
           ],
         ),
       ),
@@ -94,10 +100,15 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 child: Icon(Icons.person, size: 16, color: Colors.black),
               ),
               const SizedBox(width: 8),
-              const Text('gautam', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text(
+                'gautam',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
               const Spacer(),
               Text(
-                widget.commitHash.substring(0, 7),
+                widget.commitHash.length > 7
+                    ? widget.commitHash.substring(0, 7)
+                    : widget.commitHash,
                 style: const TextStyle(
                   fontFamily: 'monospace',
                   color: AppTheme.accentCyan,
@@ -147,7 +158,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: AppTheme.surfaceSlate.withOpacity(0.5),
+          color: AppTheme.surfaceSlate.withValues(alpha: 0.5),
           child: Text(
             fileName,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -164,10 +175,10 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
     Color? bgColor;
     Color? textColor;
     if (type == DiffType.added) {
-      bgColor = Colors.green.withOpacity(0.1);
+      bgColor = Colors.green.withValues(alpha: 0.1);
       textColor = Colors.green[300];
     } else if (type == DiffType.removed) {
-      bgColor = Colors.red.withOpacity(0.1);
+      bgColor = Colors.red.withValues(alpha: 0.1);
       textColor = Colors.red[300];
     }
 

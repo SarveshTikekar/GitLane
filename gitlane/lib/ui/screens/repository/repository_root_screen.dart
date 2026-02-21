@@ -179,7 +179,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   }
 
   List<CommitNode> _graphNodesFromCommits() {
-    if (_commits.isEmpty) return demoCommits;
+    if (_commits.isEmpty) return [];
 
     final nodes = <CommitNode>[];
     for (var i = 0; i < _commits.length; i++) {
@@ -205,7 +205,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
       );
     }
 
-    return nodes.isEmpty ? demoCommits : nodes;
+    return nodes;
   }
 
   @override

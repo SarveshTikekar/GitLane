@@ -1,11 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+
+import '../../../services/git_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
-import '../repository/repository_root_screen.dart';
 import '../commit/commit_graph_screen.dart';
-import '../../../services/git_service.dart';
+import '../repository/repository_root_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,6 +19,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   String? _docsPath;
+  String? _reposRootPath;
   List<Map<String, String>> _repos = [];
   String _searchQuery = '';
   bool _initializing = true;
@@ -28,18 +32,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initStorage() async {
     final dir = await getApplicationDocumentsDirectory();
+    final reposRoot = Directory('${dir.path}/gitlane_repositories');
+    if (!reposRoot.existsSync()) {
+      reposRoot.createSync(recursive: true);
+    }
+
+    if (!mounted) return;
     setState(() {
       _docsPath = dir.path;
-      _repos = []; // Start fresh, no hardcoded entries
+      _reposRootPath = reposRoot.path;
+    });
+
+    await _loadReposFromDisk();
+  }
+
+  Future<void> _loadReposFromDisk() async {
+    final rootPath = _reposRootPath;
+    if (rootPath == null) return;
+
+    final rootDir = Directory(rootPath);
+    if (!rootDir.existsSync()) {
+      rootDir.createSync(recursive: true);
+    }
+
+    final repos = <Map<String, String>>[];
+    for (final entity in rootDir.listSync(followLinks: false)) {
+      if (entity is! Directory) continue;
+      final gitDir = Directory('${entity.path}/.git');
+      if (!gitDir.existsSync()) continue;
+
+      final name = _basename(entity.path);
+      repos.add({
+        'title': name,
+        'desc': 'Local repository',
+        'path': entity.path,
+      });
+    }
+
+    repos.sort(
+      (a, b) => a['title']!.toLowerCase().compareTo(b['title']!.toLowerCase()),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _repos = repos;
       _initializing = false;
     });
   }
 
-  void _showGitActionDialog() {
+  String _basename(String path) {
+    final parts = path.split(Platform.pathSeparator).where((p) => p.isNotEmpty);
+    return parts.isEmpty ? path : parts.last;
+  }
+
+  Future<void> _showGitActionDialog() async {
     final urlController = TextEditingController();
     final nameController = TextEditingController();
 
-    showDialog(
+    await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surfaceSlate,
@@ -90,7 +140,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.pop(context);
               setState(() => _initializing = true);
 
-              final path = '$_docsPath/$name';
+              final path = '${_reposRootPath}/$name';
               int result;
 
               if (url.isNotEmpty) {
@@ -102,26 +152,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               if (mounted) {
                 if (result == 0) {
-                  setState(() {
-                    _repos.add({
-                      'title': name,
-                      'desc': url.isNotEmpty
-                          ? 'Cloned from $url'
-                          : 'Local Git Repository',
-                      'path': path,
-                    });
-                  });
+                  await _loadReposFromDisk();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Failed: code $result")),
+                  );
+                  setState(() => _initializing = false);
                 }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result == 0
-                          ? "Success: $name established"
-                          : "Failed: code $result",
-                    ),
-                  ),
-                );
-                setState(() => _initializing = false);
               }
             },
             child: const Text('Create', style: TextStyle(color: Colors.black)),
@@ -129,6 +166,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _openGraphPicker() async {
+    if (_repos.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No repositories found')));
+      return;
+    }
+
+    if (_repos.length == 1) {
+      await _openGraphForRepo(_repos.first);
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surfaceSlate,
+      builder: (context) {
+        return SafeArea(
+          child: ListView.builder(
+            itemCount: _repos.length,
+            itemBuilder: (context, index) {
+              final repo = _repos[index];
+              return ListTile(
+                leading: const Icon(Icons.folder, color: AppTheme.accentCyan),
+                title: Text(repo['title']!),
+                subtitle: Text(
+                  repo['path']!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _openGraphForRepo(repo);
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openGraphForRepo(Map<String, String> repo) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppTheme.accentCyan),
+      ),
+    );
+
+    final logJson = await GitService.getCommitLog(repo['path']!);
+    final nodes = _nodesFromLog(logJson);
+
+    if (!mounted) return;
+    Navigator.pop(context);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            CommitGraphScreen(commits: nodes, title: '${repo['title']} Graph'),
+      ),
+    );
+  }
+
+  List<CommitNode> _nodesFromLog(String? logJson) {
+    if (logJson == null) return [];
+
+    try {
+      final decoded = jsonDecode(logJson);
+      if (decoded is! List) return [];
+
+      final nodes = <CommitNode>[];
+      for (var i = 0; i < decoded.length; i++) {
+        final item = decoded[i];
+        if (item is! Map<String, dynamic>) continue;
+
+        final hash = (item['hash'] ?? '').toString();
+        if (hash.isEmpty) continue;
+
+        final nextHash = i + 1 < decoded.length
+            ? ((decoded[i + 1] as Map<String, dynamic>)['hash'] ?? '')
+                  .toString()
+            : '';
+
+        final unix = (item['time'] is num) ? (item['time'] as num).toInt() : 0;
+
+        nodes.add(
+          CommitNode(
+            id: hash,
+            parentIds: nextHash.isEmpty ? [] : [nextHash],
+            message: (item['message'] ?? 'No message').toString(),
+            timestamp: DateTime.fromMillisecondsSinceEpoch(
+              unix * 1000,
+              isUtc: true,
+            ).toLocal(),
+            lane: 0,
+          ),
+        );
+      }
+
+      return nodes;
+    } catch (_) {
+      return [];
+    }
   }
 
   @override
@@ -148,14 +293,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.account_tree_outlined),
             tooltip: 'Commit Graph',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CommitGraphScreen(commits: demoCommits),
-                ),
-              );
-            },
+            onPressed: _openGraphPicker,
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -178,7 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Search repositories...',
@@ -202,11 +340,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: CircularProgressIndicator(color: AppTheme.accentCyan),
                 ),
               )
-            else if (_repos.isEmpty)
+            else if (filteredRepos.isEmpty)
               const Expanded(
                 child: Center(
                   child: Text(
-                    "No repositories yet. Tap + to start.",
+                    'No repositories yet. Tap + to start.',
                     style: TextStyle(color: AppTheme.textDim),
                   ),
                 ),
@@ -234,7 +372,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildRepoCard(BuildContext context, Map<String, String> repo) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
         padding: EdgeInsets.zero,
         child: InkWell(
@@ -251,7 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           },
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -276,32 +414,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    _buildStat('main', Icons.account_tree_outlined),
-                    const SizedBox(width: 16),
-                    _buildStat('Active', Icons.bolt),
-                  ],
+                const SizedBox(height: 8),
+                Text(
+                  repo['path']!,
+                  style: const TextStyle(
+                    color: AppTheme.textDim,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildStat(String label, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppTheme.textDim),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: AppTheme.textDim),
-        ),
-      ],
     );
   }
 
@@ -319,8 +447,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Icons.folder_open,
                   color: AppTheme.accentCyan,
                 ),
-                title: const Text('Storage Location'),
+                title: const Text('Documents Storage'),
                 subtitle: Text(_docsPath ?? 'Loading...'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.storage, color: AppTheme.accentCyan),
+                title: const Text('Repositories Root'),
+                subtitle: Text(_reposRootPath ?? 'Loading...'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.refresh, color: AppTheme.textDim),
+                title: const Text('Refresh Repositories'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _loadReposFromDisk();
+                },
               ),
               ListTile(
                 leading: const Icon(
