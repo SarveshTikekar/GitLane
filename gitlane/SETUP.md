@@ -93,6 +93,10 @@ All 6 functions in `git_bridge.c` are complete:
 | `checkoutBranch` | `git_checkout_tree()` + set HEAD | `Int` |
 | `mergeBranch` | fast-forward or merge commit | `Int` (0=merged, 1=up-to-date) |
 | `getCommitLog` | `git_revwalk` | `String` (JSON array) |
+| `getRepositoryStatus`| `git_status_list` | `String` (JSON array) |
+| `gitAddFile` | `git_index_add_bypath` | `Int` |
+| `getCommitDiff` | `git_diff_tree_to_tree` | `String` (Patch text) |
+| `cloneRepository` | `git_clone` | `Int` (Local path only for now) |
 
 ### Flutter usage example (from `lib/`):
 ```dart
@@ -142,8 +146,7 @@ libgit2 v1.7.2 static libs are at:
   android/app/src/main/cpp/jniLibs/arm64-v8a/libgit2.a
   android/app/src/main/cpp/jniLibs/x86_64/libgit2.a
 Headers at: android/app/src/main/cpp/include/git2.h
-6 operations implemented in git_bridge.c: initRepository, commitAll,
-createBranch, checkoutBranch, mergeBranch, getCommitLog.
-All use git_libgit2_init()/shutdown() + full memory cleanup.
+9 operations implemented: initRepository, commitAll, createBranch, checkoutBranch, mergeBranch, getCommitLog, getRepositoryStatus, gitAddFile, getCommitDiff.
+cloneRepository is implemented in JNI but requires HTTPS transport fix for remote URLs.
 Build with: powershell -ExecutionPolicy Bypass -File build_libgit2_android.ps1
 ```
