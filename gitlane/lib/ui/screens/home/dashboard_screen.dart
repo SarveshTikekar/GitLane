@@ -738,7 +738,9 @@ class _RepoCard extends StatelessWidget {
           onTap: onOpen,
           borderRadius: BorderRadius.circular(16),
           child: GlassCard(
-            child: Column(
+          accentBorder: branchColor,
+          padding: const EdgeInsets.all(0),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── Top row: name + branch + status ─────────────────────────────

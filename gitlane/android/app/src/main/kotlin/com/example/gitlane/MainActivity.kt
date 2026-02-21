@@ -218,7 +218,7 @@ class MainActivity : FlutterActivity() {
                                     val path = call.argument<String>("path")!!
                                     val message = call.argument<String>("message")!!
                                     val signature = call.argument<String>("signature")!!
-                                    bridge.commitSigned(path, message, signature)
+                                    result.success(bridge.commitSigned(path, message, signature))
                                 }
                                 "getCommitContent" -> {
                                     val path = call.argument<String>("path")!!
@@ -232,20 +232,20 @@ class MainActivity : FlutterActivity() {
                                 "createBundle" -> {
                                     val path = call.argument<String>("path")!!
                                     val bundlePath = call.argument<String>("bundlePath")!!
-                                    bridge.createBundle(path, bundlePath)
+                                    result.success(bridge.createBundle(path, bundlePath))
                                 }
                                 "generateSSHKey" -> {
                                     val label = call.argument<String>("label")!!
                                     val type = call.argument<String>("type")!!
                                     val bits = call.argument<Int>("bits") ?: 2048
-                                    sshManager.generateKeyPair(label, type, bits)
+                                    result.success(sshManager.generateKeyPair(label, type, bits))
                                 }
                                 "listSSHKeys" -> {
-                                    sshManager.listKeys()
+                                    result.success(sshManager.listKeys())
                                 }
                                 "deleteSSHKey" -> {
                                     val label = call.argument<String>("label")!!
-                                    sshManager.deleteKey(label)
+                                    result.success(sshManager.deleteKey(label))
                                 }
                                 "getSSHPublicKey" -> {
                                     val label = call.argument<String>("label")!!

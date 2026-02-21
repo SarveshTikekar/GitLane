@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/collaboration_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/glass_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -109,8 +110,10 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
   }
 
   Widget _buildPRTile(PullRequest pr) {
-    return Card(
+    final statusColor = pr.state == 'open' ? AppTheme.accentGreen : AppTheme.accentPurple;
+    return GlassCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      accentBorder: statusColor,
       child: ListTile(
         onTap: () => _launchUrl(pr.url),
         title: Text(pr.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -140,8 +143,10 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
   }
 
   Widget _buildIssueTile(Issue issue) {
-    return Card(
+    final statusColor = issue.state == 'open' ? AppTheme.accentGreen : AppTheme.accentPurple;
+    return GlassCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      accentBorder: statusColor,
       child: ListTile(
         onTap: () => _launchUrl(issue.url),
         title: Text(issue.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

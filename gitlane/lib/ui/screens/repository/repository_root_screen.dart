@@ -1303,7 +1303,11 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
+          builder: (_) => ShareRepoScreen(
+            repoName: widget.repoName,
+            repoPath: widget.repoPath,
+            remoteUrl: url,
+          ),
         ),
       );
     } else {

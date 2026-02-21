@@ -2261,6 +2261,8 @@ Java_com_example_gitlane_GitBridge_runHealthCheck(
     if (repo) git_repository_free(repo);
     (*env)->ReleaseStringUTFChars(env, jpath, path);
     git_libgit2_shutdown();
+    return (*env)->NewStringUTF(env, result_msg);
+}
 
 JNIEXPORT jint JNICALL
 Java_com_example_gitlane_GitBridge_createBundle(
