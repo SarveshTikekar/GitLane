@@ -431,4 +431,15 @@ class GitService {
       return "Internal Error";
     }
   }
+
+  static Future<int> createBundle(String path, String bundlePath) async {
+    try {
+      return await _channel.invokeMethod('createBundle', {
+        'path': path,
+        'bundlePath': bundlePath,
+      });
+    } on PlatformException catch (_) {
+      return -1;
+    }
+  }
 }

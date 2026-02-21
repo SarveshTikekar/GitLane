@@ -2261,5 +2261,26 @@ Java_com_example_gitlane_GitBridge_runHealthCheck(
     if (repo) git_repository_free(repo);
     (*env)->ReleaseStringUTFChars(env, jpath, path);
     git_libgit2_shutdown();
-    return (*env)->NewStringUTF(env, result_msg);
+
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_createBundle(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jbundlePath) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *bundlePath = (*env)->GetStringUTFChars(env, jbundlePath, NULL);
+    git_repository *repo = NULL;
+    int result = -1;
+
+    if (git_repository_open(&repo, path) == 0) {
+        // Create bundle for all references
+        // Note: For simplicity, we bundle all refs. 
+        // In a real app, we might allow refspec selection.
+        result = git_bundle_create(bundlePath, repo, NULL);
+    }
+
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jbundlePath, bundlePath);
+    git_libgit2_shutdown();
+    return (jint)result;
 }

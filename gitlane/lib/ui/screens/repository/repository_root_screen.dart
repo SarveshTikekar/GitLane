@@ -1149,6 +1149,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentGreen,
         ),
         _menuItem(
+          'bundle',
+          Icons.archive_rounded,
+          'Export Bundle (P2P)',
+          AppTheme.accentOrange,
+        ),
+        _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
@@ -1269,6 +1275,24 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
         break;
+      case 'bundle':
+        _exportBundle();
+        break;
+    }
+  }
+
+  Future<void> _exportBundle() async {
+    final name = widget.repoName;
+    final bundlePath = '${widget.repoPath}/../$name.bundle';
+    
+    setState(() => _isLoading = true);
+    final result = await GitService.createBundle(widget.repoPath, bundlePath);
+    setState(() => _isLoading = false);
+    
+    if (result == 0) {
+      _showSnack('Bundle exported to: $name.bundle', AppTheme.accentGreen);
+    } else {
+      _showSnack('Failed to create bundle ($result)', AppTheme.accentRed);
     }
   }
 

@@ -229,6 +229,11 @@ class MainActivity : FlutterActivity() {
                                     val path = call.argument<String>("path")!!
                                     result.success(bridge.runHealthCheck(path))
                                 }
+                                "createBundle" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val bundlePath = call.argument<String>("bundlePath")!!
+                                    bridge.createBundle(path, bundlePath)
+                                }
                                 "generateSSHKey" -> {
                                     val label = call.argument<String>("label")!!
                                     val type = call.argument<String>("type")!!

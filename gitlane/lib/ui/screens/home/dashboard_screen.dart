@@ -136,12 +136,19 @@ class _DashboardScreenState extends State<DashboardScreen>
             } catch (_) {}
           }
 
+          // Parse sync status
+          final syncStatus = await GitService.getSyncStatus(entity.path);
+          final aheadCount = syncStatus['ahead'] as int? ?? 0;
+          final behindCount = syncStatus['behind'] as int? ?? 0;
+
           updatedRepos.add({
             'title': name,
             'path': entity.path,
             'branch': branch,
             'modified': modifiedCount,
             'untracked': untrackedCount,
+            'ahead': aheadCount,
+            'behind': behindCount,
             'lastCommit': lastCommitMsg,
             'lastCommitAuthor': lastCommitAuthor,
             'lastCommitTime': lastCommitTime,
@@ -182,7 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return '${(diff.inDays / 30).floor()}mo ago';
   }
 
-  void _showNewRepoSheet() {
+  void _showNewRepoSheet({String? initialUrl}) {
     final docsPath = _docsPath;
     if (docsPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -205,12 +212,19 @@ class _DashboardScreenState extends State<DashboardScreen>
         docsPath: docsPath,
         onComplete: _refreshRepos,
         maxSheetWidth: maxSheetWidth,
+        initialUrl: initialUrl,
       ),
     );
   }
 
-  void _showQrScanner() {
-    showDialog(context: context, builder: (context) => const QRScannerDialog());
+  Future<void> _showQrScanner() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => const QRScannerDialog(),
+    );
+    if (result != null && result.isNotEmpty) {
+      _showNewRepoSheet(initialUrl: result);
+    }
   }
 
   // ── Stats ──────────────────────────────────────────────────────────────────
@@ -702,9 +716,14 @@ class _RepoCard extends StatelessWidget {
     final lastCommitTime = (repo['lastCommitTime'] ?? '').toString();
     final lastCommitAuthor = (repo['lastCommitAuthor'] ?? '').toString();
     final title = (repo['title'] ?? 'Repository').toString();
+    final ahead = repo['ahead'] as int? ?? 0;
+    final behind = repo['behind'] as int? ?? 0;
+
     final dirtyLabel = [
       if (modified > 0) '${modified}M',
       if (untracked > 0) '${untracked}U',
+      if (ahead > 0) '↑$ahead',
+      if (behind > 0) '↓$behind',
     ].join(' ');
 
     final branchColor = (branch == 'main' || branch == 'master')
@@ -1013,11 +1032,13 @@ class _NewRepoSheet extends StatefulWidget {
   final String docsPath;
   final VoidCallback onComplete;
   final double maxSheetWidth;
+  final String? initialUrl;
 
   const _NewRepoSheet({
     required this.docsPath,
     required this.onComplete,
     required this.maxSheetWidth,
+    this.initialUrl,
   });
 
   @override
@@ -1029,6 +1050,24 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
   final _urlController = TextEditingController();
   bool _isLoading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialUrl != null) {
+      _urlController.text = widget.initialUrl!;
+      // Try to guess name from URL
+      final parts = widget.initialUrl!.split('/');
+      if (parts.isNotEmpty) {
+        final last = parts.last;
+        if (last.endsWith('.git')) {
+          _nameController.text = last.substring(0, last.length - 4);
+        } else {
+          _nameController.text = last;
+        }
+      }
+    }
+  }
 
   @override
   void dispose() {
