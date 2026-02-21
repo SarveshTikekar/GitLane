@@ -86,6 +86,13 @@ class MainActivity : FlutterActivity() {
                         if (code >= 0) result.success(code) else result.error("GIT_ERROR", "gitAddFile failed: $code", code)
                     }
 
+                    "getCommitDiff" -> {
+                        val path = call.argument<String>("path")
+                        val hash = call.argument<String>("commitHash")
+                        if (path == null || hash == null) { result.error("INVALID_ARG", "path and commitHash are required", null); return@setMethodCallHandler }
+                        result.success(bridge.getCommitDiff(path, hash))
+                    }
+
                     else -> result.notImplemented()
                 }
             }
