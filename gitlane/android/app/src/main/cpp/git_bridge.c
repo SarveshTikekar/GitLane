@@ -475,3 +475,128 @@ return_log:
     free(json);
     return result_str;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 7. getRepositoryStatus(path: String): String
+ *    Returns a JSON array of files with their current status:
+ *    [ { "path": "file.txt", "status": "modified" }, ... ]
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getRepositoryStatus(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository   *repo    = NULL;
+    git_status_list  *status  = NULL;
+    char             *json    = NULL;
+    int result = 0;
+
+    json = (char *)malloc(32768); // Large buffer for status
+    if (!json) {
+        (*env)->ReleaseStringUTFChars(env, jpath, path);
+        git_libgit2_shutdown();
+        return (*env)->NewStringUTF(env, "[]");
+    }
+
+    result = git_repository_open(&repo, path);
+    if (result < 0) {
+        snprintf(json, 32768, "{\"error\":\"%s\"}", git_error_str(result));
+        goto return_status;
+    }
+
+    git_status_options opts = GIT_STATUS_OPTIONS_INIT;
+    opts.show  = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
+    opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED | 
+                 GIT_STATUS_OPT_RENAMES_HEAD_TO_INDEX |
+                 GIT_STATUS_OPT_SORT_CASE_SENSITIVELY;
+
+    result = git_status_list_new(&status, repo, &opts);
+    if (result < 0) {
+        snprintf(json, 32768, "{\"error\":\"%s\"}", git_error_str(result));
+        goto return_status;
+    }
+
+    size_t count = git_status_list_entrycount(status);
+    int pos = 0;
+    pos += snprintf(json + pos, 32768 - pos, "[");
+
+    for (size_t i = 0; i < count; i++) {
+        const git_status_entry *entry = git_status_byindex(status, i);
+        const char *file_path = NULL;
+        const char *status_str = "unknown";
+
+        if (entry->head_to_index) {
+            file_path = entry->head_to_index->new_file.path;
+        } else if (entry->index_to_workdir) {
+            file_path = entry->index_to_workdir->new_file.path;
+        }
+
+        /* Determine status string */
+        if (entry->status & GIT_STATUS_INDEX_NEW) status_str = "staged_new";
+        else if (entry->status & GIT_STATUS_INDEX_MODIFIED) status_str = "staged_modified";
+        else if (entry->status & GIT_STATUS_INDEX_DELETED) status_str = "staged_deleted";
+        else if (entry->status & GIT_STATUS_INDEX_RENAMED) status_str = "staged_renamed";
+        else if (entry->status & GIT_STATUS_WT_NEW) status_str = "untracked";
+        else if (entry->status & GIT_STATUS_WT_MODIFIED) status_str = "modified";
+        else if (entry->status & GIT_STATUS_WT_DELETED) status_str = "deleted";
+        else if (entry->status & GIT_STATUS_WT_RENAMED) status_str = "renamed";
+
+        if (file_path) {
+            if (i > 0) pos += snprintf(json + pos, 32768 - pos, ",");
+            pos += snprintf(json + pos, 32768 - pos, 
+                           "{\"path\":\"%s\",\"status\":\"%s\"}", 
+                           file_path, status_str);
+        }
+    }
+
+    pos += snprintf(json + pos, 32768 - pos, "]");
+
+return_status:
+    if (status) git_status_list_free(status);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    jstring result_str = (*env)->NewStringUTF(env, json);
+    free(json);
+    return result_str;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 8. gitAddFile(path: String, filePath: String): Int
+ *    Stages a specific file (git add <file>).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_gitAddFile(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jfile) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *file = (*env)->GetStringUTFChars(env, jfile, NULL);
+
+    git_repository *repo = NULL;
+    git_index      *index = NULL;
+    int result = 0;
+
+    result = git_repository_open(&repo, path);
+    if (result < 0) goto cleanup_add;
+
+    result = git_repository_index(&index, repo);
+    if (result < 0) goto cleanup_add;
+
+    result = git_index_add_bypath(index, file);
+    if (result < 0) goto cleanup_add;
+
+    result = git_index_write(index);
+
+cleanup_add:
+    if (index) git_index_free(index);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jfile, file);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
