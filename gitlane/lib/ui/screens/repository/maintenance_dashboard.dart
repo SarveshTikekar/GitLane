@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../../services/git_service.dart';
 import '../../theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -91,7 +92,7 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
             _buildToolTile(
               "Conflict Simulator",
               "Force a real merge conflict to test the resolver.",
-              Icons.Difference_rounded,
+              Icons.difference_rounded,
               AppTheme.accentBlue,
               _isSimulating ? null : _simulateConflict,
               _isSimulating,
