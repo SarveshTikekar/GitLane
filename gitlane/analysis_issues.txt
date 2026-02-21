@@ -16,25 +16,30 @@ Analyzing gitlane...
    info - Don't invoke 'print' in production code - lib\services\git_service.dart:158:7 - avoid_print
    info - Don't invoke 'print' in production code - lib\services\git_service.dart:168:7 - avoid_print
    info - Don't invoke 'print' in production code - lib\services\git_service.dart:178:7 - avoid_print
-   info - Don't invoke 'print' in production code - lib\services\git_service.dart:190:7 - avoid_print
-   info - Don't invoke 'print' in production code - lib\services\git_service.dart:200:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:188:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:198:7 - avoid_print
    info - Don't invoke 'print' in production code - lib\services\git_service.dart:210:7 - avoid_print
-   info - Don't invoke 'print' in production code - lib\services\git_service.dart:219:7 - avoid_print
-   info - Don't invoke 'print' in production code - lib\services\git_service.dart:228:7 - avoid_print
-   info - Don't invoke 'print' in production code - lib\services\git_service.dart:238:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:220:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:230:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:239:7 - avoid_print
    info - Don't invoke 'print' in production code - lib\services\git_service.dart:248:7 - avoid_print
-   info - Don't invoke 'print' in production code - lib\services\git_service.dart:257:7 - avoid_print
-   info - Don't invoke 'print' in production code - lib\services\git_service.dart:266:7 - avoid_print
-   info - The 'if' statement could be replaced by a null-aware assignment - lib\ui\screens\commit\commit_detail_screen.dart:303:9 - prefer_conditional_assignment
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:258:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:268:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:277:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:286:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:300:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:314:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\git_service.dart:327:7 - avoid_print
+   info - The 'if' statement could be replaced by a null-aware assignment - lib\ui\screens\commit\commit_detail_screen.dart:345:9 - prefer_conditional_assignment
    info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:35:20 - deprecated_member_use
    info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:65:58 - deprecated_member_use
    info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:66:61 - deprecated_member_use
    info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\merge\merge_resolution_screen.dart:68:31 - deprecated_member_use
-warning - Duplicate import - lib\ui\screens\repository\repository_root_screen.dart:13:8 - duplicate_import
-warning - Duplicate import - lib\ui\screens\repository\repository_root_screen.dart:14:8 - duplicate_import
-warning - Duplicate import - lib\ui\screens\repository\repository_root_screen.dart:23:8 - duplicate_import
-warning - Duplicate import - lib\ui\screens\repository\repository_root_screen.dart:24:8 - duplicate_import
-warning - Duplicate import - lib\ui\screens\repository\repository_root_screen.dart:25:8 - duplicate_import
+  error - The method 'CommitDetailScreen' isn't defined for the type '_ReflogScreenState' - lib\ui\screens\repository\reflog_screen.dart:128:43 - undefined_method
+  error - Undefined name '_unstageAll' - lib\ui\screens\repository\repository_root_screen.dart:1950:27 - undefined_identifier
+  error - Undefined name '_stageAll' - lib\ui\screens\repository\repository_root_screen.dart:1956:27 - undefined_identifier
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\repository\repository_root_screen.dart:2064:33 - use_build_context_synchronously
+  error - The method '_popStash' isn't defined for the type '_StashScreenState' - lib\ui\screens\repository\stash_screen.dart:221:46 - undefined_method
 warning - Unused import: '../../widgets/glass_card.dart' - lib\ui\screens\repository\visual_merge_editor.dart:4:8 - unused_import
    info - The private field _selections could be 'final' - lib\ui\screens\repository\visual_merge_editor.dart:22:20 - prefer_final_fields
    info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\repository\visual_merge_editor.dart:117:46 - deprecated_member_use
@@ -42,4 +47,3 @@ warning - Unused import: '../../widgets/glass_card.dart' - lib\ui\screens\reposi
    info - The imported package 'path_provider_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:5:8 - depend_on_referenced_packages
    info - The imported package 'plugin_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:6:8 - depend_on_referenced_packages
 
-41 issues found. (ran in 2.3s)

@@ -42,4 +42,4 @@ warning - Unused import: '../../widgets/glass_card.dart' - lib\ui\screens\reposi
    info - The imported package 'path_provider_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:5:8 - depend_on_referenced_packages
    info - The imported package 'plugin_platform_interface' isn't a dependency of the importing package - test\dashboard_ui_test.dart:6:8 - depend_on_referenced_packages
 
-41 issues found. (ran in 2.3s)
+41 issues found. (ran in 5.0s)

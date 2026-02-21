@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
-import '../../widgets/glass_card.dart';
 
 class VisualMergeEditor extends StatefulWidget {
   final String repoPath;
@@ -114,7 +113,7 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? highlightColor.withOpacity(0.1) : AppTheme.surfaceSlate.withOpacity(0.5),
+          color: isSelected ? highlightColor.withValues(alpha: 0.1) : AppTheme.surfaceSlate.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? highlightColor : Colors.transparent,

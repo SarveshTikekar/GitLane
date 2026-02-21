@@ -471,9 +471,24 @@ Java_com_example_gitlane_GitBridge_getCommitLog(
         }
 
         if (!first) pos += snprintf(json + pos, JSON_BUFFER_SIZE - pos, ",");
+        
+        /* Parent hashes for multi-lane graph */
+        unsigned int parent_count = git_commit_parentcount(commit);
+        char parents_json[512] = {0};
+        int p_pos = 0;
+        p_pos += snprintf(parents_json + p_pos, sizeof(parents_json) - p_pos, "[");
+        for (unsigned int p = 0; p < parent_count; p++) {
+            const git_oid *parent_id = git_commit_parent_id(commit, p);
+            char p_hash[GIT_OID_HEXSZ + 1];
+            git_oid_tostr(p_hash, sizeof(p_hash), parent_id);
+            p_pos += snprintf(parents_json + p_pos, sizeof(parents_json) - p_pos, 
+                             "%s\"%s\"", (p > 0 ? "," : ""), p_hash);
+        }
+        snprintf(parents_json + p_pos, sizeof(parents_json) - p_pos, "]");
+
         pos += snprintf(json + pos, JSON_BUFFER_SIZE - pos,
-                        "{\"hash\":\"%s\",\"message\":\"%s\",\"author\":\"%s\",\"date\":\"%s\"}",
-                        hash_str, safe_msg, safe_author, date_str);
+                        "{\"hash\":\"%s\",\"message\":\"%s\",\"author\":\"%s\",\"time\":%ld,\"parents\":%s}",
+                        hash_str, safe_msg, safe_author, (long)ts, parents_json);
 
         git_commit_free(commit);
         first = 0;
@@ -1023,6 +1038,51 @@ Java_com_example_gitlane_GitBridge_stashPop(
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+ * 16a. stashApply(path: String, index: Int): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_stashApply(
+        JNIEnv *env, jobject obj, jstring jpath, jint index) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+    git_stash_apply_options opts = GIT_STASH_APPLY_OPTIONS_INIT;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) == 0) {
+        result = git_stash_apply(repo, (size_t)index, &opts);
+    }
+
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 16b. stashDrop(path: String, index: Int): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_stashDrop(
+        JNIEnv *env, jobject obj, jstring jpath, jint index) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) == 0) {
+        result = git_stash_drop(repo, (size_t)index);
+    }
+
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
  * 17. getStashes(path: String): String
  * ═══════════════════════════════════════════════════════════════════════════ */
 JNIEXPORT jstring JNICALL
@@ -1467,3 +1527,119 @@ Java_com_example_gitlane_GitBridge_runGitCommand(
     free(output);
     return jres;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 26. getTags(path: String): String
+ *     Returns a JSON array of tag names.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getTags(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository *repo = NULL;
+    git_strarray   tag_names = {0};
+    char           *json = (char *)malloc(1024 * 16); // 16KB for tags
+    int             pos = 0;
+
+    if (!json) goto cleanup_tags;
+    pos += snprintf(json + pos, 512, "[");
+
+    if (git_repository_open(&repo, path) < 0) goto log_tags;
+
+    if (git_tag_list(&tag_names, repo) == 0) {
+        for (size_t i = 0; i < tag_names.count; i++) {
+            git_object *target = NULL;
+            if (git_revparse_single(&target, repo, tag_names.strings[i]) == 0) {
+                const git_oid *oid = git_object_id(target);
+                char hash[GIT_OID_HEXSZ + 1];
+                git_oid_tostr(hash, sizeof(hash), oid);
+
+                pos += snprintf(json + pos, (1024 * 16) - pos,
+                                "%s{\"name\":\"%s\",\"hash\":\"%s\"}",
+                                (i == 0 ? "" : ","), tag_names.strings[i], hash);
+                git_object_free(target);
+            }
+        }
+    }
+
+log_tags:
+    snprintf(json + pos, (1024 * 16) - pos, "]");
+
+cleanup_tags:
+    git_strarray_dispose(&tag_names);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    jstring jres = (*env)->NewStringUTF(env, json ? json : "[]");
+    if (json) free(json);
+    return jres;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 27. createTag(path: String, name: String, targetHash: String): Int
+ *     Creates a lightweight tag at the specified target hash.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_createTag(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jname, jstring jhash) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *name = (*env)->GetStringUTFChars(env, jname, NULL);
+    const char *hash = (*env)->GetStringUTFChars(env, jhash, NULL);
+
+    git_repository *repo = NULL;
+    git_object     *target = NULL;
+    git_oid         oid;
+    int             result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_ctag; }
+    if (git_oid_fromstr(&oid, hash) < 0) { result = -2; goto cleanup_ctag; }
+    if (git_object_lookup(&target, repo, &oid, GIT_OBJECT_ANY) < 0) { result = -3; goto cleanup_ctag; }
+
+    git_oid tag_oid;
+    result = git_tag_create_lightweight(&tag_oid, repo, name, target, 0);
+
+cleanup_ctag:
+    if (target) git_object_free(target);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jname, name);
+    (*env)->ReleaseStringUTFChars(env, jhash, hash);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 28. deleteTag(path: String, name: String): Int
+ *     Deletes the specified tag.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_deleteTag(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jname) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *name = (*env)->GetStringUTFChars(env, jname, NULL);
+
+    git_repository *repo = NULL;
+    int             result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_dtag; }
+
+    result = git_tag_delete(repo, name);
+
+cleanup_dtag:
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jname, name);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+

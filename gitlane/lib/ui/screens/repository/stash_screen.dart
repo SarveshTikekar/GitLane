@@ -33,12 +33,49 @@ class _StashScreenState extends State<StashScreen> {
     }
   }
 
+  Future<void> _applyStash(int index) async {
+    setState(() => _isLoading = true);
+    final result = await GitService.stashApply(widget.repoPath, index);
+    if (mounted) {
+      _showSnack(
+        result == 0 ? '✓ Changes applied' : 'Failed to apply stash ($result)',
+        result == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      );
+      _loadStashes();
+    }
+  }
+
   Future<void> _popStash(int index) async {
     setState(() => _isLoading = true);
     final result = await GitService.stashPop(widget.repoPath, index);
     if (mounted) {
       _showSnack(
         result == 0 ? '✓ Stash applied' : 'Failed to pop stash ($result)',
+        result == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      );
+      _loadStashes();
+    }
+  }
+
+  Future<void> _dropStash(int index) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Drop Stash'),
+        content: const Text('Are you sure you want to delete this stash?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Drop', style: TextStyle(color: AppTheme.accentRed))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _isLoading = true);
+    final result = await GitService.stashDrop(widget.repoPath, index);
+    if (mounted) {
+      _showSnack(
+        result == 0 ? '✓ Stash dropped' : 'Failed to drop stash ($result)',
         result == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
       );
       _loadStashes();
@@ -112,6 +149,7 @@ class _StashScreenState extends State<StashScreen> {
                     : int.tryParse(rawIndex?.toString() ?? '') ?? index;
 
                 return Container(
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: AppTheme.bg1,
                     borderRadius: BorderRadius.circular(12),
@@ -124,7 +162,6 @@ class _StashScreenState extends State<StashScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Header row
                             Row(
                               children: [
                                 Container(
@@ -164,7 +201,6 @@ class _StashScreenState extends State<StashScreen> {
                               ],
                             ),
                             const SizedBox(height: 10),
-                            // Message
                             Text(
                               msg,
                               style: GoogleFonts.inter(
@@ -176,38 +212,34 @@ class _StashScreenState extends State<StashScreen> {
                           ],
                         ),
                       ),
-                      // Divider + action row
                       const Divider(height: 1, color: AppTheme.border),
-                      SizedBox(
-                        height: 44,
+                      IntrinsicHeight(
                         child: Row(
                           children: [
                             Expanded(
-                              child: InkWell(
+                              child: _StashAction(
+                                icon: Icons.playlist_add_check_rounded,
+                                label: 'Apply',
+                                color: AppTheme.accentCyan,
+                                onTap: () => _applyStash(stashIndex),
+                              ),
+                            ),
+                            const VerticalDivider(width: 1, color: AppTheme.border),
+                            Expanded(
+                              child: _StashAction(
+                                icon: Icons.unarchive_rounded,
+                                label: 'Pop',
+                                color: AppTheme.accentGreen,
                                 onTap: () => _popStash(stashIndex),
-                                borderRadius: const BorderRadius.only(
-                                  bottomLeft: Radius.circular(12),
-                                  bottomRight: Radius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.unarchive_rounded,
-                                      size: 15,
-                                      color: AppTheme.accentCyan,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Apply & Pop',
-                                      style: GoogleFonts.inter(
-                                        color: AppTheme.accentCyan,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              ),
+                            ),
+                            const VerticalDivider(width: 1, color: AppTheme.border),
+                            Expanded(
+                              child: _StashAction(
+                                icon: Icons.delete_outline_rounded,
+                                label: 'Drop',
+                                color: AppTheme.accentRed,
+                                onTap: () => _dropStash(stashIndex),
                               ),
                             ),
                           ],
@@ -218,6 +250,45 @@ class _StashScreenState extends State<StashScreen> {
                 );
               },
             ),
+    );
+  }
+}
+
+class _StashAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _StashAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

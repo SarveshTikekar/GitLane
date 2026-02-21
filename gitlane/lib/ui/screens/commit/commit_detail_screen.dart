@@ -26,24 +26,31 @@ class CommitDetailScreen extends StatefulWidget {
 
 class _CommitDetailScreenState extends State<CommitDetailScreen> {
   String? _diff;
+  List<Map<String, dynamic>> _tags = [];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.repoPath != null) {
-      _fetchDiff();
+      _fetchData();
     }
   }
 
-  Future<void> _fetchDiff() async {
+  Future<void> _fetchData() async {
     final repoPath = widget.repoPath;
     if (repoPath == null) return;
     setState(() => _isLoading = true);
-    final diff = await GitService.getCommitDiff(repoPath, widget.commitHash);
+    
+    final results = await Future.wait([
+      GitService.getCommitDiff(repoPath, widget.commitHash),
+      GitService.getTags(repoPath),
+    ]);
+
     if (mounted) {
       setState(() {
-        _diff = diff;
+        _diff = results[0] as String?;
+        _tags = List<Map<String, dynamic>>.from(results[1] as List);
         _isLoading = false;
       });
     }
@@ -241,6 +248,41 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                   ),
                 ),
               ),
+              // Tags
+              ..._tags
+                  .where((t) => t['hash'] == widget.commitHash)
+                  .map((t) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentYellow.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(
+                            color: AppTheme.accentYellow.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.local_offer_rounded,
+                              size: 11,
+                              color: AppTheme.accentYellow,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              t['name'].toString(),
+                              style: GoogleFonts.inter(
+                                color: AppTheme.accentYellow,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
               // Date
               if (widget.date.isNotEmpty)
                 Row(
@@ -300,7 +342,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
         currentLines.add(line);
       } else {
         currentLines.add(line);
-        if (currentFile == null) currentFile = 'diff';
+        currentFile ??= 'diff';
       }
     }
     if (currentFile != null && currentLines.isNotEmpty) {

@@ -32,7 +32,7 @@ class MergeResolutionScreen extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       child: Row(
         children: [
           Container(width: 4, height: 20, color: color),
@@ -62,10 +62,10 @@ class MergeResolutionScreen extends StatelessWidget {
 
   Widget _buildMergeLine(String content, MergeState state) {
     Color? bgColor;
-    if (state == MergeState.local) bgColor = Colors.blue.withOpacity(0.1);
-    if (state == MergeState.remote) bgColor = Colors.purple.withOpacity(0.1);
+    if (state == MergeState.local) bgColor = Colors.blue.withValues(alpha: 0.1);
+    if (state == MergeState.remote) bgColor = Colors.purple.withValues(alpha: 0.1);
     if (state == MergeState.conflictHeader || state == MergeState.conflictDivider) {
-      bgColor = Colors.orange.withOpacity(0.2);
+      bgColor = Colors.orange.withValues(alpha: 0.2);
     }
 
     return InkWell(

@@ -1,18 +1,3 @@
-Resolving dependencies...
-Downloading packages...
-  characters 1.4.0 (1.4.1 available)
-  file_picker 8.3.7 (10.3.10 available)
-  flutter_lints 5.0.0 (6.0.0 available)
-  lints 5.1.1 (6.1.0 available)
-  matcher 0.12.17 (0.12.18 available)
-  material_color_utilities 0.11.1 (0.13.0 available)
-  meta 1.16.0 (1.18.1 available)
-  mobile_scanner 5.2.3 (7.2.0 available)
-  path_provider_foundation 2.5.1 (2.6.0 available)
-  test_api 0.7.6 (0.7.9 available)
-Got dependencies!
-10 packages have newer versions incompatible with dependency constraints.
-Try `flutter pub outdated` for more information.
 00:00 +0: loading E:/spitHackathon/gitlane/test/dashboard_ui_test.dart
 00:00 +0: DashboardScreen renders correctly with empty state
 Error: google_fonts was unable to load font Inter-Bold because the following exception occurred:
@@ -82,25 +67,107 @@ When the exception was thrown, this was the stack:
   Test failed. See exception logs above.
   The test description was: DashboardScreen renders correctly with empty state
   
+Error: google_fonts was unable to load font Inter-Bold because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Bold was not found in the application assets. Ensure Inter-Bold.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
 ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-The following TestFailure was thrown running a test (but after the test had completed):
-Expected: exactly one matching candidate
-  Actual: _TextWidgetFinder:<Found 0 widgets with text "No repositories yet": []>
-   Which: means none were found but one was expected
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Bold was not found in the
+application assets. Ensure Inter-Bold.ttf exists in a folder that is included in your pubspec's
+assets.
 
 When the exception was thrown, this was the stack:
-#0      fail (package:matcher/src/expect/expect.dart:149:31)
-#1      _expect (package:matcher/src/expect/expect.dart:144:3)
-#2      expect (package:matcher/src/expect/expect.dart:56:3)
-#3      expect (package:flutter_test/src/widget_tester.dart:473:18)
-#4      main.<anonymous closure> (file:///E:/spitHackathon/gitlane/test/dashboard_ui_test.dart:52:5)
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
 <asynchronous suspension>
-#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
 <asynchronous suspension>
-#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen renders correctly with empty state
+  
+Error: google_fonts was unable to load font FiraMono-Medium because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font FiraMono-Medium was not found in the application assets. Ensure FiraMono-Medium.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font FiraMono-Medium was not found
+in the application assets. Ensure FiraMono-Medium.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
 <asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
 <asynchronous suspension>
-(elided one frame from package:stack_trace)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen renders correctly with empty state
+  
+Error: google_fonts was unable to load font Inter-Medium because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Medium was not found in the application assets. Ensure Inter-Medium.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Medium was not found in
+the application assets. Ensure Inter-Medium.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen renders correctly with empty state
+  
+Error: google_fonts was unable to load font Inter-Regular because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Regular was not found in the application assets. Ensure Inter-Regular.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Regular was not found in
+the application assets. Ensure Inter-Regular.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen renders correctly with empty state
+  
+Error: google_fonts was unable to load font Inter-SemiBold because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-SemiBold was not found in the application assets. Ensure Inter-SemiBold.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-SemiBold was not found in
+the application assets. Ensure Inter-SemiBold.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
 ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
   Test failed. See exception logs above.
   The test description was: DashboardScreen renders correctly with empty state
@@ -162,6 +229,111 @@ If troubleshooting doesn't solve the problem, please file an issue at https://gi
 The following _Exception was thrown running a test (but after the test had completed):
 Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Regular was not found in
 the application assets. Ensure Inter-Regular.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen shows search bar
+  
+Error: google_fonts was unable to load font Inter-Bold because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Bold was not found in the application assets. Ensure Inter-Bold.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Bold was not found in the
+application assets. Ensure Inter-Bold.ttf exists in a folder that is included in your pubspec's
+assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen shows search bar
+  
+Error: google_fonts was unable to load font FiraMono-Medium because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font FiraMono-Medium was not found in the application assets. Ensure FiraMono-Medium.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font FiraMono-Medium was not found
+in the application assets. Ensure FiraMono-Medium.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen shows search bar
+  
+Error: google_fonts was unable to load font Inter-Medium because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Medium was not found in the application assets. Ensure Inter-Medium.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Medium was not found in
+the application assets. Ensure Inter-Medium.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen shows search bar
+  
+Error: google_fonts was unable to load font Inter-Regular because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Regular was not found in the application assets. Ensure Inter-Regular.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-Regular was not found in
+the application assets. Ensure Inter-Regular.ttf exists in a folder that is included in your
+pubspec's assets.
+
+When the exception was thrown, this was the stack:
+#0      loadFontIfNecessary (package:google_fonts/src/google_fonts_base.dart:177:7)
+<asynchronous suspension>
+#1      googleFontsTextStyle.<anonymous closure> (package:google_fonts/src/google_fonts_base.dart:110:22)
+<asynchronous suspension>
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Test failed. See exception logs above.
+  The test description was: DashboardScreen shows search bar
+  
+Error: google_fonts was unable to load font Inter-SemiBold because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-SemiBold was not found in the application assets. Ensure Inter-SemiBold.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following _Exception was thrown running a test (but after the test had completed):
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Inter-SemiBold was not found in
+the application assets. Ensure Inter-SemiBold.ttf exists in a folder that is included in your
 pubspec's assets.
 
 When the exception was thrown, this was the stack:

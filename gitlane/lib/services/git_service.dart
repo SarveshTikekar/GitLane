@@ -180,6 +180,26 @@ class GitService {
     }
   }
 
+  /// Applies a stash without removing it from the stack.
+  static Future<int> stashApply(String path, int index) async {
+    try {
+      return await _channel.invokeMethod('stashApply', {'path': path, 'index': index});
+    } on PlatformException catch (e) {
+      print("Failed to stash apply: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Drops a stash from the stack.
+  static Future<int> stashDrop(String path, int index) async {
+    try {
+      return await _channel.invokeMethod('stashDrop', {'path': path, 'index': index});
+    } on PlatformException catch (e) {
+      print("Failed to stash drop: '${e.message}'.");
+      return -1;
+    }
+  }
+
   /// Returns a list of stashes.
   static Future<List<Map<String, dynamic>>> getStashes(String path) async {
     try {
@@ -265,6 +285,47 @@ class GitService {
     } on PlatformException catch (e) {
       print("Failed to run git command: '${e.message}'.");
       return "Error: ${e.message}";
+    }
+  }
+
+  /// Returns a list of tags (name and target hash).
+  static Future<List<Map<String, dynamic>>> getTags(String path) async {
+    try {
+      final String? json = await _channel.invokeMethod('getTags', {'path': path});
+      if (json == null) return [];
+      final dynamic decoded = jsonDecode(json);
+      if (decoded is List) return List<Map<String, dynamic>>.from(decoded);
+      return [];
+    } on PlatformException catch (e) {
+      print("Failed to get tags: '${e.message}'.");
+      return [];
+    }
+  }
+
+  /// Creates a new tag.
+  static Future<int> createTag(String path, String tagName, String targetHash) async {
+    try {
+      return await _channel.invokeMethod('createTag', {
+        'path': path,
+        'tagName': tagName,
+        'targetHash': targetHash,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to create tag: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Deletes a tag.
+  static Future<int> deleteTag(String path, String tagName) async {
+    try {
+      return await _channel.invokeMethod('deleteTag', {
+        'path': path,
+        'tagName': tagName,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to delete tag: '${e.message}'.");
+      return -1;
     }
   }
 }

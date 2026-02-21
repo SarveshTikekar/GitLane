@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
 import '../../../services/git_service.dart';
+import '../commit/commit_detail_screen.dart';
 
 class ReflogScreen extends StatefulWidget {
   final String repoPath;
@@ -119,109 +120,106 @@ class _ReflogScreenState extends State<ReflogScreen> {
                 final (icon, color) = _actionStyle(msg);
                 final isLast = index == _entries.length - 1;
 
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Timeline column
-                    SizedBox(
-                      width: 32,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 14),
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: color.withValues(alpha: 0.4),
-                              ),
-                            ),
-                            child: Icon(icon, size: 13, color: color),
+                return InkWell(
+                  onTap: () {
+                    if (id != 'unknown' && id.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CommitDetailScreen(
+                            commitHash: id,
+                            message: msg,
+                            author: 'Git History',
+                            repoPath: widget.repoPath,
                           ),
-                          if (!isLast)
-                            Container(
-                              width: 2,
-                              height: 32,
-                              color: AppTheme.border,
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Content
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 10, bottom: 12),
+                        ),
+                      );
+                    }
+                  },
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Timeline column
+                      SizedBox(
+                        width: 32,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              msg,
-                              style: GoogleFonts.inter(
-                                color: AppTheme.textPrimary,
-                                fontSize: compact ? 13 : 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.accentCyan.withValues(
-                                      alpha: 0.08,
-                                    ),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    id.length > 7 ? id.substring(0, 7) : id,
-                                    style: GoogleFonts.firaMono(
-                                      color: AppTheme.accentCyan,
-                                      fontSize: 11,
-                                    ),
-                                  ),
+                            const SizedBox(height: 14),
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: color.withValues(alpha: 0.4),
                                 ),
-                                const SizedBox(width: 8),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Recovery coming soon'),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.restore_rounded,
-                                    size: 13,
-                                  ),
-                                  label: Text(
-                                    'Recover',
-                                    style: GoogleFonts.inter(fontSize: 11),
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: AppTheme.textSecondary,
+                              ),
+                              child: Icon(icon, size: 13, color: color),
+                            ),
+                            if (!isLast)
+                              Container(
+                                width: 2,
+                                height: 32,
+                                color: AppTheme.border,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Content
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 10, bottom: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                msg,
+                                style: GoogleFonts.inter(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: compact ? 13 : 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                       vertical: 2,
                                     ),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentCyan.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      id.length > 7 ? id.substring(0, 7) : id,
+                                      style: GoogleFonts.firaMono(
+                                        color: AppTheme.accentCyan,
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'View Details',
+                                    style: GoogleFonts.inter(
+                                      color: AppTheme.textMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),

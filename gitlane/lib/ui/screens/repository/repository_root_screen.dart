@@ -10,8 +10,6 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import 'package:file_picker/file_picker.dart';
 import 'file_editor_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
 import '../commit/commit_graph_screen.dart';
@@ -20,9 +18,7 @@ import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'reflog_screen.dart';
-import 'file_editor_screen.dart';
-import 'native_terminal_screen.dart';
-import 'package:file_picker/file_picker.dart';
+import 'analytics_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -47,6 +43,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   List<dynamic> _statusFiles = [];
   String _currentBranch = 'HEAD';
   List<String> _branches = [];
+  List<Map<String, dynamic>> _tags = [];
+
 
   List<FileSystemEntity> _currentFiles = [];
   String _currentDir = '';
@@ -129,6 +127,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       _isLoading = false;
     });
     _updateBranchInfo();
+    _fetchTags();
   }
 
   Future<void> _updateBranchInfo() async {
@@ -218,6 +217,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             isUtc: true,
           ).toLocal(),
           lane: myLane,
+          tags: _tags.where((t) => t['hash'] == hash).map((t) => t['name'].toString()).toList(),
         ),
       );
     }
@@ -287,53 +287,118 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
 
   // ── Dialogs / Actions ─────────────────────────────────────────────────────────
   Future<void> _showCommitDialog() async {
-    final controller = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final tagCtrl = TextEditingController();
+    bool pushAfter = false;
+    bool createTag = false;
+
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Commit Changes'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'feat: describe your changes…',
-            prefixIcon: Icon(Icons.commit_rounded, size: 18),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Commit Changes'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                maxLines: 3,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'feat: describe your changes…',
+                  prefixIcon: Icon(Icons.commit_rounded, size: 18),
+                ),
+              ),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                title: Text('Push after commit',
+                    style: GoogleFonts.inter(fontSize: 14)),
+                value: pushAfter,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.accentCyan,
+                onChanged: (val) => setDialogState(() => pushAfter = val ?? false),
+              ),
+              CheckboxListTile(
+                title: Text('Create tag',
+                    style: GoogleFonts.inter(fontSize: 14)),
+                value: createTag,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.accentCyan,
+                onChanged: (val) => setDialogState(() => createTag = val ?? false),
+              ),
+              if (createTag)
+                TextField(
+                  controller: tagCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Tag name (e.g. v1.0.0)',
+                    isDense: true,
+                  ),
+                ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameCtrl.text.trim().isNotEmpty) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: const Text('Commit'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                Navigator.pop(context, true);
-              }
-            },
-            child: const Text('Commit'),
-          ),
-        ],
       ),
     );
+
     if (result == true && mounted) {
       setState(() => _isLoading = true);
-      final code = await GitService.commitAll(
-        widget.repoPath,
-        controller.text.trim(),
-      );
+      final msg = nameCtrl.text.trim();
+      final code = await GitService.commitAll(widget.repoPath, msg);
+
+      if (code == 0 && mounted) {
+        if (createTag && tagCtrl.text.trim().isNotEmpty) {
+          // Get the new head hash
+          final log = await GitService.getCommitLog(widget.repoPath);
+          if (log != null) {
+            final decoded = jsonDecode(log);
+            if (decoded is List && decoded.isNotEmpty) {
+              final headHash = decoded.first['hash'];
+              await GitService.createTag(
+                  widget.repoPath, tagCtrl.text.trim(), headHash);
+            }
+          }
+        }
+        if (pushAfter && _personalAccessToken != null) {
+          await GitService.pushRepository(
+              widget.repoPath, _personalAccessToken!);
+        } else if (pushAfter) {
+          _showSnack('Push failed: No PAT stored for this session',
+              AppTheme.accentYellow);
+        }
+      }
+
       if (mounted) {
         _showSnack(
           code == 0 ? '✓ Commit successful' : 'Commit failed (code: $code)',
           code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
         );
-        if (code == 0) {
-          _fetchData();
-        } else {
-          setState(() => _isLoading = false);
-        }
+        _fetchData();
+        _updateBranchInfo();
+        _fetchTags();
       }
+    }
+  }
+
+  Future<void> _fetchTags() async {
+    final tags = await GitService.getTags(widget.repoPath);
+    if (mounted) {
+      setState(() => _tags = tags);
     }
   }
 
@@ -393,6 +458,19 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         ),
                         child: ListTile(
                           dense: true,
+                          onTap: isCurrent ? null : () async {
+                            Navigator.pop(context);
+                            setState(() => _isLoading = true);
+                            final code = await GitService.checkoutBranch(widget.repoPath, b);
+                            if (mounted) {
+                              _showSnack(
+                                code == 0 ? "Checked out '$b'" : "Checkout failed ($code)",
+                                code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                              );
+                              _fetchData();
+                              _listRepoFiles();
+                            }
+                          },
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 10,
                           ),
@@ -872,6 +950,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     },
   );
 
+
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -909,21 +988,6 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     _showSnack('Unstage not yet supported via bridge', AppTheme.accentYellow);
   }
 
-  Future<void> _shareRepo() async {
-    final url = await GitService.getRemoteUrl(widget.repoPath);
-    if (!mounted) return;
-    if (url.startsWith('http') || url.startsWith('git@')) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
-        ),
-      );
-    } else {
-      _showSnack('No remote origin set', AppTheme.accentYellow);
-    }
-  }
 
   Future<void> _uploadFile() async {
     final result = await FilePicker.platform.pickFiles(allowMultiple: true);
@@ -944,6 +1008,26 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         );
       }
     }
+  }
+
+  Future<void> _stageAll() async {
+    setState(() => _isLoading = true);
+    for (var f in _statusFiles) {
+      if (f['isStaged'] == false) {
+        await GitService.gitAddFile(widget.repoPath, f['file']);
+      }
+    }
+    _fetchData();
+  }
+
+  Future<void> _unstageAll() async {
+    setState(() => _isLoading = true);
+    // Bridge reset fallback
+    final res = await GitService.runGitCommand(widget.repoPath, 'reset');
+    if (res.contains('Error') && mounted) {
+      _showSnack('Unstage all not yet fully supported', AppTheme.accentYellow);
+    }
+    _fetchData();
   }
 
   // ── Overflow menu ─────────────────────────────────────────────────────────────
@@ -977,7 +1061,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         side: const BorderSide(color: AppTheme.border),
       ),
       items: [
-        _menuItem('pull', Icons.download_rounded, 'Pull', AppTheme.accentBlue),
+        _menuItem('pull', Icons.sync_rounded, 'Sync (Pull)', AppTheme.accentBlue),
         _menuItem('push', Icons.upload_rounded, 'Push', AppTheme.accentBlue),
         const PopupMenuDivider(height: 1),
         _menuItem(
@@ -1006,22 +1090,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.textSecondary,
         ),
         _menuItem(
-          'import',
-          Icons.upload_file_rounded,
-          'Import File',
-          AppTheme.accentBlue,
+          'analytics',
+          Icons.analytics_rounded,
+          'Insights',
+          AppTheme.accentCyan,
         ),
         _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
           AppTheme.textSecondary,
-        ),
-        _menuItem(
-          'upload',
-          Icons.upload_file_rounded,
-          'Import File',
-          AppTheme.accentCyan,
         ),
       ],
     );
@@ -1064,6 +1142,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
         break;
+      case 'analytics':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ContributorAnalyticsScreen(repoPath: widget.repoPath),
+          ),
+        );
+        break;
       case 'import':
       case 'upload':
         _uploadFile();
@@ -1089,22 +1175,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     }
   }
 
-  Future<void> _uploadFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles();
-      if (result != null && result.files.single.path != null) {
-        final sourceFile = File(result.files.single.path!);
-        final fileName = result.files.single.name;
-        final targetPath = '$_currentDir${Platform.pathSeparator}$fileName';
-        await sourceFile.copy(targetPath);
-        _fetchData();
-        _listRepoFiles();
-        _showSnack("File '$fileName' imported successfully.", AppTheme.accentGreen);
-      }
-    } catch (e) {
-      _showSnack("Error importing file: $e", AppTheme.accentRed);
-    }
-  }
+
 
   PopupMenuItem<String> _menuItem(
     String value,
@@ -1301,6 +1372,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                   _buildExplorerView(),
                   _buildHistoryView(),
                   _buildStatusView(),
+                  _buildTagsView(),
                 ],
               ),
         bottomNavigationBar: _isNotGitRepo
@@ -1332,6 +1404,11 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                       child: const Icon(Icons.adjust_rounded),
                     ),
                     label: 'Status',
+                  ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.local_offer_outlined),
+                    selectedIcon: Icon(Icons.local_offer_rounded),
+                    label: 'Tags',
                   ),
                 ],
               ),
@@ -1655,6 +1732,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         ),
       ),
+      onLongPress: () => _showCreateTagDialog(prefillHash: hash),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
         child: Row(
@@ -1688,15 +1766,58 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      msg,
-                      style: GoogleFonts.inter(
-                        color: AppTheme.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            msg,
+                            style: GoogleFonts.inter(
+                              color: AppTheme.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        ..._tags
+                            .where((t) => t['hash'] == hash)
+                            .map((t) => Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentYellow
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: AppTheme.accentYellow
+                                          .withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.local_offer_rounded,
+                                        size: 10,
+                                        color: AppTheme.accentYellow,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        t['name'].toString(),
+                                        style: GoogleFonts.inter(
+                                          color: AppTheme.accentYellow,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     LayoutBuilder(
@@ -1827,63 +1948,191 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     if (_statusFiles.isEmpty) {
       return EmptyState(
         icon: Icons.check_circle_outline_rounded,
-        title: 'Working tree clean',
-        subtitle: 'Nothing to commit — your changes are up to date',
-        iconColor: AppTheme.accentGreen,
-        action: OutlinedButton.icon(
-          onPressed: _pushRepo,
-          icon: const Icon(
-            Icons.upload_rounded,
-            size: 16,
-            color: AppTheme.accentBlue,
-          ),
-          label: Text(
-            'Push to remote',
-            style: GoogleFonts.inter(
-              color: AppTheme.accentBlue,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: AppTheme.accentBlue),
-          ),
+        title: 'Working directory clean',
+        subtitle: 'Everything is up to date and committed',
+        action: ElevatedButton.icon(
+          onPressed: _fetchData,
+          icon: const Icon(Icons.refresh_rounded, size: 16),
+          label: const Text('Refresh'),
         ),
       );
     }
 
-    final staged = _statusFiles
-        .where(
-          (f) =>
-              (f['status'] ?? '').toString().toLowerCase().contains('staged'),
-        )
-        .toList();
-    final unstaged = _statusFiles
-        .where(
-          (f) =>
-              !(f['status'] ?? '').toString().toLowerCase().contains('staged'),
-        )
-        .toList();
+    final staged = _statusFiles.where((f) => f['isStaged'] == true).toList();
+    final unstaged = _statusFiles.where((f) => f['isStaged'] == false).toList();
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        if (staged.isNotEmpty) ...[
-          _sectionHeader('Staged', staged.length, AppTheme.accentGreen),
-          ...staged.map((f) => _buildStatusRow(f, isStaged: true)),
-          const SizedBox(height: 4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView(
+        children: [
+          const SizedBox(height: 16),
+          if (staged.isNotEmpty) ...[
+            _sectionHeader('STAGED', staged.length, AppTheme.accentGreen,
+                onAction: _unstageAll, actionLabel: 'UNSTAGE ALL'),
+            ...staged.map((f) => _buildStatusRow(f, isStaged: true)),
+            const SizedBox(height: 20),
+          ],
+          if (unstaged.isNotEmpty) ...[
+            _sectionHeader('CHANGES', unstaged.length, AppTheme.accentYellow,
+                onAction: _stageAll, actionLabel: 'STAGE ALL'),
+            ...unstaged.map((f) => _buildStatusRow(f, isStaged: false)),
+          ],
+          const SizedBox(height: 100),
         ],
-        if (unstaged.isNotEmpty) ...[
-          _sectionHeader('Unstaged', unstaged.length, AppTheme.accentYellow),
-          ...unstaged.map((f) => _buildStatusRow(f, isStaged: false)),
-        ],
-        const SizedBox(height: 80),
-      ],
+      ),
     );
   }
 
-  Widget _sectionHeader(String label, int count, Color color) {
+  // ── Tags Tab ────────────────────────────────────────────────────────────────
+  Widget _buildTagsView() {
+    if (_tags.isEmpty) {
+      return EmptyState(
+        icon: Icons.local_offer_outlined,
+        title: 'No tags found',
+        subtitle: 'Create a tag to mark important points in your project history',
+        action: ElevatedButton.icon(
+          onPressed: _showCreateTagDialog,
+          icon: const Icon(Icons.add_rounded, size: 16),
+          label: const Text('New Tag'),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _tags.length,
+      itemBuilder: (context, index) {
+        final tag = _tags[index];
+        final tagName = tag['name']?.toString() ?? 'unknown';
+        return Slidable(
+          endActionPane: ActionPane(
+            motion: const ScrollMotion(),
+            children: [
+              SlidableAction(
+                onPressed: (_) => _deleteTag(tagName),
+                backgroundColor: AppTheme.accentRed,
+                foregroundColor: Colors.white,
+                icon: Icons.delete_outline_rounded,
+                label: 'Delete',
+              ),
+            ],
+          ),
+          child: ListTile(
+            leading: const Icon(Icons.local_offer_rounded,
+                color: AppTheme.accentCyan, size: 18),
+            title: Text(
+              tagName,
+              style: GoogleFonts.inter(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded,
+                color: AppTheme.textMuted, size: 18),
+            onTap: () {
+              // Future: show tag details or commits at tag
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCreateTagDialog({String? prefillHash}) {
+    final nameCtrl = TextEditingController();
+    final hashCtrl = TextEditingController(
+      text: prefillHash ?? (_commits.isNotEmpty ? _commits.first['hash'] : ''),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Tag'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Tag Name',
+                hintText: 'e.g. v1.0.0',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: hashCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Target Hash',
+                hintText: 'Commit SHA',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              final hash = hashCtrl.text.trim();
+              if (name.isNotEmpty && hash.isNotEmpty) {
+                final res = await GitService.createTag(
+                    widget.repoPath, name, hash);
+                if (mounted) {
+                  Navigator.pop(context);
+                  if (res == 0) {
+                    _showSnack('Tag created successfully', AppTheme.accentGreen);
+                    _fetchTags();
+                  } else {
+                    _showSnack('Failed to create tag ($res)', AppTheme.accentRed);
+                  }
+                }
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteTag(String tagName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Tag'),
+        content: Text('Are you sure you want to delete tag "$tagName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.accentRed),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final res = await GitService.deleteTag(widget.repoPath, tagName);
+      if (res == 0) {
+        _showSnack('Tag deleted', AppTheme.accentYellow);
+        _fetchTags();
+      } else {
+        _showSnack('Failed to delete tag', AppTheme.accentRed);
+      }
+    }
+  }
+
+  Widget _sectionHeader(String label, int count, Color color, {VoidCallback? onAction, String? actionLabel}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         children: [
           Container(
@@ -1999,7 +2248,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           padding: EdgeInsets.zero,
           accentBorder: statusColor,
           child: ListTile(
-            dense: true,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FileEditorScreen(
+                    filePath: '${widget.repoPath}/$fileName',
+                    fileName: baseName,
+                    repoPath: widget.repoPath,
+                  ),
+                ),
+              ).then((_) => _fetchData());
+            },
             leading: Container(
               width: 26,
               height: 26,

@@ -45,6 +45,8 @@ class GitBridge {
     external fun deleteBranch(path: String, branchName: String): Int
     external fun stashSave(path: String, message: String): Int
     external fun stashPop(path: String, index: Int): Int
+    external fun stashApply(path: String, index: Int): Int
+    external fun stashDrop(path: String, index: Int): Int
     external fun getStashes(path: String): String
     external fun pushRepository(path: String, token: String): Int
     external fun pullRepository(path: String, token: String): Int
@@ -54,6 +56,9 @@ class GitBridge {
     external fun getConflictChunks(path: String, filePath: String): String
     external fun resolveConflict(path: String, filePath: String, content: String): Int
     external fun runGitCommand(path: String, command: String): String
+    external fun getTags(path: String): String
+    external fun createTag(path: String, tagName: String, targetHash: String): Int
+    external fun deleteTag(path: String, tagName: String): Int
 
     companion object {
         init {

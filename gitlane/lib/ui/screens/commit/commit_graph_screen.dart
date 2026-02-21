@@ -15,6 +15,7 @@ class CommitNode {
     required this.message,
     required this.timestamp,
     required this.lane,
+    this.tags = const [],
   });
 
   final String id;
@@ -22,6 +23,7 @@ class CommitNode {
   final String message;
   final DateTime timestamp;
   final int lane;
+  final List<String> tags;
 }
 
 class CommitGraphScreen extends StatelessWidget {
@@ -126,6 +128,40 @@ class CommitGraphScreen extends StatelessWidget {
                                       ),
                                     ),
                                   ),
+                                  ...commit.tags.map((tag) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentYellow
+                                              .withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: AppTheme.accentYellow
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.local_offer_rounded,
+                                              size: 8,
+                                              color: AppTheme.accentYellow,
+                                            ),
+                                            const SizedBox(width: 3),
+                                            Text(
+                                              tag,
+                                              style: GoogleFonts.inter(
+                                                color: AppTheme.accentYellow,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )),
                                   Text(
                                     _formatTimestamp(commit.timestamp),
                                     style: GoogleFonts.inter(

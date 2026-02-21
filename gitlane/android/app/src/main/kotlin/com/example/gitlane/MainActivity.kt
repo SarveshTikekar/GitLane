@@ -137,6 +137,21 @@ class MainActivity : FlutterActivity() {
                                     val command = call.argument<String>("command")!!
                                     bridge.runGitCommand(path, command)
                                 }
+                                "getTags" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getTags(path)
+                                }
+                                "createTag" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val tagName = call.argument<String>("tagName")!!
+                                    val targetHash = call.argument<String>("targetHash")!!
+                                    bridge.createTag(path, tagName, targetHash)
+                                }
+                                "deleteTag" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val tagName = call.argument<String>("tagName")!!
+                                    bridge.deleteTag(path, tagName)
+                                }
                                 else -> "NOT_IMPLEMENTED"
                             }
                         } catch (e: Exception) {

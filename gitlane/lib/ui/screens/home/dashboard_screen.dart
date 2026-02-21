@@ -114,6 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           // Parse last commit
           String lastCommitMsg = '';
           String lastCommitTime = '';
+          String lastCommitAuthor = '';
           if (logJson != null) {
             try {
               final decoded = _tryDecode(logJson);
@@ -121,6 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 final first = decoded.first;
                 if (first is Map) {
                   lastCommitMsg = (first['message'] ?? '').toString();
+                  lastCommitAuthor = (first['author'] ?? '').toString();
                   final ts = first['time'];
                   if (ts is num) {
                     final dt = DateTime.fromMillisecondsSinceEpoch(
@@ -141,6 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             'modified': modifiedCount,
             'untracked': untrackedCount,
             'lastCommit': lastCommitMsg,
+            'lastCommitAuthor': lastCommitAuthor,
             'lastCommitTime': lastCommitTime,
             'isDirty': modifiedCount > 0 || untrackedCount > 0,
           });
@@ -720,6 +723,9 @@ class _RepoCard extends StatelessWidget {
     final modified = repo['modified'] as int? ?? 0;
     final untracked = repo['untracked'] as int? ?? 0;
     final isDirty = repo['isDirty'] as bool? ?? false;
+    final lastCommit = (repo['lastCommit'] ?? '').toString();
+    final lastCommitTime = (repo['lastCommitTime'] ?? '').toString();
+    final lastCommitAuthor = (repo['lastCommitAuthor'] ?? '').toString();
     final title = (repo['title'] ?? 'Repository').toString();
     final dirtyLabel = [
       if (modified > 0) '${modified}M',
@@ -730,74 +736,142 @@ class _RepoCard extends StatelessWidget {
         ? AppTheme.accentGreen
         : AppTheme.accentBlue;
 
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Top row: name + branch + status ─────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+    return Hero(
+      tag: 'repo_card_${repo['path']}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(16),
+          child: GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.folder_rounded,
-                      size: compact ? 15 : 16,
-                      color: branchColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          color: AppTheme.textPrimary,
-                          fontSize: compact ? 14 : 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                // ── Top row: name + branch + status ─────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.folder_rounded,
+                            size: compact ? 16 : 18,
+                            color: branchColor,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: GoogleFonts.inter(
+                                color: AppTheme.textPrimary,
+                                fontSize: compact ? 15 : 17,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _StatusBadge(
+                            label: isDirty
+                                ? (dirtyLabel.isEmpty ? 'dirty' : dirtyLabel)
+                                : 'clean',
+                            color: isDirty
+                                ? AppTheme.accentYellow
+                                : AppTheme.accentGreen,
+                            icon: isDirty ? Icons.edit_rounded : Icons.check_rounded,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    _StatusBadge(
-                      label: isDirty
-                          ? (dirtyLabel.isEmpty ? 'dirty' : dirtyLabel)
-                          : 'clean',
-                      color: isDirty
-                          ? AppTheme.accentYellow
-                          : AppTheme.accentGreen,
-                      icon: isDirty ? Icons.edit_rounded : Icons.check_rounded,
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      _BranchChip(branch: branch, color: branchColor),
+                      if (lastCommit.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.textPrimary.withValues(alpha: 0.03),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppTheme.textPrimary.withValues(alpha: 0.05),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                lastCommit,
+                                style: GoogleFonts.inter(
+                                  color: AppTheme.textPrimary.withValues(alpha: 0.9),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.3,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  if (lastCommitAuthor.isNotEmpty) ...[
+                                    Text(
+                                      lastCommitAuthor,
+                                      style: GoogleFonts.inter(
+                                        color: AppTheme.textSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                                      width: 3,
+                                      height: 3,
+                                      decoration: const BoxDecoration(
+                                        color: AppTheme.textMuted,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ],
+                                  Text(
+                                    lastCommitTime,
+                                    style: GoogleFonts.inter(
+                                      color: AppTheme.textMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                _BranchChip(branch: branch, color: branchColor),
-              ],
-            ),
-          ),
 
-          Padding(
-            padding: const EdgeInsets.only(right: 8, bottom: 8, top: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _ActionButton(
-                  icon: Icons.download_rounded,
-                  tooltip: 'Pull',
-                  onTap: onPull,
-                ),
-                const SizedBox(width: 4),
-                _ActionButton(
-                  icon: Icons.open_in_new_rounded,
-                  tooltip: 'Open',
-                  onTap: onOpen,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      _ActionButton(
+                        icon: Icons.sync_rounded,
+                        label: 'Sync',
+                        tooltip: 'Sync remote changes',
+                        onTap: onPull,
+                        isPrimary: true,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -874,13 +948,17 @@ class _StatusBadge extends StatelessWidget {
 
 class _ActionButton extends StatefulWidget {
   final IconData icon;
+  final String? label;
   final String tooltip;
   final VoidCallback onTap;
+  final bool isPrimary;
 
   const _ActionButton({
     required this.icon,
+    this.label,
     required this.tooltip,
     required this.onTap,
+    this.isPrimary = false,
   });
 
   @override
@@ -892,30 +970,62 @@ class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final activeColor =
+        widget.isPrimary ? AppTheme.accentCyan : AppTheme.textPrimary;
+
     return Tooltip(
       message: widget.tooltip,
-      textStyle: GoogleFonts.inter(color: AppTheme.bg0, fontSize: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.textPrimary.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(6),
-      ),
       child: InkWell(
         onHover: (val) => setState(() => _isHovered = val),
         onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? AppTheme.accentCyan.withValues(alpha: 0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.label != null ? 14 : 10,
+            vertical: 8,
           ),
-          child: Icon(
-            widget.icon,
-            size: 16,
-            color: _isHovered ? AppTheme.accentCyan : AppTheme.textMuted,
+          decoration: BoxDecoration(
+            color: widget.isPrimary
+                ? activeColor.withValues(alpha: _isHovered ? 0.2 : 0.12)
+                : (_isHovered
+                    ? AppTheme.textPrimary.withValues(alpha: 0.1)
+                    : Colors.transparent),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: widget.isPrimary
+                  ? activeColor.withValues(alpha: 0.2)
+                  : (_isHovered
+                      ? AppTheme.textPrimary.withValues(alpha: 0.1)
+                      : Colors.transparent),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.icon,
+                size: 16,
+                color: widget.isPrimary
+                    ? activeColor
+                    : (_isHovered ? AppTheme.textPrimary : AppTheme.textSecondary),
+              ),
+              if (widget.label != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  widget.label!,
+                  style: GoogleFonts.inter(
+                    color: widget.isPrimary
+                        ? activeColor
+                        : (_isHovered
+                            ? AppTheme.textPrimary
+                            : AppTheme.textSecondary),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
