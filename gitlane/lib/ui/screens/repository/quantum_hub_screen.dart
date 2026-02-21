@@ -292,13 +292,33 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
       itemBuilder: (context) => [
         const PopupMenuItem(value: PeerRole.read, child: Text('Read Only')),
         const PopupMenuItem(value: PeerRole.write, child: Text('Read & Write')),
+        const PopupMenuItem(value: PeerRole.admin, child: Text('Admin')),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(color: p.role == PeerRole.write ? AppTheme.accentCyan.withOpacity(0.1) : AppTheme.border, borderRadius: BorderRadius.circular(4)),
-        child: Text(p.role == PeerRole.write ? 'WRITE' : 'READ', style: TextStyle(color: p.role == PeerRole.write ? AppTheme.accentCyan : AppTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+        decoration: BoxDecoration(
+          color: _getRoleColor(p.role).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: _getRoleColor(p.role).withOpacity(0.3)),
+        ),
+        child: Text(
+          p.role.name.toUpperCase(),
+          style: TextStyle(
+            color: _getRoleColor(p.role),
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
+  }
+
+  Color _getRoleColor(PeerRole role) {
+    switch (role) {
+      case PeerRole.read: return AppTheme.textMuted;
+      case PeerRole.write: return AppTheme.accentCyan;
+      case PeerRole.admin: return AppTheme.accentPurple;
+    }
   }
 
   void _updatePeer(String id, PeerStatus s, [PeerRole? r]) {
