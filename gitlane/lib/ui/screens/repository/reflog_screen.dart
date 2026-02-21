@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import '../../theme/app_theme.dart';
+import '../../widgets/empty_state.dart';
 import '../../../services/git_service.dart';
-import '../../widgets/glass_card.dart';
 
 class ReflogScreen extends StatefulWidget {
   final String repoPath;
-
   const ReflogScreen({super.key, required this.repoPath});
 
   @override
@@ -14,7 +14,7 @@ class ReflogScreen extends StatefulWidget {
 }
 
 class _ReflogScreenState extends State<ReflogScreen> {
-  List<dynamic> _reflogEntries = [];
+  List<dynamic> _entries = [];
   bool _isLoading = true;
 
   @override
@@ -25,97 +25,206 @@ class _ReflogScreenState extends State<ReflogScreen> {
 
   Future<void> _fetchReflog() async {
     setState(() => _isLoading = true);
-    final jsonStr = await GitService.getReflog(widget.repoPath);
     try {
+      final jsonStr = await GitService.getReflog(widget.repoPath);
       final data = json.decode(jsonStr);
+      if (!mounted) return;
       if (data is List) {
         setState(() {
-          _reflogEntries = data;
+          _entries = data;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _entries = [];
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() => _isLoading = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  // Map reflog action → icon + color
+  (IconData, Color) _actionStyle(String msg) {
+    final m = msg.toLowerCase();
+    if (m.contains('commit')) {
+      return (Icons.commit_rounded, AppTheme.accentGreen);
+    }
+    if (m.contains('merge')) {
+      return (Icons.merge_rounded, AppTheme.accentOrange);
+    }
+    if (m.contains('checkout') || m.contains('branch')) {
+      return (Icons.account_tree_rounded, AppTheme.accentBlue);
+    }
+    if (m.contains('reset')) {
+      return (Icons.restart_alt_rounded, AppTheme.accentRed);
+    }
+    if (m.contains('stash')) {
+      return (Icons.inventory_2_outlined, AppTheme.accentOrange);
+    }
+    if (m.contains('rebase')) {
+      return (Icons.rebase_edit, AppTheme.accentPurple);
+    }
+    return (Icons.history_toggle_off_rounded, AppTheme.textSecondary);
   }
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.of(context).size.width < 360;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundBlack,
+      backgroundColor: AppTheme.bg0,
       appBar: AppBar(
-        title: const Text("Action History (Reflog)"),
+        title: Text(
+          'Action History',
+          style: GoogleFonts.inter(
+            color: AppTheme.textPrimary,
+            fontSize: compact ? 15 : 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded, size: 20),
             onPressed: _fetchReflog,
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
-          : _reflogEntries.isEmpty
-              ? const Center(child: Text("No history found.", style: TextStyle(color: AppTheme.textDim)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _reflogEntries.length,
-                  itemBuilder: (context, index) {
-                    final entry = _reflogEntries[index];
-                    final msg = entry['msg'] ?? 'no message';
-                    final id = entry['id'] ?? 'unknown';
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.accentCyan),
+            )
+          : _entries.isEmpty
+          ? const EmptyState(
+              icon: Icons.history_edu_rounded,
+              title: 'No history found',
+              subtitle: 'Reflog tracks all HEAD movements in this repository',
+            )
+          : ListView.builder(
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 12 : 16,
+                vertical: 8,
+              ),
+              itemCount: _entries.length,
+              itemBuilder: (context, index) {
+                final entry = _entries[index];
+                if (entry is! Map) {
+                  return const SizedBox.shrink();
+                }
+                final msg = (entry['msg'] ?? 'no message').toString();
+                final id = (entry['id'] ?? 'unknown').toString();
+                final (icon, color) = _actionStyle(msg);
+                final isLast = index == _entries.length - 1;
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(16),
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Timeline column
+                    SizedBox(
+                      width: 32,
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 14),
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: color.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Icon(icon, size: 13, color: color),
+                          ),
+                          if (!isLast)
+                            Container(
+                              width: 2,
+                              height: 32,
+                              color: AppTheme.border,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Content
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10, bottom: 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Text(
+                              msg,
+                              style: GoogleFonts.inter(
+                                color: AppTheme.textPrimary,
+                                fontSize: compact ? 13 : 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Icon(Icons.history_toggle_off, color: AppTheme.accentCyan, size: 16),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    msg,
-                                    style: const TextStyle(
-                                      color: AppTheme.textLight,
-                                      fontWeight: FontWeight.bold,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentCyan.withValues(
+                                      alpha: 0.08,
                                     ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    id.length > 7 ? id.substring(0, 7) : id,
+                                    style: GoogleFonts.firaMono(
+                                      color: AppTheme.accentCyan,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Recovery coming soon'),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.restore_rounded,
+                                    size: 13,
+                                  ),
+                                  label: Text(
+                                    'Recover',
+                                    style: GoogleFonts.inter(fontSize: 11),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppTheme.textSecondary,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Target: ${id.substring(0, 7)}",
-                              style: const TextStyle(
-                                color: AppTheme.textDim,
-                                fontSize: 12,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                onPressed: () {
-                                  // Implementation of 'Reset to this state'
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Recovery feature coming soon!")),
-                                  );
-                                },
-                                icon: const Icon(Icons.restore_rounded, size: 16),
-                                label: const Text("Recover to this state", style: TextStyle(fontSize: 12)),
-                                style: TextButton.styleFrom(foregroundColor: AppTheme.accentCyan),
-                              ),
-                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ],
+                );
+              },
+            ),
     );
   }
 }

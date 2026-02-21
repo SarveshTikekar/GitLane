@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/empty_state.dart';
 import '../../../services/git_service.dart';
-import '../../widgets/glass_card.dart';
 
 class StashScreen extends StatefulWidget {
   final String repoPath;
-
   const StashScreen({super.key, required this.repoPath});
 
   @override
@@ -37,109 +37,187 @@ class _StashScreenState extends State<StashScreen> {
     setState(() => _isLoading = true);
     final result = await GitService.stashPop(widget.repoPath, index);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result == 0 ? "Stash popped successfully!" : "Failed to pop stash: $result")),
+      _showSnack(
+        result == 0 ? '✓ Stash applied' : 'Failed to pop stash ($result)',
+        result == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
       );
       _loadStashes();
     }
   }
 
+  void _showSnack(String msg, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          msg,
+          style: GoogleFonts.inter(color: AppTheme.textPrimary),
+        ),
+        backgroundColor: AppTheme.bg2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: color.withValues(alpha: 0.5)),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final compact = screenWidth < 360;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundBlack,
+      backgroundColor: AppTheme.bg0,
       appBar: AppBar(
-        title: const Text("Stash Management"),
+        title: Text(
+          'Stashes',
+          style: GoogleFonts.inter(
+            color: AppTheme.textPrimary,
+            fontSize: compact ? 15 : 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            tooltip: 'Refresh',
             onPressed: _loadStashes,
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.accentCyan),
+            )
           : _stashes.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _stashes.length,
-                  itemBuilder: (context, index) {
-                    final s = _stashes[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(16),
+          ? EmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'No stashes',
+              subtitle:
+                  'Stash allows you to save WIP changes\nwithout committing them.',
+              iconColor: AppTheme.accentOrange,
+            )
+          : ListView.separated(
+              padding: EdgeInsets.all(compact ? 12 : 16),
+              itemCount: _stashes.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final s = _stashes[index];
+                final hash = (s['hash'] ?? '').toString();
+                final msg = (s['message'] ?? 'No message').toString();
+                final rawIndex = s['index'];
+                final stashIndex = rawIndex is int
+                    ? rawIndex
+                    : int.tryParse(rawIndex?.toString() ?? '') ?? index;
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.bg1,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.all(compact ? 12 : 16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Header row
                             Row(
                               children: [
-                                const Icon(Icons.inventory_2_outlined, color: AppTheme.accentCyan, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Stash @{${s['index']}}",
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  s['hash'].toString().substring(0, 7),
-                                  style: const TextStyle(fontFamily: 'monospace', color: AppTheme.textDim, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              s['message'] ?? "No message",
-                              style: const TextStyle(color: AppTheme.textLight, fontSize: 14),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                ElevatedButton.icon(
-                                  onPressed: () => _popStash(s['index'] as int),
-                                  icon: const Icon(Icons.unarchive_outlined, size: 16),
-                                  label: const Text("Pop Stash"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.accentCyan,
-                                    foregroundColor: Colors.black,
-                                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentOrange.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      color: AppTheme.accentOrange.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'stash@{$stashIndex}',
+                                    style: GoogleFonts.firaMono(
+                                      color: AppTheme.accentOrange,
+                                      fontSize: compact ? 10 : 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
+                                const Spacer(),
+                                if (hash.length >= 7)
+                                  Text(
+                                    hash.substring(0, 7),
+                                    style: GoogleFonts.firaMono(
+                                      color: AppTheme.textMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
                               ],
+                            ),
+                            const SizedBox(height: 10),
+                            // Message
+                            Text(
+                              msg,
+                              style: GoogleFonts.inter(
+                                color: AppTheme.textPrimary,
+                                fontSize: compact ? 13 : 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 64, color: AppTheme.surfaceSlate),
-          const SizedBox(height: 16),
-          const Text(
-            "No stashes found",
-            style: TextStyle(color: AppTheme.textDim, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 48.0),
-            child: Text(
-              "Stash allows you to save work-in-progress changes without committing them.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textDim, fontSize: 12),
+                      // Divider + action row
+                      const Divider(height: 1, color: AppTheme.border),
+                      SizedBox(
+                        height: 44,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => _popStash(stashIndex),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(12),
+                                  bottomRight: Radius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.unarchive_rounded,
+                                      size: 15,
+                                      color: AppTheme.accentCyan,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Apply & Pop',
+                                      style: GoogleFonts.inter(
+                                        color: AppTheme.accentCyan,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
-        ],
-      ),
     );
   }
 }

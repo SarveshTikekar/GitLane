@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../../theme/app_theme.dart';
+import '../../theme/responsive.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/glass_card.dart';
 import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
+import '../commit/commit_graph_screen.dart';
 import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'reflog_screen.dart';
-import '../commit/commit_graph_screen.dart';
-import 'file_editor_screen.dart';
-import 'native_terminal_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -27,22 +29,19 @@ class RepositoryRootScreen extends StatefulWidget {
   State<RepositoryRootScreen> createState() => _RepositoryRootScreenState();
 }
 
-class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
+class _RepositoryRootScreenState extends State<RepositoryRootScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   List<dynamic> _commits = [];
-  String? _repoStatus;
   bool _isLoading = false;
   bool _isNotGitRepo = false;
 
   List<dynamic> _statusFiles = [];
-  bool _isStatusLoading = false;
-
-  String _currentBranch = "HEAD";
+  String _currentBranch = 'HEAD';
   List<String> _branches = [];
 
-  List<FileSystemEntity> _files = [];
-  Map<String, dynamic> _syncStatus = {"ahead": 0, "behind": 0};
-  String _currentDir = "";
+  List<FileSystemEntity> _currentFiles = [];
+  String _currentDir = '';
 
   String? _personalAccessToken;
 
@@ -54,124 +53,60 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     _listRepoFiles();
   }
 
-  Future<void> _fetchSyncStatus() async {
-    final status = await GitService.getSyncStatus(widget.repoPath);
-    if (mounted) {
-      setState(() {
-        _syncStatus = status;
-      });
-    }
-  }
-
+  // ── File system ─────────────────────────────────────────────────────────────
   void _listRepoFiles() {
     try {
       final dir = Directory(_currentDir);
-      if (dir.existsSync()) {
-        setState(() {
-          // List files and directories, excluding the .git folder
-          _files = dir.listSync().where((entity) {
-            final name = entity.path.split(Platform.pathSeparator).last;
-            return name != ".git";
-          }).toList();
-
-          // Sort: Directories first, then alphabetical
-          _files.sort((a, b) {
-            if (a is Directory && b is File) return -1;
-            if (a is File && b is Directory) return 1;
-            return a.path
-                .split(Platform.pathSeparator)
-                .last
-                .toLowerCase()
-                .compareTo(
-                  b.path.split(Platform.pathSeparator).last.toLowerCase(),
-                );
-          });
-        });
-      }
-    } catch (e) {
-      debugPrint("Error listing files: $e");
-    }
-  }
-
-  void _onItemTapped(FileSystemEntity entity) {
-    if (entity is Directory) {
+      if (!dir.existsSync()) return;
       setState(() {
-        _currentDir = entity.path;
-        _listRepoFiles();
+        _currentFiles =
+            dir.listSync().where((e) {
+              final name = e.path.split(Platform.pathSeparator).last;
+              return name != '.git' && !name.startsWith('.');
+            }).toList()..sort((a, b) {
+              if (a is Directory && b is File) return -1;
+              if (a is File && b is Directory) return 1;
+              return a.path
+                  .split(Platform.pathSeparator)
+                  .last
+                  .toLowerCase()
+                  .compareTo(
+                    b.path.split(Platform.pathSeparator).last.toLowerCase(),
+                  );
+            });
       });
-    } else if (entity is File) {
-      final name = entity.path.split(Platform.pathSeparator).last;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FileEditorScreen(
-            filePath: entity.path,
-            fileName: name,
-            repoPath: widget.repoPath,
-          ),
-        ),
-      ).then((value) {
-        if (value == true) {
-          _fetchData();
-          _listRepoFiles();
-        }
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Selected: ${entity.path.split(Platform.pathSeparator).last}",
-          ),
-        ),
-      );
+    } catch (e) {
+      debugPrint('Error listing files: $e');
     }
   }
 
+  // ── Git data ─────────────────────────────────────────────────────────────────
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
-
     final logJson = await GitService.getCommitLog(widget.repoPath);
     final statusJson = await GitService.getRepositoryStatus(widget.repoPath);
-
-    if (mounted) {
-      setState(() {
-        if (logJson == null && statusJson == null) {
-          _isNotGitRepo = true;
-        } else {
-          _isNotGitRepo = false;
-
-          if (logJson != null) {
-            try {
-              final decodedLog = jsonDecode(logJson);
-              if (decodedLog is List) {
-                _commits = decodedLog;
-              } else if (decodedLog is Map && decodedLog.containsKey('error')) {
-                debugPrint("Bridge error: ${decodedLog['error']}");
-                _commits = [];
-              }
-            } catch (e) {
-              debugPrint("Parsing log error: $e");
-            }
-          }
-
-          if (statusJson != null) {
-            try {
-              final decodedStatus = jsonDecode(statusJson);
-              if (decodedStatus is List) {
-                _statusFiles = decodedStatus;
-              }
-            } catch (e) {
-              debugPrint("Parsing status error: $e");
-            }
-          }
+    if (!mounted) return;
+    setState(() {
+      if (logJson == null && statusJson == null) {
+        _isNotGitRepo = true;
+      } else {
+        _isNotGitRepo = false;
+        if (logJson != null) {
+          try {
+            final d = jsonDecode(logJson);
+            if (d is List) _commits = d;
+          } catch (_) {}
         }
-
-        // Fetch branch metadata
-        _updateBranchInfo();
-        _fetchSyncStatus();
-        _isLoading = false;
-      });
-    }
+        if (statusJson != null) {
+          try {
+            final d = jsonDecode(statusJson);
+            if (d is List) _statusFiles = d;
+          } catch (_) {}
+        }
+      }
+      _isLoading = false;
+    });
+    _updateBranchInfo();
   }
 
   Future<void> _updateBranchInfo() async {
@@ -185,60 +120,502 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     }
   }
 
+  // ── Graph nodes ───────────────────────────────────────────────────────────────
   List<CommitNode> _graphNodesFromCommits() {
     if (_commits.isEmpty) return [];
     final nodes = <CommitNode>[];
+
     for (var i = 0; i < _commits.length; i++) {
-      final current = _commits[i] as Map<String, dynamic>;
+      final current = _commits[i];
+      if (current is! Map) continue;
+
       final hash = (current['hash'] ?? '').toString();
       if (hash.isEmpty) continue;
-      final parent = i + 1 < _commits.length
-          ? ((_commits[i + 1] as Map<String, dynamic>)['hash'] ?? '').toString()
-          : '';
+
+      String parentHash = '';
+      if (i + 1 < _commits.length) {
+        final parent = _commits[i + 1];
+        if (parent is Map) {
+          parentHash = (parent['hash'] ?? '').toString();
+        }
+      }
+
+      final ts = current['time'];
+      int unix = 0;
+      if (ts is num) unix = ts.toInt();
+      if (ts is String) unix = int.tryParse(ts) ?? 0;
+
       nodes.add(
         CommitNode(
           id: hash,
-          parentIds: parent.isEmpty ? [] : [parent],
+          parentIds: parentHash.isEmpty ? const [] : [parentHash],
           message: (current['message'] ?? 'No message').toString(),
           timestamp: DateTime.fromMillisecondsSinceEpoch(
-            (((current['time'] as num?)?.toInt() ?? 0) * 1000),
+            unix * 1000,
             isUtc: true,
           ).toLocal(),
           lane: 0,
         ),
       );
     }
+
     return nodes;
   }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+  String _relativeTime(dynamic ts) {
+    if (ts == null) return '';
+    int? unix;
+    if (ts is num) unix = ts.toInt();
+    if (ts is String) unix = int.tryParse(ts);
+    if (unix == null) return '';
+    final dt = DateTime.fromMillisecondsSinceEpoch(
+      unix * 1000,
+      isUtc: true,
+    ).toLocal();
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 30) return '${diff.inDays}d ago';
+    return '${(diff.inDays / 30).floor()}mo ago';
+  }
+
+  String _currentRelativePathLabel() {
+    if (_currentDir == widget.repoPath) return '';
+    if (_currentDir.startsWith(widget.repoPath)) {
+      final relative = _currentDir.substring(widget.repoPath.length);
+      return relative.isEmpty ? '/' : relative;
+    }
+    return _currentDir;
+  }
+
+  String _fileExt(String path) {
+    final name = path.split(Platform.pathSeparator).last;
+    final dot = name.lastIndexOf('.');
+    return dot >= 0 ? name.substring(dot) : '';
+  }
+
+  Color _extColor(String ext) {
+    switch (ext.toLowerCase()) {
+      case '.dart':
+        return const Color(0xFF54C5F8);
+      case '.kt':
+      case '.java':
+        return const Color(0xFFEF6C00);
+      case '.json':
+        return const Color(0xFFD29922);
+      case '.md':
+        return const Color(0xFF8B949E);
+      case '.yaml':
+      case '.yml':
+        return const Color(0xFFBC8CFF);
+      case '.swift':
+        return const Color(0xFFFF6C37);
+      case '.py':
+        return const Color(0xFF3FB950);
+      case '.js':
+      case '.ts':
+        return const Color(0xFFF7DF1E);
+      default:
+        return AppTheme.textSecondary;
+    }
+  }
+
+  // ── Dialogs / Actions ─────────────────────────────────────────────────────────
+  Future<void> _showCommitDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Commit Changes'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'feat: describe your changes…',
+            prefixIcon: Icon(Icons.commit_rounded, size: 18),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: const Text('Commit'),
+          ),
+        ],
+      ),
+    );
+    if (result == true && mounted) {
+      setState(() => _isLoading = true);
+      final code = await GitService.commitAll(
+        widget.repoPath,
+        controller.text.trim(),
+      );
+      if (mounted) {
+        _showSnack(
+          code == 0 ? '✓ Commit successful' : 'Commit failed (code: $code)',
+          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+        );
+        if (code == 0) {
+          _fetchData();
+        } else {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _showBranchDialog() async {
+    final controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(
+                Icons.account_tree_rounded,
+                size: 18,
+                color: AppTheme.accentGreen,
+              ),
+              const SizedBox(width: 8),
+              const Text('Git Branches'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Branches',
+                  style: GoogleFonts.inter(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _branches.length,
+                    itemBuilder: (context, idx) {
+                      final b = _branches[idx];
+                      final isCurrent = b == _currentBranch;
+                      final color = (b == 'main' || b == 'master')
+                          ? AppTheme.accentGreen
+                          : AppTheme.accentBlue;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? color.withValues(alpha: 0.08)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: isCurrent
+                              ? Border.all(color: color.withValues(alpha: 0.3))
+                              : null,
+                        ),
+                        child: ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                          ),
+                          leading: Icon(
+                            isCurrent
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_off_rounded,
+                            size: 16,
+                            color: isCurrent ? color : AppTheme.textMuted,
+                          ),
+                          title: Text(
+                            b,
+                            style: GoogleFonts.firaMono(
+                              color: isCurrent
+                                  ? AppTheme.textPrimary
+                                  : AppTheme.textSecondary,
+                              fontSize: 13,
+                              fontWeight: isCurrent
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                          trailing: isCurrent
+                              ? Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'current',
+                                    style: GoogleFonts.inter(
+                                      color: color,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _branchAction(
+                                      'Checkout',
+                                      AppTheme.accentCyan,
+                                      () async {
+                                        Navigator.pop(context);
+                                        setState(() => _isLoading = true);
+                                        final code =
+                                            await GitService.checkoutBranch(
+                                              widget.repoPath,
+                                              b,
+                                            );
+                                        if (mounted) {
+                                          _showSnack(
+                                            code == 0
+                                                ? "Checked out '$b'"
+                                                : "Checkout failed ($code)",
+                                            code == 0
+                                                ? AppTheme.accentGreen
+                                                : AppTheme.accentRed,
+                                          );
+                                          _fetchData();
+                                          _listRepoFiles();
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    _branchAction(
+                                      'Merge',
+                                      AppTheme.accentOrange,
+                                      () async {
+                                        Navigator.pop(context);
+                                        setState(() => _isLoading = true);
+                                        final code =
+                                            await GitService.mergeBranch(
+                                              widget.repoPath,
+                                              b,
+                                            );
+                                        if (!mounted) return;
+                                        if (code == -100) {
+                                          final conflicts =
+                                              await GitService.getConflicts(
+                                                widget.repoPath,
+                                              );
+                                          if (!mounted) return;
+                                          final resolved =
+                                              await Navigator.push<bool>(
+                                                this.context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      MergeConflictScreen(
+                                                        repoPath:
+                                                            widget.repoPath,
+                                                        conflictingFiles:
+                                                            conflicts,
+                                                      ),
+                                                ),
+                                              );
+                                          if (!mounted) return;
+                                          if (resolved == true) {
+                                            await GitService.commitAll(
+                                              widget.repoPath,
+                                              "Merge branch '$b'",
+                                            );
+                                            _fetchData();
+                                          } else {
+                                            setState(() => _isLoading = false);
+                                          }
+                                        } else {
+                                          _showSnack(
+                                            code >= 0
+                                                ? "Merged '$b'"
+                                                : "Merge failed ($code)",
+                                            code >= 0
+                                                ? AppTheme.accentGreen
+                                                : AppTheme.accentRed,
+                                          );
+                                          _fetchData();
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 15,
+                                        color: AppTheme.accentRed,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () async {
+                                        final ok = await _confirmDelete(b);
+                                        if (ok == true) {
+                                          if (!mounted) return;
+                                          Navigator.of(this.context).pop();
+                                          setState(() => _isLoading = true);
+                                          final code =
+                                              await GitService.deleteBranch(
+                                                widget.repoPath,
+                                                b,
+                                              );
+                                          if (!mounted) return;
+                                          _showSnack(
+                                            code == 0
+                                                ? "Deleted '$b'"
+                                                : "Delete failed ($code)",
+                                            code == 0
+                                                ? AppTheme.accentGreen
+                                                : AppTheme.accentRed,
+                                          );
+                                          _updateBranchInfo();
+                                          setState(() => _isLoading = false);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  style: GoogleFonts.firaMono(
+                    color: AppTheme.textPrimary,
+                    fontSize: 13,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'New branch name',
+                    prefixIcon: Icon(Icons.add_rounded, size: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isEmpty) return;
+                Navigator.pop(context);
+                setState(() => _isLoading = true);
+                final code = await GitService.createBranch(
+                  widget.repoPath,
+                  name,
+                );
+                if (mounted) {
+                  _showSnack(
+                    code == 0
+                        ? "Branch '$name' created!"
+                        : "Failed (code: $code)",
+                    code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                  );
+                  _fetchData();
+                }
+              },
+              child: const Text('Create Branch'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _branchAction(String label, Color color, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+
+  Future<bool?> _confirmDelete(String branch) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Delete Branch'),
+      content: Text("Delete '$branch'? This cannot be undone if unmerged."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text(
+            'Delete',
+            style: TextStyle(color: AppTheme.accentRed),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Future<void> _showStashSaveDialog() async {
     final controller = TextEditingController();
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceSlate,
-        title: const Text(
-          "Stash Changes",
-          style: TextStyle(color: AppTheme.accentCyan),
+        title: const Row(
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 18,
+              color: AppTheme.accentOrange,
+            ),
+            SizedBox(width: 8),
+            Text('Stash Changes'),
+          ],
         ),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: const TextStyle(color: AppTheme.textLight),
           decoration: const InputDecoration(
-            labelText: "Message (optional)",
-            labelStyle: TextStyle(color: AppTheme.textDim),
+            labelText: 'Message (optional)',
+            hintText: 'WIP: work in progress…',
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan,
-            ),
             onPressed: () async {
               Navigator.pop(context);
               setState(() => _isLoading = true);
@@ -247,20 +624,83 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
                 controller.text.trim(),
               );
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      code == 0
-                          ? "Changes stashed!"
-                          : "Stash failed (code: $code)",
-                    ),
-                  ),
+                _showSnack(
+                  code == 0 ? '✓ Changes stashed' : 'Stash failed ($code)',
+                  code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
                 );
                 _fetchData();
                 _listRepoFiles();
               }
             },
-            child: const Text("Stash", style: TextStyle(color: Colors.black)),
+            child: const Text('Stash'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showNewFileDialog() async {
+    final nameController = TextEditingController();
+    final contentController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(
+              Icons.add_comment_outlined,
+              size: 18,
+              color: AppTheme.accentCyan,
+            ),
+            SizedBox(width: 8),
+            Text('Create New File'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'File Name',
+                hintText: 'example.dart',
+                prefixIcon: Icon(Icons.description_outlined, size: 18),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: contentController,
+              maxLines: 5,
+              style: GoogleFonts.firaMono(
+                color: AppTheme.textPrimary,
+                fontSize: 13,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Content',
+                hintText: '// your code here',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) return;
+              final file = File('$_currentDir${Platform.pathSeparator}$name');
+              await file.writeAsString(contentController.text);
+              if (!mounted) return;
+              Navigator.of(this.context).pop();
+              _showSnack('Created $name', AppTheme.accentGreen);
+              _fetchData();
+              _listRepoFiles();
+            },
+            child: const Text('Create'),
           ),
         ],
       ),
@@ -274,36 +714,44 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceSlate,
-        title: const Text(
-          "Git Credentials",
-          style: TextStyle(color: AppTheme.accentCyan),
+        title: const Row(
+          children: [
+            Icon(Icons.key_rounded, size: 18, color: AppTheme.accentCyan),
+            SizedBox(width: 8),
+            Text('Git Credentials'),
+          ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Personal Access Token (PAT)",
-              style: TextStyle(color: AppTheme.textDim, fontSize: 12),
+            Text(
+              'Personal Access Token (PAT)',
+              style: GoogleFonts.inter(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: controller,
               obscureText: true,
               autofocus: true,
-              style: const TextStyle(color: AppTheme.textLight),
+              style: GoogleFonts.firaMono(
+                color: AppTheme.textPrimary,
+                fontSize: 13,
+              ),
               decoration: const InputDecoration(
-                hintText: "ghp_xxxxxxxxxxxx",
-                hintStyle: TextStyle(color: AppTheme.surfaceSlate),
+                hintText: 'ghp_xxxxxxxxxxxx',
+                prefixIcon: Icon(Icons.token_rounded, size: 18),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              "Note: Your token is only stored for this session.",
-              style: TextStyle(
-                color: AppTheme.textDim,
-                fontSize: 10,
+            const SizedBox(height: 10),
+            Text(
+              'Token is stored for this session only.',
+              style: GoogleFonts.inter(
+                color: AppTheme.textMuted,
+                fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -312,12 +760,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan,
-            ),
             onPressed: () {
               final token = controller.text.trim();
               if (token.isNotEmpty) {
@@ -326,1300 +771,946 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
                 onConfirm(token);
               }
             },
-            child: const Text("Confirm", style: TextStyle(color: Colors.black)),
+            child: const Text('Confirm'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _pullRepo() async {
-    await _showCredentialDialog(
-      onConfirm: (token) async {
-        setState(() => _isLoading = true);
-        final code = await GitService.pullRepository(widget.repoPath, token);
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                code == 0 ? "Pull successful!" : "Pull failed (code: $code)",
-              ),
-            ),
-          );
-          _fetchData();
-          _listRepoFiles();
-        }
-      },
-    );
-  }
-
-  Future<void> _pushRepo() async {
-    await _showCredentialDialog(
-      onConfirm: (token) async {
-        setState(() => _isLoading = true);
-        final code = await GitService.pushRepository(widget.repoPath, token);
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                code == 0 ? "Push successful!" : "Push failed (code: $code)",
-              ),
-            ),
-          );
-          _fetchData();
-        }
-      },
-    );
-  }
-
-  Future<void> _showCommitDialog() async {
-    final TextEditingController controller = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceSlate,
-        title: const Text(
-          "Commit Changes",
-          style: TextStyle(color: AppTheme.accentCyan),
-        ),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          style: const TextStyle(color: AppTheme.textLight),
-          decoration: const InputDecoration(
-            hintText: "Commit message",
-            hintStyle: TextStyle(color: AppTheme.textDim),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppTheme.textDim),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(color: AppTheme.textDim),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isEmpty) return;
-              Navigator.pop(context, true);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan,
-              foregroundColor: Colors.black,
-            ),
-            child: const Text("Commit"),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true && mounted) {
+  Future<void> _pullRepo() => _showCredentialDialog(
+    onConfirm: (token) async {
       setState(() => _isLoading = true);
-      final code = await GitService.commitAll(
-        widget.repoPath,
-        controller.text.trim(),
-      );
+      final code = await GitService.pullRepository(widget.repoPath, token);
       if (mounted) {
-        if (code == 0) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text("Commit successful!")));
-          _fetchData(); // Refresh history and status
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Commit failed (code: $code)")),
-          );
-          setState(() => _isLoading = false);
-        }
-      }
-    }
-  }
-
-  Future<void> _showBranchDialog() async {
-    final TextEditingController controller = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.surfaceSlate,
-          title: const Text(
-            "Git Branches",
-            style: TextStyle(color: AppTheme.accentCyan),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Available Branches:",
-                style: TextStyle(color: AppTheme.textDim, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 120,
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _branches.length,
-                  itemBuilder: (context, index) {
-                    final b = _branches[index];
-                    final isCurrent = b == _currentBranch;
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        isCurrent
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        size: 16,
-                        color: isCurrent
-                            ? AppTheme.accentCyan
-                            : AppTheme.textDim,
-                      ),
-                      title: Text(
-                        b,
-                        style: TextStyle(
-                          color: isCurrent
-                              ? AppTheme.textLight
-                              : AppTheme.textDim,
-                          fontWeight: isCurrent
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      trailing: isCurrent
-                          ? null
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    size: 16,
-                                    color: Colors.redAccent,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () async {
-                                    final confirmed = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        backgroundColor: AppTheme.surfaceSlate,
-                                        title: const Text("Delete Branch"),
-                                        content: Text(
-                                          "Delete branch '$b'? This cannot be undone if unmerged.",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text("Cancel"),
-                                          ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text(
-                                              "Delete",
-                                              style: TextStyle(
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (confirmed == true) {
-                                      Navigator.pop(
-                                        context,
-                                      ); // Close branch dialog
-                                      setState(() => _isLoading = true);
-                                      final code =
-                                          await GitService.deleteBranch(
-                                            widget.repoPath,
-                                            b,
-                                          );
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              code == 0
-                                                  ? "Deleted branch '$b'"
-                                                  : "Failed to delete branch (code: $code)",
-                                            ),
-                                          ),
-                                        );
-                                        _updateBranchInfo();
-                                        setState(() => _isLoading = false);
-                                      }
-                                    }
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                TextButton(
-                                  child: const Text(
-                                    "Checkout",
-                                    style: TextStyle(fontSize: 10),
-                                  ),
-                                  onPressed: () async {
-                                    Navigator.pop(context);
-                                    setState(() => _isLoading = true);
-                                    final code =
-                                        await GitService.checkoutBranch(
-                                          widget.repoPath,
-                                          b,
-                                        );
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            code == 0
-                                                ? "Checked out '$b'"
-                                                : "Checkout failed (code: $code)",
-                                          ),
-                                        ),
-                                      );
-                                      _fetchData();
-                                      _listRepoFiles();
-                                    }
-                                  },
-                                ),
-                                TextButton(
-                                  child: const Text(
-                                    "Merge",
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.orange,
-                                    ),
-                                  ),
-                                  onPressed: () async {
-                                    Navigator.pop(context);
-                                    setState(() => _isLoading = true);
-                                    final code = await GitService.mergeBranch(
-                                      widget.repoPath,
-                                      b,
-                                    );
-                                    if (mounted) {
-                                      if (code == -100) {
-                                        // Conflict!
-                                        final conflicts =
-                                            await GitService.getConflicts(
-                                              widget.repoPath,
-                                            );
-                                        if (mounted) {
-                                          final resolved =
-                                              await Navigator.push<bool>(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      MergeConflictScreen(
-                                                        repoPath:
-                                                            widget.repoPath,
-                                                        conflictingFiles:
-                                                            conflicts,
-                                                      ),
-                                                ),
-                                              );
-                                          if (resolved == true) {
-                                            await GitService.commitAll(
-                                              widget.repoPath,
-                                              "Merge branch '$b' (resolved conflicts)",
-                                            );
-                                            _fetchData();
-                                          } else {
-                                            setState(() => _isLoading = false);
-                                          }
-                                        }
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              code >= 0
-                                                  ? "Merged '$b'!"
-                                                  : "Merge failed (code: $code)",
-                                            ),
-                                          ),
-                                        );
-                                        _fetchData();
-                                      }
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                    );
-                  },
-                ),
-              ),
-              const Divider(color: AppTheme.textDim, height: 24),
-              TextField(
-                controller: controller,
-                style: const TextStyle(color: AppTheme.textLight),
-                decoration: const InputDecoration(
-                  hintText: "New branch name",
-                  hintStyle: TextStyle(color: AppTheme.textDim),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                final name = controller.text.trim();
-                if (name.isEmpty) return;
-                Navigator.pop(context);
-                setState(() => _isLoading = true);
-                final code = await GitService.createBranch(
-                  widget.repoPath,
-                  name,
-                );
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        code == 0
-                            ? "Branch '$name' created!"
-                            : "Failed to create branch (code: $code)",
-                      ),
-                    ),
-                  );
-                  _fetchData();
-                }
-              },
-              child: const Text(
-                "Create",
-                style: TextStyle(color: AppTheme.accentCyan),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                "Close",
-                style: TextStyle(color: AppTheme.textDim),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showNewFileDialog() async {
-    final nameController = TextEditingController();
-    final contentController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceSlate,
-        title: const Text(
-          "Create New File",
-          style: TextStyle(color: AppTheme.accentCyan),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              autofocus: true,
-              style: const TextStyle(color: AppTheme.textLight),
-              decoration: const InputDecoration(
-                hintText: "example.txt",
-                hintStyle: TextStyle(color: AppTheme.textDim),
-                labelText: "File Name",
-                labelStyle: TextStyle(color: AppTheme.textDim),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: contentController,
-              maxLines: 5,
-              style: const TextStyle(color: AppTheme.textLight),
-              decoration: const InputDecoration(
-                hintText: "File content here...",
-                hintStyle: TextStyle(color: AppTheme.textDim),
-                labelText: "Content",
-                labelStyle: TextStyle(color: AppTheme.textDim),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(color: AppTheme.textDim),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-
-              final file = File("${_currentDir}${Platform.pathSeparator}$name");
-              await file.writeAsString(contentController.text);
-
-              if (mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text("Created $name")));
-                _fetchData();
-                _listRepoFiles();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan,
-              foregroundColor: Colors.black,
-            ),
-            child: const Text("Create"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _shareRepo() async {
-    final url = await GitService.getRemoteUrl(widget.repoPath);
-    if (url.startsWith("http") || url.startsWith("git@")) {
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
-          ),
+        setState(() => _isLoading = false);
+        _showSnack(
+          code == 0 ? '⬇ Pull successful' : 'Pull failed ($code)',
+          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
         );
+        _fetchData();
+        _listRepoFiles();
       }
-    } else {
+    },
+  );
+
+  Future<void> _pushRepo() => _showCredentialDialog(
+    onConfirm: (token) async {
+      setState(() => _isLoading = true);
+      final code = await GitService.pushRepository(widget.repoPath, token);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Only repositories with a remote 'origin' can be shared via QR.",
-            ),
-          ),
+        setState(() => _isLoading = false);
+        _showSnack(
+          code == 0 ? '⬆ Push successful' : 'Push failed ($code)',
+          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
         );
+        _fetchData();
       }
-    }
-  }
+    },
+  );
 
-  Future<void> _uploadFile() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-    if (result != null) {
-      for (var file in result.files) {
-        if (file.path != null) {
-          final targetPath = "$_currentDir${Platform.pathSeparator}${file.name}";
-          await File(file.path!).copy(targetPath);
-          await GitService.gitAddFile(widget.repoPath, file.name);
-        }
-      }
-      _fetchData();
-      _listRepoFiles();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Uploaded ${result.count} files")),
-        );
-      }
-    }
-  }
-
-  Widget _buildSyncBadge() {
-    final ahead = _syncStatus['ahead'] ?? 0;
-    final behind = _syncStatus['behind'] ?? 0;
-    final hasChanges = ahead > 0 || behind > 0;
-
-    return Center(
-      child: InkWell(
-        onTap: _showSyncDashboard,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: hasChanges ? AppTheme.accentCyan.withOpacity(0.2) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                hasChanges ? Icons.sync_problem_rounded : Icons.sync_rounded,
-                size: 14,
-                color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                "↑$ahead ↓$behind",
-                style: TextStyle(
-                  color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+  void _showSnack(String msg, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          msg,
+          style: GoogleFonts.inter(color: AppTheme.textPrimary),
         ),
-      ),
-    );
-  }
-
-  /// Compact sync badge for inline use inside the AppBar title Row.
-  Widget _buildSyncBadgeCompact() {
-    final ahead = _syncStatus['ahead'] ?? 0;
-    final behind = _syncStatus['behind'] ?? 0;
-    final hasChanges = ahead > 0 || behind > 0;
-    return GestureDetector(
-      onTap: _showSyncDashboard,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: hasChanges
-              ? AppTheme.accentCyan.withOpacity(0.15)
-              : Colors.transparent,
+        backgroundColor: AppTheme.bg2,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: hasChanges
-                ? AppTheme.accentCyan
-                : AppTheme.textDim.withOpacity(0.3),
-          ),
+          side: BorderSide(color: color.withValues(alpha: 0.5)),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              hasChanges ? Icons.sync_problem_rounded : Icons.sync_rounded,
-              size: 12,
-              color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
-            ),
-            const SizedBox(width: 3),
-            Text(
-              "↑$ahead ↓$behind",
-              style: TextStyle(
-                color: hasChanges ? AppTheme.accentCyan : AppTheme.textDim,
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  void _showSyncDashboard() {
-    showDialog(
+  Future<void> _stageFile(String path) async {
+    HapticFeedback.lightImpact();
+    await GitService.gitAddFile(widget.repoPath, path);
+    _fetchData();
+  }
+
+  Future<void> _discardFile(String path) async {
+    HapticFeedback.mediumImpact();
+    // git checkout -- <path> via bridge — fallback: show snack
+    _showSnack('Discard not yet supported via bridge', AppTheme.accentYellow);
+  }
+
+  Future<void> _unstageFile(String path) async {
+    HapticFeedback.mediumImpact();
+    // git reset HEAD -- <path> via bridge — fallback: show snack
+    _showSnack('Unstage not yet supported via bridge', AppTheme.accentYellow);
+  }
+
+  // ── Overflow menu ─────────────────────────────────────────────────────────────
+  void _showOverflowMenu(BuildContext anchorContext) async {
+    final buttonObject = anchorContext.findRenderObject();
+    if (buttonObject is! RenderBox) return;
+    final overlayState = Navigator.of(context).overlay;
+    if (overlayState == null) return;
+    final overlayObject = overlayState.context.findRenderObject();
+    if (overlayObject is! RenderBox) return;
+    final RenderBox button = buttonObject;
+    final RenderBox overlay = overlayObject;
+    final offset = Offset(0, button.size.height);
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(offset, ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero) + offset,
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final result = await showMenu<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceSlate,
-        title: const Text("Sync Dashboard", style: TextStyle(color: AppTheme.accentCyan)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildSyncInfoRow("Local Ahead", "${_syncStatus['ahead']} commits", Icons.upload_rounded, AppTheme.accentCyan),
-            const SizedBox(height: 16),
-            _buildSyncInfoRow("Remote Behind", "${_syncStatus['behind']} commits", Icons.download_rounded, Colors.orange),
-            const SizedBox(height: 24),
-            const Text(
-              "Your local changes are saved safely. Connect to internet and use 'Sync Now' to push/pull.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textDim, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Close")),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              _pullRepo(); // Use existing pull logic
-            },
-            icon: const Icon(Icons.sync_rounded, color: Colors.black),
-            label: const Text("Sync Now", style: TextStyle(color: Colors.black)),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
-          ),
-        ],
+      position: position,
+      color: AppTheme.bg2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: AppTheme.border),
       ),
-    );
-  }
-
-  Widget _buildSyncInfoRow(String label, String value, IconData icon, Color color) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(color: AppTheme.textDim, fontSize: 12)),
-            Text(value, style: const TextStyle(color: AppTheme.textLight, fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
+      items: [
+        _menuItem('pull', Icons.download_rounded, 'Pull', AppTheme.accentBlue),
+        _menuItem('push', Icons.upload_rounded, 'Push', AppTheme.accentBlue),
+        const PopupMenuDivider(height: 1),
+        _menuItem(
+          'stash_save',
+          Icons.save_outlined,
+          'Stash Changes',
+          AppTheme.accentOrange,
+        ),
+        _menuItem(
+          'stash_list',
+          Icons.inventory_2_outlined,
+          'View Stashes',
+          AppTheme.accentOrange,
+        ),
+        const PopupMenuDivider(height: 1),
+        _menuItem(
+          'graph',
+          Icons.timeline_rounded,
+          'Commit Graph',
+          AppTheme.accentPurple,
+        ),
+        _menuItem(
+          'reflog',
+          Icons.history_edu_rounded,
+          'Action History',
+          AppTheme.textSecondary,
+        ),
+        _menuItem(
+          'share',
+          Icons.qr_code_2_rounded,
+          'Share (QR)',
+          AppTheme.textSecondary,
         ),
       ],
     );
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final relativePath = _currentDir.length > widget.repoPath.length
-        ? _currentDir.substring(widget.repoPath.length)
-        : "";
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: _currentDir != widget.repoPath
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _currentDir = Directory(_currentDir).parent.path;
-                    _listRepoFiles();
-                  });
-                },
-              )
-            : null,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    widget.repoName,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 70),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentCyan.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: AppTheme.accentCyan.withOpacity(0.5),
-                      ),
-                    ),
-                    child: Text(
-                      _currentBranch,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppTheme.accentCyan,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                // Sync badge inline with title for proper layout
-                _buildSyncBadgeCompact(),
-              ],
-            ),
-            if (relativePath.isNotEmpty)
-              Text(
-                relativePath,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10, color: AppTheme.textDim),
-              ),
-          ],
-        ),
-        actions: [
-          // Branch manager — core USP
-          IconButton(
-            icon: const Icon(Icons.account_tree_outlined),
-            tooltip: 'Branches',
-            onPressed: _showBranchDialog,
-          ),
-          // Native terminal — core USP
-          IconButton(
-            icon: const Icon(Icons.terminal_rounded),
-            tooltip: "Git Terminal",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      NativeTerminalScreen(repoPath: widget.repoPath),
-                ),
-              );
-            },
-          ),
-          // Overflow menu for secondary actions
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            color: AppTheme.surfaceSlate,
-            onSelected: (value) async {
-              switch (value) {
-                case 'refresh':
-                  _fetchData();
-                  _listRepoFiles();
-                  break;
-                case 'pull':
-                  await _pullRepo();
-                  break;
-                case 'push':
-                  await _pushRepo();
-                  break;
-                case 'commit_graph':
-                  if (mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CommitGraphScreen(
-                          commits: _graphNodesFromCommits(),
-                          title: '${widget.repoName} Graph',
-                        ),
-                      ),
-                    );
-                  }
-                  break;
-                case 'stash_save':
-                  await _showStashSaveDialog();
-                  break;
-                case 'stash_list':
-                  if (mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            StashScreen(repoPath: widget.repoPath),
-                      ),
-                    );
-                  }
-                  break;
-                case 'reflog':
-                  if (mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ReflogScreen(repoPath: widget.repoPath),
-                      ),
-                    );
-                  }
-                  break;
-                case 'share':
-                  await _shareRepo();
-                  break;
-                case 'upload':
-                  await _uploadFile();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'refresh',
-                child: ListTile(
-                  leading: Icon(Icons.refresh, color: AppTheme.accentCyan),
-                  title: Text('Refresh', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'pull',
-                child: ListTile(
-                  leading: Icon(Icons.download_rounded, color: AppTheme.accentCyan),
-                  title: Text('Pull', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'push',
-                child: ListTile(
-                  leading: Icon(Icons.upload_rounded, color: AppTheme.accentCyan),
-                  title: Text('Push', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'commit_graph',
-                child: ListTile(
-                  leading: Icon(Icons.timeline_outlined, color: AppTheme.accentCyan),
-                  title: Text('Commit Graph', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'stash_save',
-                child: ListTile(
-                  leading: Icon(Icons.archive_outlined, color: AppTheme.accentCyan),
-                  title: Text('Stash Changes', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'stash_list',
-                child: ListTile(
-                  leading: Icon(Icons.inventory_2_outlined, color: AppTheme.accentCyan),
-                  title: Text('Stash List', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'reflog',
-                child: ListTile(
-                  leading: Icon(Icons.history_edu_rounded, color: AppTheme.accentCyan),
-                  title: Text('Reflog', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'share',
-                child: ListTile(
-                  leading: Icon(Icons.qr_code_2_rounded, color: AppTheme.accentCyan),
-                  title: Text('Share (QR)', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'upload',
-                child: ListTile(
-                  leading: Icon(Icons.upload_file_rounded, color: AppTheme.accentCyan),
-                  title: Text('Import File', style: TextStyle(color: AppTheme.textLight)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentCyan),
-            )
-          : _isNotGitRepo
-          ? _buildNotGitRepoView()
-          : IndexedStack(
-              index: _selectedIndex,
-              children: [
-                _buildExplorerView(),
-                _buildHistoryView(),
-                _buildStatusView(),
-              ],
-            ),
-      bottomNavigationBar: _isNotGitRepo
-          ? null
-          : BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: (index) => setState(() => _selectedIndex = index),
-              backgroundColor: AppTheme.surfaceSlate,
-              selectedItemColor: AppTheme.accentCyan,
-              unselectedItemColor: AppTheme.textDim,
-              type: BottomNavigationBarType.fixed,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.folder_outlined),
-                  activeIcon: Icon(Icons.folder),
-                  label: 'Explorer',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.history_outlined),
-                  activeIcon: Icon(Icons.history),
-                  label: 'History',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.check_circle_outline),
-                  activeIcon: Icon(Icons.check_circle),
-                  label: 'Status',
-                ),
-              ],
-            ),
-      floatingActionButton: _isNotGitRepo || _isLoading
-          ? null
-          : _selectedIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: _showNewFileDialog,
-              icon: const Icon(Icons.add_comment_outlined),
-              label: const Text("New File"),
-              backgroundColor: AppTheme.accentCyan,
-              foregroundColor: Colors.black,
-            )
-          : _selectedIndex == 2 && _statusFiles.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _showCommitDialog,
-              icon: const Icon(Icons.check),
-              label: const Text("Commit"),
-              backgroundColor: AppTheme.accentCyan,
-              foregroundColor: Colors.black,
-            )
-          : null,
-    );
-  }
-
-  Widget _buildExplorerView() {
-    if (_files.isEmpty) {
-      return const Center(
-        child: Text(
-          "Empty directory",
-          style: TextStyle(color: AppTheme.textDim),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: _files.length,
-      itemBuilder: (context, index) {
-        final entity = _files[index];
-        final name = entity.path.split(Platform.pathSeparator).last;
-        final isDir = entity is Directory;
-
-        return ListTile(
-          leading: Icon(
-            isDir ? Icons.folder : Icons.description_outlined,
-            color: isDir ? AppTheme.accentCyan : AppTheme.textDim,
-          ),
-          title: Text(name),
-          trailing: PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.more_vert,
-              size: 18,
-              color: AppTheme.textDim,
-            ),
-            color: AppTheme.surfaceSlate,
-            onSelected: (value) async {
-              if (value == 'delete') {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: AppTheme.surfaceSlate,
-                    title: const Text("Delete"),
-                    content: Text("Are you sure you want to delete '$name'?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text("Cancel"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text(
-                          "Delete",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  if (isDir) {
-                    await (entity as Directory).delete(recursive: true);
-                  } else {
-                    await (entity as File).delete();
-                  }
-                  _fetchData();
-                  _listRepoFiles();
-                }
-              } else if (value == 'rename') {
-                final TextEditingController renameController =
-                    TextEditingController(text: name);
-                final newName = await showDialog<String>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: AppTheme.surfaceSlate,
-                    title: const Text("Rename"),
-                    content: TextField(
-                      controller: renameController,
-                      autofocus: true,
-                      style: const TextStyle(color: AppTheme.textLight),
-                      decoration: const InputDecoration(labelText: "New Name"),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Cancel"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(
-                          context,
-                          renameController.text.trim(),
-                        ),
-                        child: const Text(
-                          "Rename",
-                          style: TextStyle(color: AppTheme.accentCyan),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-                if (newName != null && newName.isNotEmpty && newName != name) {
-                  final newPath =
-                      "${entity.parent.path}${Platform.pathSeparator}$newName";
-                  await entity.rename(newPath);
-                  _fetchData();
-                  _listRepoFiles();
-                }
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'rename', child: Text('Rename')),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Text('Delete', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
-          onTap: () => _onItemTapped(entity),
-        );
-      },
-    );
-  }
-
-  Widget _buildHistoryView() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppTheme.accentCyan),
-      );
-    }
-    if (_commits.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 48, color: AppTheme.textDim),
-            SizedBox(height: 16),
-            Text("No commits found", style: TextStyle(color: AppTheme.textDim)),
-          ],
-        ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _commits.length,
-      itemBuilder: (context, index) {
-        return _buildCommitItem(index);
-      },
-    );
-  }
-
-  Widget _buildCommitItem(int index) {
-    final commit = _commits[index];
-    final hash = commit['hash'] ?? '0000000';
-    final msg = commit['message'] ?? 'No message';
-    final author = commit['author'] ?? 'Unknown';
-    final date = commit['date'] ?? 'N/A';
-
-    return InkWell(
-      onTap: () {
+    if (!mounted) return;
+    switch (result) {
+      case 'pull':
+        _pullRepo();
+        break;
+      case 'push':
+        _pushRepo();
+        break;
+      case 'stash_save':
+        _showStashSaveDialog();
+        break;
+      case 'stash_list':
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CommitDetailScreen(
-              commitHash: hash,
-              message: msg,
-              author: author,
-              date: date,
-              repoPath: widget.repoPath,
+            builder: (_) => StashScreen(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'graph':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CommitGraphScreen(
+              commits: _graphNodesFromCommits(),
+              title: '${widget.repoName} Graph',
             ),
           ),
         );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Column(
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.accentCyan,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                if (index < _commits.length - 1)
-                  Container(
-                    width: 2,
-                    height: 50,
-                    color: AppTheme.textDim.withOpacity(0.3),
-                  ),
-              ],
+        break;
+      case 'reflog':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ReflogScreen(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'share':
+        final url = await GitService.getRemoteUrl(widget.repoPath);
+        if (!mounted) return;
+        if (url.startsWith('http') || url.startsWith('git@')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  ShareRepoScreen(repoName: widget.repoName, remoteUrl: url),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    msg,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
+          );
+        } else {
+          _showSnack('No remote origin set', AppTheme.accentYellow);
+        }
+        break;
+    }
+  }
+
+  PopupMenuItem<String> _menuItem(
+    String value,
+    IconData icon,
+    String label,
+    Color color,
+  ) => PopupMenuItem(
+    value: value,
+    height: 44,
+    child: Row(
+      children: [
+        Icon(icon, size: 17, color: color),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: 14),
+        ),
+      ],
+    ),
+  );
+
+  // ── Build ─────────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.isCompact(context);
+    final branchColor = (_currentBranch == 'main' || _currentBranch == 'master')
+        ? AppTheme.accentGreen
+        : AppTheme.accentBlue;
+    final statusCount = _statusFiles.length;
+
+    return PopScope(
+      canPop: _currentDir == widget.repoPath,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _currentDir != widget.repoPath) {
+          setState(() {
+            _currentDir = Directory(_currentDir).parent.path;
+            _listRepoFiles();
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.bg0,
+        appBar: AppBar(
+          backgroundColor: AppTheme.bg0,
+          surfaceTintColor: Colors.transparent,
+          titleSpacing: 0,
+          leading: _currentDir != widget.repoPath
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                  onPressed: () => setState(() {
+                    _currentDir = Directory(_currentDir).parent.path;
+                    _listRepoFiles();
+                  }),
+                )
+              : null,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final narrowTitle = constraints.maxWidth < 220;
+                  final branchChip = GestureDetector(
+                    onTap: _showBranchDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: branchColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(
+                          color: branchColor.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.account_tree_rounded,
+                            size: 10,
+                            color: branchColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _currentBranch,
+                            style: GoogleFonts.firaMono(
+                              color: branchColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+
+                  if (narrowTitle) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.repoName,
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textPrimary,
+                            fontSize: compact ? 15 : 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        branchChip,
+                      ],
+                    );
+                  }
+
+                  return Row(
                     children: [
-                      Text(
-                        author,
-                        style: const TextStyle(
-                          color: AppTheme.textDim,
-                          fontSize: 12,
+                      Expanded(
+                        child: Text(
+                          widget.repoName,
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textPrimary,
+                            fontSize: compact ? 15 : 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        hash.substring(0, 7),
-                        style: const TextStyle(
-                          color: AppTheme.accentCyan,
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
+                      branchChip,
                     ],
+                  );
+                },
+              ),
+              if (_currentDir != widget.repoPath)
+                Text(
+                  _currentRelativePathLabel(),
+                  style: GoogleFonts.firaMono(
+                    color: AppTheme.textMuted,
+                    fontSize: 10,
                   ),
-                  const SizedBox(height: 4),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              tooltip: 'Refresh',
+              onPressed: () {
+                _fetchData();
+                _listRepoFiles();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.account_tree_rounded, size: 20),
+              tooltip: 'Branches',
+              onPressed: _showBranchDialog,
+            ),
+            Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.more_vert_rounded, size: 20),
+                tooltip: 'More actions',
+                onPressed: () => _showOverflowMenu(ctx),
+              ),
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppTheme.accentCyan),
+              )
+            : _isNotGitRepo
+            ? _buildNotGitRepoView()
+            : IndexedStack(
+                index: _selectedIndex,
+                children: [
+                  _buildExplorerView(),
+                  _buildHistoryView(),
+                  _buildStatusView(),
+                ],
+              ),
+        bottomNavigationBar: _isNotGitRepo
+            ? null
+            : NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (i) =>
+                    setState(() => _selectedIndex = i),
+                destinations: [
+                  const NavigationDestination(
+                    icon: Icon(Icons.folder_outlined),
+                    selectedIcon: Icon(Icons.folder_rounded),
+                    label: 'Explorer',
+                  ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.history_outlined),
+                    selectedIcon: Icon(Icons.history_rounded),
+                    label: 'History',
+                  ),
+                  NavigationDestination(
+                    icon: Badge(
+                      isLabelVisible: statusCount > 0,
+                      label: Text('$statusCount'),
+                      child: const Icon(Icons.adjust_outlined),
+                    ),
+                    selectedIcon: Badge(
+                      isLabelVisible: statusCount > 0,
+                      label: Text('$statusCount'),
+                      child: const Icon(Icons.adjust_rounded),
+                    ),
+                    label: 'Status',
+                  ),
+                ],
+              ),
+        floatingActionButton: _isNotGitRepo || _isLoading
+            ? null
+            : _selectedIndex == 0
+            ? FloatingActionButton(
+                onPressed: _showNewFileDialog,
+                tooltip: 'New File',
+                child: const Icon(Icons.add_rounded),
+              )
+            : _selectedIndex == 2 && _statusFiles.isNotEmpty
+            ? compact
+                  ? FloatingActionButton(
+                      onPressed: _showCommitDialog,
+                      tooltip: 'Commit',
+                      child: const Icon(Icons.check_rounded),
+                    )
+                  : FloatingActionButton.extended(
+                      onPressed: _showCommitDialog,
+                      icon: const Icon(Icons.check_rounded),
+                      label: Text(
+                        'Commit ${_statusFiles.length} files',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                    )
+            : null,
+      ),
+    );
+  }
+
+  // ── Explorer Tab ───────────────────────────────────────────────────────────────
+  Widget _buildExplorerView() {
+    if (_currentFiles.isEmpty) {
+      return EmptyState(
+        icon: Icons.folder_open_rounded,
+        title: 'Empty directory',
+        subtitle: 'Create a new file to get started',
+        action: ElevatedButton.icon(
+          onPressed: _showNewFileDialog,
+          icon: const Icon(Icons.add_rounded, size: 16),
+          label: const Text('New File'),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _currentFiles.length,
+      separatorBuilder: (_, __) => const Divider(height: 1, indent: 52),
+      itemBuilder: (context, index) {
+        final entity = _currentFiles[index];
+        final name = entity.path.split(Platform.pathSeparator).last;
+        final isDir = entity is Directory;
+        final ext = isDir ? '' : _fileExt(name);
+        final extColor = isDir ? AppTheme.accentCyan : _extColor(ext);
+
+        return PopupMenuButton<String>(
+          color: AppTheme.bg2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: AppTheme.border),
+          ),
+          onSelected: (value) async {
+            if (value == 'delete') {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete'),
+                  content: Text("Delete '$name'? This cannot be undone."),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(color: AppTheme.accentRed),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true) {
+                await entity.delete(recursive: isDir);
+                _fetchData();
+                _listRepoFiles();
+              }
+            } else if (value == 'rename') {
+              final ctrl = TextEditingController(text: name);
+              final newName = await showDialog<String>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Rename'),
+                  content: TextField(
+                    controller: ctrl,
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'New Name'),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+                      child: const Text('Rename'),
+                    ),
+                  ],
+                ),
+              );
+              if (newName != null && newName.isNotEmpty && newName != name) {
+                final newPath =
+                    '${entity.parent.path}${Platform.pathSeparator}$newName';
+                await entity.rename(newPath);
+                _listRepoFiles();
+              }
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: 'rename',
+              height: 40,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.edit_rounded,
+                    size: 16,
+                    color: AppTheme.accentCyan,
+                  ),
+                  const SizedBox(width: 10),
                   Text(
-                    date,
-                    style: const TextStyle(
-                      color: AppTheme.textDim,
-                      fontSize: 10,
+                    'Rename',
+                    style: GoogleFonts.inter(
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              height: 40,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 16,
+                    color: AppTheme.accentRed,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Delete',
+                    style: GoogleFonts.inter(
+                      color: AppTheme.accentRed,
+                      fontSize: 14,
                     ),
                   ),
                 ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusView() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppTheme.accentCyan),
-      );
-    }
-    if (_statusFiles.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 48,
-              color: AppTheme.accentCyan,
+          child: ListTile(
+            onTap: () {
+              if (isDir) {
+                setState(() {
+                  _currentDir = entity.path;
+                  _listRepoFiles();
+                });
+              }
+            },
+            leading: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: extColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                isDir ? Icons.folder_rounded : Icons.description_outlined,
+                size: 18,
+                color: extColor,
+              ),
             ),
-            SizedBox(height: 16),
-            Text("Worktree clean", style: TextStyle(color: AppTheme.textDim)),
-          ],
-        ),
-      );
-    }
-    return ListView.builder(
-      itemCount: _statusFiles.length,
-      itemBuilder: (context, index) {
-        final file = _statusFiles[index];
-        final fileName = file['path'] ?? 'Unknown';
-        final status = file['status'] ?? 'unknown';
-
-        return ListTile(
-          leading: Icon(_getStatusIcon(status), color: _getStatusColor(status)),
-          title: Text(fileName),
-          subtitle: Text(
-            status,
-            style: const TextStyle(fontSize: 10, color: AppTheme.textDim),
+            title: Text(
+              name,
+              style: GoogleFonts.inter(
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: !isDir && ext.isNotEmpty
+                ? Text(
+                    ext,
+                    style: GoogleFonts.firaMono(color: extColor, fontSize: 10),
+                  )
+                : null,
+            trailing: isDir
+                ? const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.textMuted,
+                    size: 18,
+                  )
+                : null,
           ),
-          trailing: status.contains('untracked') || status.contains('modified')
-              ? IconButton(
-                  icon: const Icon(
-                    Icons.add,
-                    color: AppTheme.accentCyan,
-                    size: 20,
-                  ),
-                  onPressed: () async {
-                    await GitService.gitAddFile(widget.repoPath, fileName);
-                    _fetchData();
-                  },
-                )
-              : const Icon(Icons.check, color: Colors.green, size: 16),
         );
       },
     );
   }
 
-  Widget _buildNotGitRepoView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.warning_amber_rounded,
-            size: 64,
-            color: Colors.orange,
+  // ── History Tab ───────────────────────────────────────────────────────────────
+  Widget _buildHistoryView() {
+    if (_commits.isEmpty) {
+      return EmptyState(
+        icon: Icons.history_rounded,
+        title: 'No commits yet',
+        subtitle:
+            'Make your first commit on the Status tab to start tracking history',
+        action: ElevatedButton.icon(
+          onPressed: () => setState(() => _selectedIndex = 2),
+          icon: const Icon(Icons.adjust_rounded, size: 16),
+          label: const Text('Go to Status'),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _commits.length,
+      itemBuilder: (context, index) => _buildCommitRow(index),
+    );
+  }
+
+  Widget _buildCommitRow(int index) {
+    final rawCommit = _commits[index];
+    if (rawCommit is! Map) {
+      return const SizedBox.shrink();
+    }
+    final commit = Map<String, dynamic>.from(rawCommit);
+    final hash = (commit['hash'] ?? '0000000').toString();
+    final msg = (commit['message'] ?? 'No message').toString();
+    final author = (commit['author'] ?? 'Unknown').toString();
+    final timeAgo = _relativeTime(commit['time']);
+    final isLast = index == _commits.length - 1;
+
+    // avatar letter + color from author hash
+    final avatarColor = _authorColor(author);
+    final initial = author.isNotEmpty ? author[0].toUpperCase() : '?';
+
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CommitDetailScreen(
+            commitHash: hash,
+            message: msg,
+            author: author,
+            date: timeAgo,
+            repoPath: widget.repoPath,
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Not a Git Repository',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textLight,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'This directory does not contain a valid .git folder.',
-            style: TextStyle(color: AppTheme.textDim),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () async {
-              setState(() => _isLoading = true);
-              final result = await GitService.initRepository(widget.repoPath);
-              if (result == 0) {
-                // Success, fetch fresh data
-                _fetchData();
-              } else {
-                setState(() => _isLoading = false);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Failed to initialize repository (code: $result)',
-                      ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Lane column
+            SizedBox(
+              width: 32,
+              child: Column(
+                children: [
+                  const SizedBox(height: 18),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: AppTheme.bg0,
+                      border: Border.all(color: AppTheme.accentCyan, width: 2),
+                      shape: BoxShape.circle,
                     ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  if (!isLast)
+                    Container(width: 2, height: 52, color: AppTheme.border),
+                ],
+              ),
             ),
-            icon: const Icon(Icons.add),
-            label: const Text(
-              'Initialize Repository',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(width: 12),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      msg,
+                      style: GoogleFonts.inter(
+                        color: AppTheme.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final narrow = constraints.maxWidth < 290;
+
+                        final authorChip = Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: avatarColor.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: avatarColor.withValues(alpha: 0.5),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  initial,
+                                  style: GoogleFonts.inter(
+                                    color: avatarColor,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                author,
+                                style: GoogleFonts.inter(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        );
+
+                        final hashChip = Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentCyan.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            hash.length >= 7 ? hash.substring(0, 7) : hash,
+                            style: GoogleFonts.firaMono(
+                              color: AppTheme.accentCyan,
+                              fontSize: 10,
+                            ),
+                          ),
+                        );
+
+                        if (narrow) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              authorChip,
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: [
+                                  hashChip,
+                                  Text(
+                                    timeAgo,
+                                    style: GoogleFonts.inter(
+                                      color: AppTheme.textMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(child: authorChip),
+                            const SizedBox(width: 8),
+                            hashChip,
+                            const SizedBox(width: 8),
+                            Text(
+                              timeAgo,
+                              style: GoogleFonts.inter(
+                                color: AppTheme.textMuted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _authorColor(String author) {
+    final hash = author.codeUnits.fold(0, (a, b) => a + b);
+    const colors = [
+      AppTheme.accentCyan,
+      AppTheme.accentGreen,
+      AppTheme.accentPurple,
+      AppTheme.accentOrange,
+      AppTheme.accentBlue,
+    ];
+    return colors[hash % colors.length];
+  }
+
+  // ── Status Tab ────────────────────────────────────────────────────────────────
+  Widget _buildStatusView() {
+    if (_statusFiles.isEmpty) {
+      return EmptyState(
+        icon: Icons.check_circle_outline_rounded,
+        title: 'Working tree clean',
+        subtitle: 'Nothing to commit — your changes are up to date',
+        iconColor: AppTheme.accentGreen,
+        action: OutlinedButton.icon(
+          onPressed: _pushRepo,
+          icon: const Icon(
+            Icons.upload_rounded,
+            size: 16,
+            color: AppTheme.accentBlue,
+          ),
+          label: Text(
+            'Push to remote',
+            style: GoogleFonts.inter(
+              color: AppTheme.accentBlue,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppTheme.accentBlue),
+          ),
+        ),
+      );
+    }
+
+    final staged = _statusFiles
+        .where(
+          (f) =>
+              (f['status'] ?? '').toString().toLowerCase().contains('staged'),
+        )
+        .toList();
+    final unstaged = _statusFiles
+        .where(
+          (f) =>
+              !(f['status'] ?? '').toString().toLowerCase().contains('staged'),
+        )
+        .toList();
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        if (staged.isNotEmpty) ...[
+          _sectionHeader('Staged', staged.length, AppTheme.accentGreen),
+          ...staged.map((f) => _buildStatusRow(f, isStaged: true)),
+          const SizedBox(height: 4),
+        ],
+        if (unstaged.isNotEmpty) ...[
+          _sectionHeader('Unstaged', unstaged.length, AppTheme.accentYellow),
+          ...unstaged.map((f) => _buildStatusRow(f, isStaged: false)),
+        ],
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+
+  Widget _sectionHeader(String label, int count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 14,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$count',
+              style: GoogleFonts.inter(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -1627,17 +1718,180 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     );
   }
 
-  IconData _getStatusIcon(String status) {
-    if (status.contains('new')) return Icons.add_box_outlined;
-    if (status.contains('modified')) return Icons.edit_note;
-    if (status.contains('deleted')) return Icons.delete_outline;
-    return Icons.help_outline;
+  Widget _buildStatusRow(dynamic file, {required bool isStaged}) {
+    final fileName = (file['path'] ?? 'Unknown').toString();
+    final status = (file['status'] ?? 'unknown').toString();
+    final statusColor = AppTheme.statusColor(status);
+    final statusLabel = AppTheme.statusLabel(status);
+    final parts = fileName.split('/');
+    final baseName = parts.last;
+    final dirName = parts.length > 1
+        ? '${parts.sublist(0, parts.length - 1).join('/')}/'
+        : '';
+
+    return Slidable(
+      key: ValueKey(fileName),
+      startActionPane: isStaged
+          ? ActionPane(
+              motion: const BehindMotion(),
+              extentRatio: 0.25,
+              children: [
+                SlidableAction(
+                  onPressed: (_) => _unstageFile(fileName),
+                  backgroundColor: AppTheme.accentOrange,
+                  foregroundColor: Colors.white,
+                  icon: Icons.remove_circle_outline_rounded,
+                  label: 'Unstage',
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                ),
+              ],
+            )
+          : ActionPane(
+              motion: const BehindMotion(),
+              extentRatio: 0.25,
+              children: [
+                SlidableAction(
+                  onPressed: (_) => _stageFile(fileName),
+                  backgroundColor: AppTheme.accentGreen,
+                  foregroundColor: Colors.black,
+                  icon: Icons.add_circle_outline_rounded,
+                  label: 'Stage',
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                ),
+              ],
+            ),
+      endActionPane: isStaged
+          ? null // No end action for staged (already handled by start pane)
+          : ActionPane(
+              motion: const BehindMotion(),
+              extentRatio: 0.25,
+              children: [
+                SlidableAction(
+                  onPressed: (_) => _discardFile(fileName),
+                  backgroundColor: AppTheme.accentRed,
+                  foregroundColor: Colors.white,
+                  icon: Icons.restore_rounded,
+                  label: 'Discard',
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                ),
+              ],
+            ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: GlassCard(
+          borderRadius: 12,
+          padding: EdgeInsets.zero,
+          accentBorder: statusColor,
+          child: ListTile(
+            dense: true,
+            leading: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Center(
+                child: Text(
+                  statusLabel,
+                  style: GoogleFonts.firaMono(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            title: RichText(
+              text: TextSpan(
+                children: [
+                  if (dirName.isNotEmpty)
+                    TextSpan(
+                      text: dirName,
+                      style: GoogleFonts.firaMono(
+                        color: AppTheme.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  TextSpan(
+                    text: baseName,
+                    style: GoogleFonts.firaMono(
+                      color: AppTheme.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              status,
+              style: GoogleFonts.inter(color: statusColor, fontSize: 10),
+            ),
+            trailing: isStaged
+                ? IconButton(
+                    icon: const Icon(
+                      Icons.remove_circle_outline_rounded,
+                      size: 18,
+                      color: AppTheme.accentOrange,
+                    ),
+                    tooltip: 'Unstage file',
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _unstageFile(fileName),
+                  )
+                : IconButton(
+                    icon: const Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 18,
+                      color: AppTheme.accentGreen,
+                    ),
+                    tooltip: 'Stage file',
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _stageFile(fileName),
+                  ),
+          ),
+        ),
+      ),
+    );
   }
 
-  Color _getStatusColor(String status) {
-    if (status.contains('staged')) return Colors.green;
-    if (status.contains('modified')) return Colors.orange;
-    if (status.contains('untracked')) return AppTheme.accentCyan;
-    return AppTheme.textDim;
+  // ── Not git repo ───────────────────────────────────────────────────────────────
+  Widget _buildNotGitRepoView() {
+    return EmptyState(
+      icon: Icons.warning_amber_rounded,
+      title: 'Not a Git Repository',
+      subtitle:
+          'This directory has no .git folder.\nInitialize it to start tracking.',
+      iconColor: AppTheme.accentYellow,
+      action: ElevatedButton.icon(
+        onPressed: () async {
+          setState(() => _isLoading = true);
+          final result = await GitService.initRepository(widget.repoPath);
+          if (result == 0) {
+            _fetchData();
+          } else {
+            setState(() => _isLoading = false);
+            _showSnack(
+              'Failed to initialize (code: $result)',
+              AppTheme.accentRed,
+            );
+          }
+        },
+        icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+        label: const Text('Initialize Repository'),
+      ),
+    );
   }
 }
