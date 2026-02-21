@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
 import 'merge_conflict_screen.dart';
+import 'stash_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -133,6 +134,45 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
         _branches = list;
       });
     }
+  }
+
+  Future<void> _showStashSaveDialog() async {
+    final controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceSlate,
+        title: const Text("Stash Changes", style: TextStyle(color: AppTheme.accentCyan)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: AppTheme.textLight),
+          decoration: const InputDecoration(
+            labelText: "Message (optional)",
+            labelStyle: TextStyle(color: AppTheme.textDim),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() => _isLoading = true);
+              final code = await GitService.stashSave(widget.repoPath, controller.text.trim());
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(code == 0 ? "Changes stashed!" : "Stash failed (code: $code)"))
+                );
+                _fetchData();
+                _listRepoFiles();
+              }
+            },
+            child: const Text("Stash", style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _showCommitDialog() async {
@@ -474,6 +514,21 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
               _fetchData();
               _listRepoFiles();
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.inventory_2_outlined),
+            tooltip: "Stashes",
+            onPressed: () {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (context) => StashScreen(repoPath: widget.repoPath))
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.archive_outlined),
+            tooltip: "Stash Changes",
+            onPressed: _showStashSaveDialog,
           ),
           IconButton(
             icon: const Icon(Icons.account_tree_outlined),

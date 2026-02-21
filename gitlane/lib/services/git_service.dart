@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'dart:convert';
 
 class GitService {
   static const _channel = MethodChannel('git_channel');
@@ -156,6 +157,38 @@ class GitService {
     } on PlatformException catch (e) {
       print("Failed to delete branch: '${e.message}'.");
       return -1;
+    }
+  }
+
+  /// Saves current changes to the stash.
+  static Future<int> stashSave(String path, String message) async {
+    try {
+      return await _channel.invokeMethod('stashSave', {'path': path, 'message': message});
+    } on PlatformException catch (e) {
+      print("Failed to stash save: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Pops a stash from the stack.
+  static Future<int> stashPop(String path, int index) async {
+    try {
+      return await _channel.invokeMethod('stashPop', {'path': path, 'index': index});
+    } on PlatformException catch (e) {
+      print("Failed to stash pop: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Returns a list of stashes.
+  static Future<List<Map<String, dynamic>>> getStashes(String path) async {
+    try {
+      final String? jsonVal = await _channel.invokeMethod('getStashes', {'path': path});
+      if (jsonVal == null) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
+    } on PlatformException catch (e) {
+      print("Failed to get stashes: '${e.message}'.");
+      return [];
     }
   }
 }

@@ -947,3 +947,109 @@ cleanup_delete:
 
     return (jint) result;
 }
+
+/* ─── Callback: Stash List Iteration ───────────────────────────────────── */
+struct stash_list_payload {
+    char *json;
+    size_t capacity;
+    size_t offset;
+    int first;
+};
+
+static int stash_cb(size_t index, const char *message, const git_oid *stash_id, void *payload) {
+    struct stash_list_payload *p = (struct stash_list_payload *)payload;
+    
+    char oid_str[GIT_OID_HEXSZ + 1];
+    git_oid_tostr(oid_str, sizeof(oid_str), stash_id);
+
+    if (!p->first) { p->json[p->offset++] = ','; }
+    p->offset += snprintf(p->json + p->offset, p->capacity - p->offset, 
+                         "{\"index\":%zu,\"message\":\"%s\",\"hash\":\"%s\"}", 
+                         index, message ? message : "No message", oid_str);
+    p->first = 0;
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 15. stashSave(path: String, message: String): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_stashSave(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jmessage) {
+
+    git_libgit2_init();
+    const char *path    = (*env)->GetStringUTFChars(env, jpath,    NULL);
+    const char *message = (*env)->GetStringUTFChars(env, jmessage, NULL);
+
+    git_repository *repo = NULL;
+    git_signature  *sig  = NULL;
+    git_oid         stash_oid;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_stash_save;
+    git_signature_now(&sig, "GitLane", "gitlane@local");
+    result = git_stash_save(&stash_oid, repo, sig, message, GIT_STASH_DEFAULT);
+
+cleanup_stash_save:
+    if (sig) git_signature_free(sig);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath,    path);
+    (*env)->ReleaseStringUTFChars(env, jmessage, message);
+    git_libgit2_shutdown();
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 16. stashPop(path: String, index: Int): Int
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_stashPop(
+        JNIEnv *env, jobject obj, jstring jpath, jint index) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+    git_stash_apply_options opts = GIT_STASH_APPLY_OPTIONS_INIT;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) == 0) {
+        result = git_stash_pop(repo, (size_t)index, &opts);
+    }
+
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 17. getStashes(path: String): String
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getStashes(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    git_repository *repo = NULL;
+
+    struct stash_list_payload payload;
+    payload.capacity = 8192;
+    payload.json = malloc(payload.capacity);
+    payload.offset = 0;
+    payload.first = 1;
+    strcpy(payload.json, "[");
+    payload.offset = 1;
+
+    if (git_repository_open(&repo, path) == 0) {
+        git_stash_foreach(repo, stash_cb, &payload);
+    }
+    strcat(payload.json, "]");
+
+    jstring result_str = (*env)->NewStringUTF(env, payload.json);
+    free(payload.json);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+    return result_str;
+}

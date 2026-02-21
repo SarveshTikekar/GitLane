@@ -127,6 +127,28 @@ class MainActivity : FlutterActivity() {
                         result.success(bridge.getConflicts(path))
                     }
 
+                    "stashSave" -> {
+                        val path    = call.argument<String>("path")
+                        val message = call.argument<String>("message")
+                        if (path == null || message == null) { result.error("INVALID_ARG", "path and message required", null); return@setMethodCallHandler }
+                        val code = bridge.stashSave(path, message)
+                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "stashSave failed: $code", code)
+                    }
+
+                    "stashPop" -> {
+                        val path  = call.argument<String>("path")
+                        val index = call.argument<Int>("index")
+                        if (path == null || index == null) { result.error("INVALID_ARG", "path and index required", null); return@setMethodCallHandler }
+                        val code = bridge.stashPop(path, index)
+                        if (code >= 0) result.success(code) else result.error("GIT_ERROR", "stashPop failed: $code", code)
+                    }
+
+                    "getStashes" -> {
+                        val path = call.argument<String>("path")
+                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
+                        result.success(bridge.getStashes(path))
+                    }
+
                     else -> result.notImplemented()
                 }
             }

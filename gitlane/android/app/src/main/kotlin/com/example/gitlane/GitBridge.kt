@@ -43,6 +43,9 @@ class GitBridge {
     external fun getBranches(path: String): String
     external fun getConflicts(path: String): String
     external fun deleteBranch(path: String, branchName: String): Int
+    external fun stashSave(path: String, message: String): Int
+    external fun stashPop(path: String, index: Int): Int
+    external fun getStashes(path: String): String
 
     companion object {
         init {
