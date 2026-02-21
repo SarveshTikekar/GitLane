@@ -33,11 +33,16 @@ class GlassCard extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: AppTheme.bg1.withValues(alpha: 0.8 + opacity),
+            color: Theme.of(context)
+                .colorScheme
+                .surface
+                .withValues(alpha: 0.8 + opacity),
             borderRadius: BorderRadius.circular(borderRadius),
             border: gradientBorder
                 ? null
-                : Border.all(color: AppTheme.border, width: 1.0),
+                : Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                    width: 1.0),
           ),
           child: accentBorder != null
               ? IntrinsicHeight(
@@ -97,9 +102,9 @@ class ShimmerCard extends StatelessWidget {
       margin: margin ?? const EdgeInsets.only(bottom: 12),
       height: height,
       decoration: BoxDecoration(
-        color: AppTheme.bg1,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
       ),
     );
   }

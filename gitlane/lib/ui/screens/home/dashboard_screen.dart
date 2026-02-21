@@ -225,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final compact = Responsive.isCompact(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         color: AppTheme.accentCyan,
         backgroundColor: AppTheme.bg2,
@@ -288,13 +288,35 @@ class _DashboardScreenState extends State<DashboardScreen>
     required double horizontalPadding,
     required double maxContentWidth,
   }) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
     return SliverAppBar(
       expandedHeight: compact ? 188 : 168,
       floating: false,
       pinned: true,
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       actions: [
+        // ── Theme toggle ───────────────────────────────────────────────────
+        ValueListenableBuilder<ThemeMode>(
+          valueListenable: AppTheme.themeNotifier,
+          builder: (context, mode, _) => IconButton(
+            icon: Icon(
+              mode == ThemeMode.dark
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+            ),
+            tooltip: mode == ThemeMode.dark
+                ? 'Switch to Light Theme'
+                : 'Switch to Dark Theme',
+            onPressed: () {
+              AppTheme.themeNotifier.value = mode == ThemeMode.dark
+                  ? ThemeMode.light
+                  : ThemeMode.dark;
+            },
+            color: AppTheme.textSecondary,
+          ),
+        ),
         IconButton(
           icon: const Icon(Icons.qr_code_scanner_rounded),
           tooltip: 'Scan QR to Clone',
@@ -312,11 +334,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
         background: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF0D1117), Color(0xFF161B22)],
+              colors: isDark
+                  ? [const Color(0xFF0D1117), const Color(0xFF161B22)]
+                  : [const Color(0xFFFFFFFF), const Color(0xFFF6F8FA)],
             ),
           ),
           child: SafeArea(
@@ -522,8 +546,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxContentWidth),
             child: Shimmer.fromColors(
-              baseColor: AppTheme.bg1,
-              highlightColor: AppTheme.bg2,
+              baseColor: Theme.of(context).colorScheme.surface,
+              highlightColor:
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
               child: ShimmerCard(
                 height: 130,
                 margin: EdgeInsets.fromLTRB(
