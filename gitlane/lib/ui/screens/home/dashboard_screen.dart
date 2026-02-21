@@ -12,6 +12,8 @@ import '../../widgets/empty_state.dart';
 import '../repository/repository_root_screen.dart';
 import '../../../services/git_service.dart';
 import 'qr_scanner_dialog.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:archive/archive.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -1301,6 +1303,20 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                         ),
                       ],
                     ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _importFromZip,
+                      icon: const Icon(Icons.download_rounded, size: 16),
+                      label: const Text('Import Offline Repository (.zip)'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.accentCyan,
+                        side: const BorderSide(color: AppTheme.accentCyan),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1308,5 +1324,49 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _importFromZip() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip', 'bundle'],
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      setState(() => _isLoading = true);
+      
+      final file = File(result.files.single.path!);
+      final bytes = await file.readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+
+      for (final file in archive) {
+        final filename = file.name;
+        if (file.isFile) {
+          final data = file.content as List<int>;
+          File('${widget.docsPath}/$filename')
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(data);
+        } else {
+          Directory('${widget.docsPath}/$filename').createSync(recursive: true);
+        }
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onComplete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(backgroundColor: AppTheme.accentGreen, content: Text('✓ Repository imported successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Import failed: $e';
+        });
+      }
+    }
   }
 }
