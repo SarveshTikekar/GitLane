@@ -2151,3 +2151,86 @@ cleanup_rebase_finish:
     git_libgit2_shutdown();
     return result;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 37. getCommitContent(path: String, message: String): String
+ *     Returns the unsigned commit content as a string for signing.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getCommitContent(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jmsg) {
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *msg  = (*env)->GetStringUTFChars(env, jmsg,  NULL);
+
+    git_repository *repo = NULL;
+    git_index *index = NULL;
+    git_oid tree_id, parent_id;
+    git_tree *tree = NULL;
+    git_commit *parent = NULL;
+    git_signature *sig = NULL;
+    git_buf commit_buf = {0};
+    char *result_str = NULL;
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_content;
+    if (git_repository_index(&index, repo) < 0) goto cleanup_content;
+    if (git_index_write_tree(&tree_id, index) < 0) goto cleanup_content;
+    if (git_tree_lookup(&tree, repo, &tree_id) < 0) goto cleanup_content;
+
+    git_signature_now(&sig, "User", "user@example.com");
+
+    int parent_count = 0;
+    if (git_reference_name_to_id(&parent_id, repo, "HEAD") == 0) {
+        git_commit_lookup(&parent, repo, &parent_id);
+        parent_count = 1;
+    }
+
+    const git_commit *parents[] = { parent };
+    if (git_commit_create_buffer(&commit_buf, repo, sig, sig, NULL, msg, tree, parent_count, parents) == 0) {
+        result_str = strndup(commit_buf.ptr, commit_buf.size);
+    }
+
+cleanup_content:
+    git_buf_dispose(&commit_buf);
+    if (sig) git_signature_free(sig);
+    if (parent) git_commit_free(parent);
+    if (tree) git_tree_free(tree);
+    if (index) git_index_free(index);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jmsg, msg);
+    git_libgit2_shutdown();
+
+    jstring jres = (*env)->NewStringUTF(env, result_str ? result_str : "");
+    if (result_str) free(result_str);
+    return jres;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 38. commitSigned(path: String, message: String, signature: String): Int
+ *     Assembles and creates a signed commit.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_commitSigned(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jcontent, jstring jsig) {
+    git_libgit2_init();
+    const char *path    = (*env)->GetStringUTFChars(env, jpath,    NULL);
+    const char *content = (*env)->GetStringUTFChars(env, jcontent, NULL);
+    const char *sig     = (*env)->GetStringUTFChars(env, jsig,     NULL);
+
+    git_repository *repo = NULL;
+    git_oid commit_id;
+    int result = 0;
+
+    if (git_repository_open(&repo, path) < 0) { result = -1; goto cleanup_signed; }
+
+    result = git_commit_create_with_signature(&commit_id, repo, content, sig, "gpgsig");
+
+cleanup_signed:
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath,    path);
+    (*env)->ReleaseStringUTFChars(env, jcontent, content);
+    (*env)->ReleaseStringUTFChars(env, jsig,     sig);
+    git_libgit2_shutdown();
+    return result;
+}

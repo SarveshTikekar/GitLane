@@ -71,6 +71,8 @@ class GitBridge {
     external fun rebaseCommit(path: String, authorName: String, authorEmail: String, message: String): Int
     external fun rebaseAbort(path: String): Int
     external fun rebaseFinish(path: String): Int
+    external fun commitSigned(path: String, message: String, signature: String): Int
+    external fun getCommitContent(path: String, message: String): String
 
     companion object {
         init {

@@ -214,6 +214,17 @@ class MainActivity : FlutterActivity() {
                                     val path = call.argument<String>("path")!!
                                     bridge.rebaseFinish(path)
                                 }
+                                "commitSigned" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val message = call.argument<String>("message")!!
+                                    val signature = call.argument<String>("signature")!!
+                                    bridge.commitSigned(path, message, signature)
+                                }
+                                "getCommitContent" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val message = call.argument<String>("message")!!
+                                    bridge.getCommitContent(path, message)
+                                }
                                 "generateSSHKey" -> {
                                     val label = call.argument<String>("label")!!
                                     val type = call.argument<String>("type")!!

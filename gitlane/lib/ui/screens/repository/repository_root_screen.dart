@@ -26,6 +26,8 @@ import 'ssh_workbench_screen.dart';
 import 'rebase_workbench.dart';
 import 'semantic_search_screen.dart';
 import 'git_hooks_screen.dart';
+import 'collaboration_dashboard.dart';
+import 'gpg_workbench.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -1128,6 +1130,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentGreen,
         ),
         _menuItem(
+          'social',
+          Icons.groups_rounded,
+          'Collaboration',
+          AppTheme.accentCyan,
+        ),
+        _menuItem(
+          'gpg',
+          Icons.verified_user_rounded,
+          'GPG Workbench',
+          AppTheme.accentOrange,
+        ),
+        _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
@@ -1221,6 +1235,22 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           context,
           MaterialPageRoute(
             builder: (_) => GitHooksScreen(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'social':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CollaborationDashboard(repoPath: widget.repoPath),
+          ),
+        );
+        break;
+      case 'gpg':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const GPGWorkbench(),
           ),
         );
         break;
