@@ -440,21 +440,20 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        color: AppTheme.bg1,
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 13, color: color.withValues(alpha: 0.8)),
           const SizedBox(width: 5),
           Text(
             '$count $label',
             style: GoogleFonts.inter(
-              color: color,
+              color: AppTheme.textPrimary,
               fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -721,21 +720,17 @@ class _RepoCard extends StatelessWidget {
     final modified = repo['modified'] as int? ?? 0;
     final untracked = repo['untracked'] as int? ?? 0;
     final isDirty = repo['isDirty'] as bool? ?? false;
-    final lastCommit = (repo['lastCommit'] ?? '').toString();
-    final lastCommitTime = (repo['lastCommitTime'] ?? '').toString();
     final title = (repo['title'] ?? 'Repository').toString();
     final dirtyLabel = [
       if (modified > 0) '${modified}M',
       if (untracked > 0) '${untracked}U',
     ].join(' ');
 
-    final statusColor = isDirty ? AppTheme.accentYellow : AppTheme.accentGreen;
     final branchColor = (branch == 'main' || branch == 'master')
         ? AppTheme.accentGreen
         : AppTheme.accentBlue;
 
     return GlassCard(
-      accentBorder: statusColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -769,7 +764,7 @@ class _RepoCard extends StatelessWidget {
                     _StatusBadge(
                       label: isDirty
                           ? (dirtyLabel.isEmpty ? 'dirty' : dirtyLabel)
-                          : '✓ clean',
+                          : 'clean',
                       color: isDirty
                           ? AppTheme.accentYellow
                           : AppTheme.accentGreen,
@@ -778,107 +773,26 @@ class _RepoCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                if (compact)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _BranchChip(branch: branch, color: branchColor),
-                      if (lastCommit.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          lastCommit,
-                          style: GoogleFonts.inter(
-                            color: AppTheme.textSecondary,
-                            fontSize: 11,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (lastCommitTime.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              lastCommitTime,
-                              style: GoogleFonts.inter(
-                                color: AppTheme.textMuted,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ],
-                  )
-                else
-                  Row(
-                    children: [
-                      _BranchChip(branch: branch, color: branchColor),
-                      if (lastCommit.isNotEmpty) ...[
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            lastCommit,
-                            style: GoogleFonts.inter(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (lastCommitTime.isNotEmpty)
-                          Text(
-                            lastCommitTime,
-                            style: GoogleFonts.inter(
-                              color: AppTheme.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
+                _BranchChip(branch: branch, color: branchColor),
               ],
             ),
           ),
 
-          // ── Divider ───────────────────────────────────────────────────────
-          const Divider(height: 1, color: AppTheme.border),
-
-          // ── Action row: Open | Pull | status badge ────────────────────────
-          SizedBox(
-            height: 44,
+          Padding(
+            padding: const EdgeInsets.only(right: 8, bottom: 8, top: 4),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: _ActionButton(
-                    icon: Icons.open_in_new_rounded,
-                    label: 'Open',
-                    color: AppTheme.accentCyan,
-                    onTap: onOpen,
-                  ),
+                _ActionButton(
+                  icon: Icons.download_rounded,
+                  tooltip: 'Pull',
+                  onTap: onPull,
                 ),
-                Container(width: 1, color: AppTheme.border),
-                Expanded(
-                  child: _ActionButton(
-                    icon: Icons.download_rounded,
-                    label: 'Pull',
-                    color: AppTheme.textSecondary,
-                    onTap: onPull,
-                  ),
-                ),
-                Container(width: 1, color: AppTheme.border),
-                Expanded(
-                  child: _ActionButton(
-                    icon: isDirty
-                        ? Icons.circle_notifications_rounded
-                        : Icons.check_circle_rounded,
-                    label: isDirty
-                        ? compact
-                              ? '${modified + untracked} chg'
-                              : '${modified + untracked} changes'
-                        : 'Clean',
-                    color: statusColor,
-                    onTap: onOpen,
-                  ),
+                const SizedBox(width: 4),
+                _ActionButton(
+                  icon: Icons.open_in_new_rounded,
+                  tooltip: 'Open',
+                  onTap: onOpen,
                 ),
               ],
             ),
@@ -901,8 +815,7 @@ class _BranchChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -936,8 +849,7 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -960,43 +872,51 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   final IconData icon;
-  final String label;
-  final Color color;
+  final String tooltip;
   final VoidCallback onTap;
 
   const _ActionButton({
     required this.icon,
-    required this.label,
-    required this.color,
+    required this.tooltip,
     required this.onTap,
   });
 
   @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+    return Tooltip(
+      message: widget.tooltip,
+      textStyle: GoogleFonts.inter(color: AppTheme.bg0, fontSize: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.textPrimary.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: InkWell(
+        onHover: (val) => setState(() => _isHovered = val),
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? AppTheme.accentCyan.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            widget.icon,
+            size: 16,
+            color: _isHovered ? AppTheme.accentCyan : AppTheme.textMuted,
+          ),
         ),
       ),
     );
