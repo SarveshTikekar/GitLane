@@ -4,6 +4,8 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.*
+import java.io.*
+import java.util.zip.*
 
 class MainActivity : FlutterActivity() {
 
@@ -218,34 +220,39 @@ class MainActivity : FlutterActivity() {
                                     val path = call.argument<String>("path")!!
                                     val message = call.argument<String>("message")!!
                                     val signature = call.argument<String>("signature")!!
-                                    result.success(bridge.commitSigned(path, message, signature))
+                                    bridge.commitSigned(path, message, signature)
                                 }
                                 "getCommitContent" -> {
                                     val path = call.argument<String>("path")!!
                                     val message = call.argument<String>("message")!!
-                                    result.success(bridge.getCommitContent(path, message))
+                                    bridge.getCommitContent(path, message)
                                 }
                                 "runHealthCheck" -> {
                                     val path = call.argument<String>("path")!!
-                                    result.success(bridge.runHealthCheck(path))
+                                    bridge.runHealthCheck(path)
                                 }
                                 "createBundle" -> {
                                     val path = call.argument<String>("path")!!
                                     val bundlePath = call.argument<String>("bundlePath")!!
-                                    result.success(bridge.createBundle(path, bundlePath))
+                                    try {
+                                        zipFolder(File(path), File(bundlePath))
+                                        0
+                                    } catch (e: Exception) {
+                                        -1
+                                    }
                                 }
                                 "generateSSHKey" -> {
                                     val label = call.argument<String>("label")!!
                                     val type = call.argument<String>("type")!!
                                     val bits = call.argument<Int>("bits") ?: 2048
-                                    result.success(sshManager.generateKeyPair(label, type, bits))
+                                    sshManager.generateKeyPair(label, type, bits)
                                 }
                                 "listSSHKeys" -> {
-                                    result.success(sshManager.listKeys())
+                                    sshManager.listKeys()
                                 }
                                 "deleteSSHKey" -> {
                                     val label = call.argument<String>("label")!!
-                                    result.success(sshManager.deleteKey(label))
+                                    sshManager.deleteKey(label)
                                 }
                                 "getSSHPublicKey" -> {
                                     val label = call.argument<String>("label")!!
@@ -279,5 +286,25 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+    }
+
+    private fun zipFolder(sourceFolder: File, zipFile: File) {
+        zipFile.outputStream().use { fos ->
+            ZipOutputStream(fos).use { zos ->
+                sourceFolder.walkTopDown().forEach { file ->
+                    if (file.absolutePath != zipFile.absolutePath) {
+                        val zipEntryName = file.relativeTo(sourceFolder).path
+                        if (file.isDirectory) {
+                            zos.putNextEntry(ZipEntry("$zipEntryName/"))
+                            zos.closeEntry()
+                        } else {
+                            zos.putNextEntry(ZipEntry(zipEntryName))
+                            file.inputStream().use { it.copyTo(zos) }
+                            zos.closeEntry()
+                        }
+                    }
+                }
+            }
+        }
     }
 }

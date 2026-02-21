@@ -74,7 +74,6 @@ class GitBridge {
     external fun commitSigned(path: String, message: String, signature: String): Int
     external fun getCommitContent(path: String, message: String): String
     external fun runHealthCheck(path: String): String
-    external fun createBundle(path: String, bundlePath: String): Int
 
     companion object {
         init {
