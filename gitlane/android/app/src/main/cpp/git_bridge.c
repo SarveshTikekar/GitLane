@@ -600,3 +600,90 @@ cleanup_add:
 
     return (jint) result;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 9. getCommitDiff(path: String, commitHash: String): String
+ *    Returns the patch text (diff) for a specific commit hash.
+ *    Diffs the commit against its first parent.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+struct diff_payload {
+    char *output;
+    size_t size;
+    size_t capacity;
+};
+
+static int diff_print_callback(
+    const git_diff_delta *delta,
+    const git_diff_hunk *hunk,
+    const git_diff_line *line,
+    void *payload) {
+    
+    struct diff_payload *p = (struct diff_payload *)payload;
+    
+    if (p->size + line->content_len + 1 > p->capacity) {
+        p->capacity *= 2;
+        p->output = realloc(p->output, p->capacity);
+    }
+    
+    memcpy(p->output + p->size, line->content, line->content_len);
+    p->size += line->content_len;
+    p->output[p->size] = '\0';
+    
+    return 0;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getCommitDiff(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jhash) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *hash = (*env)->GetStringUTFChars(env, jhash, NULL);
+
+    git_repository *repo = NULL;
+    git_commit     *commit = NULL;
+    git_commit     *parent = NULL;
+    git_tree       *commit_tree = NULL;
+    git_tree       *parent_tree = NULL;
+    git_diff       *diff = NULL;
+    git_oid         oid;
+    int result = 0;
+
+    struct diff_payload payload;
+    payload.capacity = 16384;
+    payload.size = 0;
+    payload.output = malloc(payload.capacity);
+    payload.output[0] = '\0';
+
+    if (git_repository_open(&repo, path) < 0) goto cleanup_diff;
+    if (git_oid_fromstr(&oid, hash) < 0) goto cleanup_diff;
+    if (git_commit_lookup(&commit, repo, &oid) < 0) goto cleanup_diff;
+    if (git_commit_tree(&commit_tree, commit) < 0) goto cleanup_diff;
+
+    if (git_commit_parentcount(commit) > 0) {
+        if (git_commit_parent(&parent, commit, 0) == 0) {
+            git_commit_tree(&parent_tree, parent);
+        }
+    }
+
+    /* Diff trees */
+    if (git_diff_tree_to_tree(&diff, repo, parent_tree, commit_tree, NULL) == 0) {
+        git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_callback, &payload);
+    }
+
+cleanup_diff:
+    if (diff) git_diff_free(diff);
+    if (parent_tree) git_tree_free(parent_tree);
+    if (commit_tree) git_tree_free(commit_tree);
+    if (parent) git_commit_free(parent);
+    if (commit) git_commit_free(commit);
+    if (repo) git_repository_free(repo);
+    
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jhash, hash);
+    git_libgit2_shutdown();
+
+    jstring result_str = (*env)->NewStringUTF(env, payload.output);
+    free(payload.output);
+    return result_str;
+}

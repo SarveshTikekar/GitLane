@@ -24,14 +24,15 @@ This file tracks the status of the native Git engine. Teammates should check thi
 | `getCommitLog` | Returns the commit history | JSON String |
 | `getRepositoryStatus` | Summary of modified/staged files | JSON String |
 | `gitAddFile` | Stages a specific file (git add) | Int (0=Success) |
+| `getCommitDiff` | Returns patch text for a commit hash | String (Patch) |
 
 ---
 
 ## 🛠️ WHAT NEEDS TO BE DONE (Current Focus)
 
 ### 📂 Phase 5: Enhanced Local Operations
-- [ ] **Visualizing Diffs**: Native method to get diff text for a specific commit.
 - [ ] **Partial Staging**: Support staging Hunk/Line level changes via native API.
+- [ ] **Stash Management**: Native support for `git stash` operations.
 
 ### 🌐 Phase 6: Remote Operations (Requires Network Backend)
 - [ ] **HTTPS Integration**: Re-enable HTTPS backend (OpenSSL/MbedTLS) to support remotes.
