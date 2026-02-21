@@ -1392,10 +1392,20 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final narrowTitle = constraints.maxWidth < 220;
-                  final branchChip = GestureDetector(
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    widget.repoName,
+                    style: GoogleFonts.inter(
+                      color: AppTheme.textPrimary,
+                      fontSize: compact ? 15 : 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  GestureDetector(
                     onTap: _showBranchDialog,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -1429,47 +1439,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         ],
                       ),
                     ),
-                  );
-
-                  if (narrowTitle) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.repoName,
-                          style: GoogleFonts.inter(
-                            color: AppTheme.textPrimary,
-                            fontSize: compact ? 15 : 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        branchChip,
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.repoName,
-                          style: GoogleFonts.inter(
-                            color: AppTheme.textPrimary,
-                            fontSize: compact ? 15 : 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      branchChip,
-                    ],
-                  );
-                },
+                  ),
+                ],
               ),
               if (_currentDir != widget.repoPath)
                 Text(

@@ -65,7 +65,36 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
 
   Future<void> _loadIP() async {
     final ip = await _syncService.getLocalIP();
-    setState(() => _localIP = ip);
+    if (mounted) setState(() => _localIP = ip);
+  }
+
+  void _manualIP() {
+    final controller = TextEditingController(text: _localIP ?? '');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.bg1,
+        title: const Text('Manual IP Override', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'e.g. 192.168.1.5',
+            hintStyle: TextStyle(color: AppTheme.textMuted),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              setState(() => _localIP = controller.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _toggleHub() async {
@@ -176,7 +205,10 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
   }
 
   void _showRepoQR(String repoId) {
-    if (_localIP == null) return;
+    if (_localIP == null || _localIP!.isEmpty) {
+      _snack('⚠ Local IP not detected. Set it manually in the Host Card.', AppTheme.accentOrange);
+      return;
+    }
     final qrData = 'gitlane://hub/$_localIP:8080/repo/$repoId';
     
     showDialog(
@@ -224,6 +256,8 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
             const SizedBox(height: 32),
             _buildHostCard(isHosting),
             if (isHosting) ...[
+              const SizedBox(height: 32),
+              _buildIPCard(),
               const SizedBox(height: 32),
               _buildSharedReposList(),
               const SizedBox(height: 32),
@@ -285,6 +319,47 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
           Switch(value: isHosting, onChanged: (_) => _toggleHub(), activeColor: AppTheme.accentGreen),
         ],
       ),
+    );
+  }
+
+  Widget _buildIPCard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('HUB ADDRESS', style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(color: AppTheme.bg1, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.border)),
+          child: Row(
+            children: [
+              Icon(Icons.wifi_rounded, color: _localIP != null ? AppTheme.accentCyan : AppTheme.accentOrange, size: 18),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _localIP != null ? '$_localIP:8080' : 'IP Not Detected',
+                  style: GoogleFonts.firaMono(color: _localIP != null ? Colors.white : AppTheme.accentOrange, fontSize: 14),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_rounded, color: AppTheme.textMuted, size: 18),
+                onPressed: _manualIP,
+                tooltip: 'Manual IP Override',
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: AppTheme.textMuted, size: 18),
+                onPressed: _loadIP,
+                tooltip: 'Refresh IP',
+              ),
+            ],
+          ),
+        ),
+        if (_localIP == null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 4),
+            child: Text('⚠ Required for QR generation and peer discovery.', style: TextStyle(color: AppTheme.accentOrange, fontSize: 10)),
+          ),
+      ],
     );
   }
 
