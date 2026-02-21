@@ -16,7 +16,9 @@ class RepositoryRootScreen extends StatefulWidget {
 class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   int _selectedIndex = 0;
   List<dynamic> _commits = [];
+  String? _repoStatus;
   bool _isLoading = false;
+  bool _isNotGitRepo = false;
 
   List<dynamic> _statusFiles = [];
   bool _isStatusLoading = false;
@@ -24,49 +26,50 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchHistory();
-    _fetchStatus();
+    _fetchData();
   }
 
-  Future<void> _fetchStatus() async {
-    setState(() => _isStatusLoading = true);
-    final statusJson = await GitService.getRepositoryStatus(widget.repoPath);
-    if (statusJson != null) {
-      try {
-        final decoded = jsonDecode(statusJson);
-        if (decoded is List) {
-          setState(() {
-            _statusFiles = decoded;
-          });
-        }
-      } catch (e) {
-        debugPrint("Status parsing error: $e");
-      }
-    }
-    setState(() => _isStatusLoading = false);
-  }
-
-  Future<void> _fetchHistory() async {
+  Future<void> _fetchData() async {
     setState(() => _isLoading = true);
+    
     final logJson = await GitService.getCommitLog(widget.repoPath);
-    if (logJson != null) {
-      try {
-        final decoded = jsonDecode(logJson);
-        if (decoded is List) {
-          setState(() {
-            _commits = decoded;
-          });
-        } else if (decoded is Map && decoded.containsKey('error')) {
-          debugPrint("Bridge error: ${decoded['error']}");
-          setState(() {
-            _commits = [];
-          });
+    final statusJson = await GitService.getRepositoryStatus(widget.repoPath);
+
+    if (mounted) {
+      setState(() {
+        if (logJson == null && statusJson == null) {
+          _isNotGitRepo = true;
+        } else {
+          _isNotGitRepo = false;
+          
+          if (logJson != null) {
+            try {
+              final decodedLog = jsonDecode(logJson);
+              if (decodedLog is List) {
+                _commits = decodedLog;
+              } else if (decodedLog is Map && decodedLog.containsKey('error')) {
+                debugPrint("Bridge error: ${decodedLog['error']}");
+                _commits = [];
+              }
+            } catch (e) {
+              debugPrint("Parsing log error: $e");
+            }
+          }
+
+          if (statusJson != null) {
+            try {
+              final decodedStatus = jsonDecode(statusJson);
+              if (decodedStatus is List) {
+                _statusFiles = decodedStatus;
+              }
+            } catch (e) {
+              debugPrint("Parsing status error: $e");
+            }
+          }
         }
-      } catch (e) {
-        debugPrint("Parsing error: $e");
-      }
+        _isLoading = false;
+      });
     }
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -86,10 +89,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _fetchHistory();
-              _fetchStatus();
-            },
+            onPressed: _fetchData,
           ),
           IconButton(
             icon: const Icon(Icons.account_tree_outlined),
@@ -97,39 +97,45 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          _buildExplorerView(),
-          _buildHistoryView(),
-          _buildStatusView(),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        backgroundColor: AppTheme.surfaceSlate,
-        selectedItemColor: AppTheme.accentCyan,
-        unselectedItemColor: AppTheme.textDim,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder_outlined),
-            activeIcon: Icon(Icons.folder),
-            label: 'Explorer',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'History',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check_circle_outline),
-            activeIcon: Icon(Icons.check_circle),
-            label: 'Status',
-          ),
-        ],
-      ),
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          : _isNotGitRepo 
+              ? _buildNotGitRepoView()
+              : IndexedStack(
+                  index: _selectedIndex,
+                  children: [
+                    _buildExplorerView(),
+                    _buildHistoryView(),
+                    _buildStatusView(),
+                  ],
+                ),
+      bottomNavigationBar: _isNotGitRepo 
+          ? null 
+          : BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: (index) => setState(() => _selectedIndex = index),
+              backgroundColor: AppTheme.surfaceSlate,
+              selectedItemColor: AppTheme.accentCyan,
+              unselectedItemColor: AppTheme.textDim,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.folder_outlined),
+                  activeIcon: Icon(Icons.folder),
+                  label: 'Explorer',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.history_outlined),
+                  activeIcon: Icon(Icons.history),
+                  label: 'History',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.check_circle_outline),
+                  activeIcon: Icon(Icons.check_circle),
+                  label: 'Status',
+                ),
+              ],
+            ),
     );
   }
 
@@ -258,7 +264,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
   }
 
   Widget _buildStatusView() {
-    if (_isStatusLoading) {
+    if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan));
     }
     if (_statusFiles.isEmpty) {
@@ -292,12 +298,58 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
                 icon: const Icon(Icons.add, color: AppTheme.accentCyan, size: 20),
                 onPressed: () async {
                    await GitService.gitAddFile(widget.repoPath, fileName);
-                   _fetchStatus();
+                   _fetchData();
                 },
               ) 
             : const Icon(Icons.check, color: Colors.green, size: 16),
         );
       },
+    );
+  }
+
+  Widget _buildNotGitRepoView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
+          const SizedBox(height: 16),
+          const Text(
+            'Not a Git Repository',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textLight),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'This directory does not contain a valid .git folder.',
+            style: TextStyle(color: AppTheme.textDim),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              final result = await GitService.initRepository(widget.repoPath);
+              if (result == 0) {
+                // Success, fetch fresh data
+                _fetchData();
+              } else {
+                setState(() => _isLoading = false);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to initialize repository (code: $result)')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentCyan,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Initialize Repository', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
