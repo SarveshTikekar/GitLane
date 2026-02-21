@@ -7,7 +7,9 @@ class GitService {
   /// Initializes a new Git repository at the given [path].
   static Future<int> initRepository(String path) async {
     try {
-      final int result = await _channel.invokeMethod('initRepository', {'path': path});
+      final int result = await _channel.invokeMethod('initRepository', {
+        'path': path,
+      });
       return result;
     } on PlatformException catch (e) {
       print("Failed to init repository: '${e.message}'.");
@@ -18,7 +20,9 @@ class GitService {
   /// Returns the commit log for the repository at [path].
   static Future<String?> getCommitLog(String path) async {
     try {
-      final String? result = await _channel.invokeMethod('getCommitLog', {'path': path});
+      final String? result = await _channel.invokeMethod('getCommitLog', {
+        'path': path,
+      });
       return result;
     } on PlatformException catch (e) {
       print("Failed to get commit log: '${e.message}'.");
@@ -29,7 +33,10 @@ class GitService {
   /// Returns the repository status at [path].
   static Future<String?> getRepositoryStatus(String path) async {
     try {
-      final String? result = await _channel.invokeMethod('getRepositoryStatus', {'path': path});
+      final String? result = await _channel.invokeMethod(
+        'getRepositoryStatus',
+        {'path': path},
+      );
       return result;
     } on PlatformException catch (e) {
       print("Failed to get repo status: '${e.message}'.");
@@ -54,7 +61,10 @@ class GitService {
   /// Stages all changes and creates a commit.
   static Future<int> commitAll(String path, String message) async {
     try {
-      return await _channel.invokeMethod('commitAll', {'path': path, 'message': message});
+      return await _channel.invokeMethod('commitAll', {
+        'path': path,
+        'message': message,
+      });
     } on PlatformException catch (e) {
       print("Failed to commitall: '${e.message}'.");
       return -1;
@@ -64,7 +74,10 @@ class GitService {
   /// Creates a new branch.
   static Future<int> createBranch(String path, String branchName) async {
     try {
-      return await _channel.invokeMethod('createBranch', {'path': path, 'branchName': branchName});
+      return await _channel.invokeMethod('createBranch', {
+        'path': path,
+        'branchName': branchName,
+      });
     } on PlatformException catch (e) {
       print("Failed to create branch: '${e.message}'.");
       return -1;
@@ -74,7 +87,10 @@ class GitService {
   /// Checks out a branch.
   static Future<int> checkoutBranch(String path, String branchName) async {
     try {
-      return await _channel.invokeMethod('checkoutBranch', {'path': path, 'branchName': branchName});
+      return await _channel.invokeMethod('checkoutBranch', {
+        'path': path,
+        'branchName': branchName,
+      });
     } on PlatformException catch (e) {
       print("Failed to checkout branch: '${e.message}'.");
       return -1;
@@ -84,7 +100,10 @@ class GitService {
   /// Merges a branch.
   static Future<int> mergeBranch(String path, String branchName) async {
     try {
-      return await _channel.invokeMethod('mergeBranch', {'path': path, 'branchName': branchName});
+      return await _channel.invokeMethod('mergeBranch', {
+        'path': path,
+        'branchName': branchName,
+      });
     } on PlatformException catch (e) {
       print("Failed to merge branch: '${e.message}'.");
       return -1;
@@ -94,9 +113,41 @@ class GitService {
   /// Adds a specific file to index.
   static Future<int> gitAddFile(String path, String filePath) async {
     try {
-      return await _channel.invokeMethod('gitAddFile', {'path': path, 'filePath': filePath});
+      return await _channel.invokeMethod('gitAddFile', {
+        'path': path,
+        'filePath': filePath,
+      });
     } on PlatformException catch (e) {
       print("Failed to add file: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Unstages a specific file from index.
+  static Future<int> gitUnstageFile(String path, String filePath) async {
+    try {
+      return await _channel.invokeMethod('gitUnstageFile', {
+        'path': path,
+        'filePath': filePath,
+      });
+    } on MissingPluginException catch (e) {
+      print("Unstage plugin method missing: '$e'.");
+      return -2;
+    } on PlatformException catch (e) {
+      print("Failed to unstage file: '${e.message}'.");
+      return -1;
+    }
+  }
+
+  /// Unstages all staged files.
+  static Future<int> gitUnstageAll(String path) async {
+    try {
+      return await _channel.invokeMethod('gitUnstageAll', {'path': path});
+    } on MissingPluginException catch (e) {
+      print("Unstage-all plugin method missing: '$e'.");
+      return -2;
+    } on PlatformException catch (e) {
+      print("Failed to unstage all: '${e.message}'.");
       return -1;
     }
   }
@@ -104,7 +155,10 @@ class GitService {
   /// Clones a repository.
   static Future<int> cloneRepository(String url, String path) async {
     try {
-      return await _channel.invokeMethod('cloneRepository', {'url': url, 'path': path});
+      return await _channel.invokeMethod('cloneRepository', {
+        'url': url,
+        'path': path,
+      });
     } on PlatformException catch (e) {
       print("Failed to clone: '${e.message}'.");
       return -1;
@@ -114,10 +168,15 @@ class GitService {
   /// Returns a list of local branches.
   static Future<List<String>> getBranches(String path) async {
     try {
-      final String? json = await _channel.invokeMethod('getBranches', {'path': path});
+      final String? json = await _channel.invokeMethod('getBranches', {
+        'path': path,
+      });
       if (json == null) return [];
       // Basic JSON parsing as a simple workaround for now
-      final String content = json.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+      final String content = json
+          .replaceAll('[', '')
+          .replaceAll(']', '')
+          .replaceAll('"', '');
       if (content.isEmpty) return [];
       return content.split(',').map((e) => e.trim()).toList();
     } on PlatformException catch (e) {
@@ -139,9 +198,14 @@ class GitService {
   /// Returns a list of filenames with active conflicts.
   static Future<List<String>> getConflicts(String path) async {
     try {
-      final String? json = await _channel.invokeMethod('getConflicts', {'path': path});
+      final String? json = await _channel.invokeMethod('getConflicts', {
+        'path': path,
+      });
       if (json == null) return [];
-      final String content = json.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+      final String content = json
+          .replaceAll('[', '')
+          .replaceAll(']', '')
+          .replaceAll('"', '');
       if (content.isEmpty) return [];
       return content.split(',').map((e) => e.trim()).toList();
     } on PlatformException catch (e) {
@@ -153,7 +217,10 @@ class GitService {
   /// Deletes a local branch.
   static Future<int> deleteBranch(String path, String branchName) async {
     try {
-      return await _channel.invokeMethod('deleteBranch', {'path': path, 'branchName': branchName});
+      return await _channel.invokeMethod('deleteBranch', {
+        'path': path,
+        'branchName': branchName,
+      });
     } on PlatformException catch (e) {
       print("Failed to delete branch: '${e.message}'.");
       return -1;
@@ -163,7 +230,10 @@ class GitService {
   /// Saves current changes to the stash.
   static Future<int> stashSave(String path, String message) async {
     try {
-      return await _channel.invokeMethod('stashSave', {'path': path, 'message': message});
+      return await _channel.invokeMethod('stashSave', {
+        'path': path,
+        'message': message,
+      });
     } on PlatformException catch (e) {
       print("Failed to stash save: '${e.message}'.");
       return -1;
@@ -173,7 +243,10 @@ class GitService {
   /// Pops a stash from the stack.
   static Future<int> stashPop(String path, int index) async {
     try {
-      return await _channel.invokeMethod('stashPop', {'path': path, 'index': index});
+      return await _channel.invokeMethod('stashPop', {
+        'path': path,
+        'index': index,
+      });
     } on PlatformException catch (e) {
       print("Failed to stash pop: '${e.message}'.");
       return -1;
@@ -183,7 +256,10 @@ class GitService {
   /// Applies a stash without removing it from the stack.
   static Future<int> stashApply(String path, int index) async {
     try {
-      return await _channel.invokeMethod('stashApply', {'path': path, 'index': index});
+      return await _channel.invokeMethod('stashApply', {
+        'path': path,
+        'index': index,
+      });
     } on PlatformException catch (e) {
       print("Failed to stash apply: '${e.message}'.");
       return -1;
@@ -193,7 +269,10 @@ class GitService {
   /// Drops a stash from the stack.
   static Future<int> stashDrop(String path, int index) async {
     try {
-      return await _channel.invokeMethod('stashDrop', {'path': path, 'index': index});
+      return await _channel.invokeMethod('stashDrop', {
+        'path': path,
+        'index': index,
+      });
     } on PlatformException catch (e) {
       print("Failed to stash drop: '${e.message}'.");
       return -1;
@@ -203,7 +282,9 @@ class GitService {
   /// Returns a list of stashes.
   static Future<List<Map<String, dynamic>>> getStashes(String path) async {
     try {
-      final String? jsonVal = await _channel.invokeMethod('getStashes', {'path': path});
+      final String? jsonVal = await _channel.invokeMethod('getStashes', {
+        'path': path,
+      });
       if (jsonVal == null) return [];
       return List<Map<String, dynamic>>.from(jsonDecode(jsonVal));
     } on PlatformException catch (e) {
@@ -215,7 +296,10 @@ class GitService {
   /// Pushes changes to the remote repository.
   static Future<int> pushRepository(String path, String token) async {
     try {
-      return await _channel.invokeMethod('pushRepository', {'path': path, 'token': token});
+      return await _channel.invokeMethod('pushRepository', {
+        'path': path,
+        'token': token,
+      });
     } on PlatformException catch (e) {
       print("Failed to push: '${e.message}'.");
       return -1;
@@ -225,7 +309,10 @@ class GitService {
   /// Pulls changes from the remote repository.
   static Future<int> pullRepository(String path, String token) async {
     try {
-      return await _channel.invokeMethod('pullRepository', {'path': path, 'token': token});
+      return await _channel.invokeMethod('pullRepository', {
+        'path': path,
+        'token': token,
+      });
     } on PlatformException catch (e) {
       print("Failed to pull: '${e.message}'.");
       return -1;
@@ -252,7 +339,9 @@ class GitService {
 
   static Future<Map<String, dynamic>> getSyncStatus(String path) async {
     try {
-      final jsonStr = await _channel.invokeMethod('getSyncStatus', {'path': path});
+      final jsonStr = await _channel.invokeMethod('getSyncStatus', {
+        'path': path,
+      });
       return Map<String, dynamic>.from(json.decode(jsonStr));
     } on PlatformException catch (e) {
       print("Failed to get sync status: '${e.message}'.");
@@ -260,9 +349,15 @@ class GitService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getConflictChunks(String path, String filePath) async {
+  static Future<List<Map<String, dynamic>>> getConflictChunks(
+    String path,
+    String filePath,
+  ) async {
     try {
-      final jsonStr = await _channel.invokeMethod('getConflictChunks', {'path': path, 'filePath': filePath});
+      final jsonStr = await _channel.invokeMethod('getConflictChunks', {
+        'path': path,
+        'filePath': filePath,
+      });
       return List<Map<String, dynamic>>.from(json.decode(jsonStr));
     } on PlatformException catch (e) {
       print("Failed to get conflict chunks: '${e.message}'.");
@@ -270,9 +365,17 @@ class GitService {
     }
   }
 
-  static Future<int> resolveConflict(String path, String filePath, String content) async {
+  static Future<int> resolveConflict(
+    String path,
+    String filePath,
+    String content,
+  ) async {
     try {
-      return await _channel.invokeMethod('resolveConflict', {'path': path, 'filePath': filePath, 'content': content});
+      return await _channel.invokeMethod('resolveConflict', {
+        'path': path,
+        'filePath': filePath,
+        'content': content,
+      });
     } on PlatformException catch (e) {
       print("Failed to resolve conflict: '${e.message}'.");
       return -1;
@@ -281,7 +384,10 @@ class GitService {
 
   static Future<String> runGitCommand(String path, String command) async {
     try {
-      return await _channel.invokeMethod('runGitCommand', {'path': path, 'command': command});
+      return await _channel.invokeMethod('runGitCommand', {
+        'path': path,
+        'command': command,
+      });
     } on PlatformException catch (e) {
       print("Failed to run git command: '${e.message}'.");
       return "Error: ${e.message}";
@@ -291,7 +397,9 @@ class GitService {
   /// Returns a list of tags (name and target hash).
   static Future<List<Map<String, dynamic>>> getTags(String path) async {
     try {
-      final String? json = await _channel.invokeMethod('getTags', {'path': path});
+      final String? json = await _channel.invokeMethod('getTags', {
+        'path': path,
+      });
       if (json == null) return [];
       final dynamic decoded = jsonDecode(json);
       if (decoded is List) return List<Map<String, dynamic>>.from(decoded);
@@ -303,7 +411,11 @@ class GitService {
   }
 
   /// Creates a new tag.
-  static Future<int> createTag(String path, String tagName, String targetHash) async {
+  static Future<int> createTag(
+    String path,
+    String tagName,
+    String targetHash,
+  ) async {
     try {
       return await _channel.invokeMethod('createTag', {
         'path': path,

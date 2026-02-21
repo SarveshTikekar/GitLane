@@ -689,6 +689,84 @@ cleanup_add:
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+ * 8b. gitUnstageFile(path: String, filePath: String): Int
+ *     Unstages a specific file (git restore --staged <file>).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_gitUnstageFile(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jfile) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *file = (*env)->GetStringUTFChars(env, jfile, NULL);
+
+    git_repository *repo = NULL;
+    git_object *target = NULL;
+    git_oid head_oid;
+    git_strarray paths = {0};
+    int result = 0;
+
+    result = git_repository_open(&repo, path);
+    if (result < 0) goto cleanup_unstage_file;
+
+    result = git_reference_name_to_id(&head_oid, repo, "HEAD");
+    if (result < 0) goto cleanup_unstage_file;
+
+    result = git_object_lookup(&target, repo, &head_oid, GIT_OBJECT_COMMIT);
+    if (result < 0) goto cleanup_unstage_file;
+
+    paths.count = 1;
+    paths.strings = (char **)&file;
+
+    result = git_reset_default(repo, target, &paths);
+
+cleanup_unstage_file:
+    if (target) git_object_free(target);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jfile, file);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 8c. gitUnstageAll(path: String): Int
+ *     Unstages all staged files (git reset --mixed HEAD).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_gitUnstageAll(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository *repo = NULL;
+    git_object *target = NULL;
+    git_oid head_oid;
+    int result = 0;
+
+    result = git_repository_open(&repo, path);
+    if (result < 0) goto cleanup_unstage_all;
+
+    result = git_reference_name_to_id(&head_oid, repo, "HEAD");
+    if (result < 0) goto cleanup_unstage_all;
+
+    result = git_object_lookup(&target, repo, &head_oid, GIT_OBJECT_COMMIT);
+    if (result < 0) goto cleanup_unstage_all;
+
+    result = git_reset(repo, target, GIT_RESET_MIXED, NULL);
+
+cleanup_unstage_all:
+    if (target) git_object_free(target);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
  * 9. getCommitDiff(path: String, commitHash: String): String
  *    Returns the patch text (diff) for a specific commit hash.
  *    Diffs the commit against its first parent.

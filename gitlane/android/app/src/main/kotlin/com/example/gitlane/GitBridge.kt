@@ -37,6 +37,8 @@ class GitBridge {
     external fun getCommitLog(path: String): String
     external fun getRepositoryStatus(path: String): String
     external fun gitAddFile(path: String, filePath: String): Int
+    external fun gitUnstageFile(path: String, filePath: String): Int
+    external fun gitUnstageAll(path: String): Int
     external fun getCommitDiff(path: String, commitHash: String): String
     external fun cloneRepository(url: String, path: String): Int
     external fun getCurrentBranch(path: String): String

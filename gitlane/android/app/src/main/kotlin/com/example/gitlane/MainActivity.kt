@@ -58,6 +58,15 @@ class MainActivity : FlutterActivity() {
                                     val filePath = call.argument<String>("filePath")!!
                                     bridge.gitAddFile(path, filePath)
                                 }
+                                "gitUnstageFile" -> {
+                                    val path = call.argument<String>("path")!!
+                                    val filePath = call.argument<String>("filePath")!!
+                                    bridge.gitUnstageFile(path, filePath)
+                                }
+                                "gitUnstageAll" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.gitUnstageAll(path)
+                                }
                                 "getCommitDiff" -> {
                                     val path = call.argument<String>("path")!!
                                     val hash = call.argument<String>("commitHash")!!

@@ -1019,8 +1019,15 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
 
   Future<void> _unstageFile(String path) async {
     HapticFeedback.mediumImpact();
-    // git reset HEAD -- <path> via bridge — fallback: show snack
-    _showSnack('Unstage not yet supported via bridge', AppTheme.accentYellow);
+    setState(() => _isLoading = true);
+    final code = await GitService.gitUnstageFile(widget.repoPath, path);
+    if (mounted) {
+      _showSnack(
+        code == 0 ? "Unstaged '$path'" : 'Unstage failed ($code)',
+        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      );
+    }
+    _fetchData();
   }
 
   Future<void> _uploadFile() async {
@@ -1056,10 +1063,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
 
   Future<void> _unstageAll() async {
     setState(() => _isLoading = true);
-    // Bridge reset fallback
-    final res = await GitService.runGitCommand(widget.repoPath, 'reset');
-    if (res.contains('Error') && mounted) {
-      _showSnack('Unstage all not yet fully supported', AppTheme.accentYellow);
+    final code = await GitService.gitUnstageAll(widget.repoPath);
+    if (mounted) {
+      _showSnack(
+        code == 0 ? 'Unstaged all files' : 'Unstage all failed ($code)',
+        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      );
     }
     _fetchData();
   }
