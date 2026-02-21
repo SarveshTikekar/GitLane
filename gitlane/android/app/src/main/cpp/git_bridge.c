@@ -438,6 +438,15 @@ Java_com_example_gitlane_GitBridge_getCommitLog(
         const char *author  = git_commit_author(commit)->name;
         git_time_t  ts      = git_commit_author(commit)->when.time;
 
+        /* Convert timestamp to readable date for UI */
+        char date_str[32] = {0};
+        struct tm *tm_info = gmtime(&ts);
+        if (tm_info) {
+            strftime(date_str, sizeof(date_str), "%Y-%m-%d %H:%M:%S", tm_info);
+        } else {
+            snprintf(date_str, sizeof(date_str), "Unknown");
+        }
+
         /* Escape double-quotes in message/author for JSON safety */
         char safe_msg[256]    = {0};
         char safe_author[128] = {0};
@@ -454,8 +463,8 @@ Java_com_example_gitlane_GitBridge_getCommitLog(
 
         if (!first) pos += snprintf(json + pos, JSON_BUFFER_SIZE - pos, ",");
         pos += snprintf(json + pos, JSON_BUFFER_SIZE - pos,
-                        "{\"hash\":\"%s\",\"message\":\"%s\",\"author\":\"%s\",\"time\":%ld}",
-                        hash_str, safe_msg, safe_author, (long)ts);
+                        "{\"hash\":\"%s\",\"message\":\"%s\",\"author\":\"%s\",\"date\":\"%s\"}",
+                        hash_str, safe_msg, safe_author, date_str);
 
         git_commit_free(commit);
         first = 0;

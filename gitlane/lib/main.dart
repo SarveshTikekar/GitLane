@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home/dashboard_screen.dart';
 
