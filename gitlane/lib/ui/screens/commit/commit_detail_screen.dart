@@ -5,12 +5,16 @@ import '../../../services/git_service.dart';
 class CommitDetailScreen extends StatefulWidget {
   final String commitHash;
   final String message;
+  final String author;
+  final String date;
   final String? repoPath;
 
   const CommitDetailScreen({
     super.key,
     required this.commitHash,
     required this.message,
+    required this.author,
+    required this.date,
     this.repoPath,
   });
 
@@ -94,7 +98,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 child: Icon(Icons.person, size: 16, color: Colors.black),
               ),
               const SizedBox(width: 8),
-              const Text('gautam', style: TextStyle(fontWeight: FontWeight.w500)),
+              Text(widget.author, style: const TextStyle(fontWeight: FontWeight.w500)),
               const Spacer(),
               Text(
                 widget.commitHash.substring(0, 7),

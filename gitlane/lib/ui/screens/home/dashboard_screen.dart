@@ -26,11 +26,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initStorage() async {
     final dir = await getApplicationDocumentsDirectory();
-    setState(() {
-      _docsPath = dir.path;
-      _repos = []; // Start fresh, no hardcoded entries
-      _initializing = false;
-    });
+    _docsPath = dir.path;
+    _refreshRepos();
+  }
+
+  Future<void> _refreshRepos() async {
+    if (_docsPath == null) return;
+    
+    final dir = Directory(_docsPath!);
+    if (!dir.existsSync()) return;
+
+    final List<Map<String, String>> updatedRepos = [];
+    final entities = dir.listSync();
+
+    for (var entity in entities) {
+      if (entity is Directory) {
+        final name = entity.path.split(Platform.pathSeparator).last;
+        final isGit = Directory("${entity.path}${Platform.pathSeparator}.git").existsSync();
+        
+        if (isGit) {
+          final branch = await GitService.getCurrentBranch(entity.path);
+          updatedRepos.add({
+            'title': name,
+            'desc': 'Local Git Repository',
+            'path': entity.path,
+            'branch': branch,
+          });
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _repos = updatedRepos;
+        _initializing = false;
+      });
+    }
   }
 
   void _showGitActionDialog() {
@@ -92,18 +123,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               if (mounted) {
                 if (result == 0) {
-                  setState(() {
-                    _repos.add({
-                      'title': name,
-                      'desc': url.isNotEmpty ? 'Cloned from $url' : 'Local Git Repository',
-                      'path': path,
-                    });
-                  });
+                  _refreshRepos();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Failed: code $result")),
+                  );
+                  setState(() => _initializing = false);
                 }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result == 0 ? "Success: $name established" : "Failed: code $result")),
-                );
-                setState(() => _initializing = false);
               }
             },
             child: const Text('Create', style: TextStyle(color: Colors.black)),
@@ -125,56 +151,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.backgroundBlack,
-              AppTheme.primaryNavy.withOpacity(0.8),
-              AppTheme.backgroundBlack,
+      body: RefreshIndicator(
+        onRefresh: _refreshRepos,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppTheme.backgroundBlack,
+                AppTheme.primaryNavy.withOpacity(0.8),
+                AppTheme.backgroundBlack,
+              ],
+            ),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search repositories...',
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.textDim),
+                    filled: true,
+                    fillColor: AppTheme.surfaceSlate.withOpacity(0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    hintStyle: const TextStyle(color: AppTheme.textDim),
+                  ),
+                ),
+              ),
+              if (_initializing)
+                const Expanded(child: Center(child: CircularProgressIndicator(color: AppTheme.accentCyan)))
+              else if (_repos.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Text("No repositories yet. Tap + to start.", 
+                      style: TextStyle(color: AppTheme.textDim)),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _repos.length,
+                    itemBuilder: (context, index) {
+                      return _buildRepoCard(context, index);
+                    },
+                  ),
+                ),
             ],
           ),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search repositories...',
-                  prefixIcon: const Icon(Icons.search, color: AppTheme.textDim),
-                  filled: true,
-                  fillColor: AppTheme.surfaceSlate.withOpacity(0.5),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  hintStyle: const TextStyle(color: AppTheme.textDim),
-                ),
-              ),
-            ),
-            if (_initializing)
-              const Expanded(child: Center(child: CircularProgressIndicator(color: AppTheme.accentCyan)))
-            else if (_repos.isEmpty)
-              const Expanded(
-                child: Center(
-                  child: Text("No repositories yet. Tap + to start.", 
-                    style: TextStyle(color: AppTheme.textDim)),
-                ),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _repos.length,
-                  itemBuilder: (context, index) {
-                    return _buildRepoCard(context, index);
-                  },
-                ),
-              ),
-          ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -234,7 +263,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _buildStat('main', Icons.account_tree_outlined),
+                    _buildStat(repo['branch'] ?? 'main', Icons.account_tree_outlined),
                     const SizedBox(width: 16),
                     _buildStat('Active', Icons.bolt),
                   ],

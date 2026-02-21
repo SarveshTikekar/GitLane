@@ -227,6 +227,41 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
                         : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () async {
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      backgroundColor: AppTheme.surfaceSlate,
+                                      title: const Text("Delete Branch"),
+                                      content: Text("Delete branch '$b'? This cannot be undone if unmerged."),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, true), 
+                                          child: const Text("Delete", style: TextStyle(color: Colors.red))
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirmed == true) {
+                                    Navigator.pop(context); // Close branch dialog
+                                    setState(() => _isLoading = true);
+                                    final code = await GitService.deleteBranch(widget.repoPath, b);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(code == 0 ? "Deleted branch '$b'" : "Failed to delete branch (code: $code)"))
+                                      );
+                                      _updateBranchInfo();
+                                      setState(() => _isLoading = false);
+                                    }
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 8),
                               TextButton(
                                 child: const Text("Checkout", style: TextStyle(fontSize: 10)),
                                 onPressed: () async {
@@ -527,7 +562,76 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
             color: isDir ? AppTheme.accentCyan : AppTheme.textDim,
           ),
           title: Text(name),
-          trailing: const Icon(Icons.chevron_right, size: 16, color: AppTheme.textDim),
+          trailing: PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, size: 18, color: AppTheme.textDim),
+            color: AppTheme.surfaceSlate,
+            onSelected: (value) async {
+              if (value == 'delete') {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: AppTheme.surfaceSlate,
+                    title: const Text("Delete"),
+                    content: Text("Are you sure you want to delete '$name'?"),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true), 
+                        child: const Text("Delete", style: TextStyle(color: Colors.red))
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  if (isDir) {
+                    await (entity as Directory).delete(recursive: true);
+                  } else {
+                    await (entity as File).delete();
+                  }
+                  _fetchData();
+                  _listRepoFiles();
+                }
+              } else if (value == 'rename') {
+                final TextEditingController renameController = TextEditingController(text: name);
+                final newName = await showDialog<String>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: AppTheme.surfaceSlate,
+                    title: const Text("Rename"),
+                    content: TextField(
+                      controller: renameController,
+                      autofocus: true,
+                      style: const TextStyle(color: AppTheme.textLight),
+                      decoration: const InputDecoration(labelText: "New Name"),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, renameController.text.trim()), 
+                        child: const Text("Rename", style: TextStyle(color: AppTheme.accentCyan))
+                      ),
+                    ],
+                  ),
+                );
+                if (newName != null && newName.isNotEmpty && newName != name) {
+                  final newPath = "${entity.parent.path}${Platform.pathSeparator}$newName";
+                  await entity.rename(newPath);
+                  _fetchData();
+                  _listRepoFiles();
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'rename',
+                child: Text('Rename'),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
           onTap: () => _onItemTapped(entity),
         );
       },
@@ -574,6 +678,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
             builder: (context) => CommitDetailScreen(
               commitHash: hash,
               message: msg,
+              author: author,
+              date: date,
               repoPath: widget.repoPath,
             ),
           ),

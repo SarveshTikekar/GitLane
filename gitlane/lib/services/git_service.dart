@@ -148,4 +148,14 @@ class GitService {
       return [];
     }
   }
+
+  /// Deletes a local branch.
+  static Future<int> deleteBranch(String path, String branchName) async {
+    try {
+      return await _channel.invokeMethod('deleteBranch', {'path': path, 'branchName': branchName});
+    } on PlatformException catch (e) {
+      print("Failed to delete branch: '${e.message}'.");
+      return -1;
+    }
+  }
 }

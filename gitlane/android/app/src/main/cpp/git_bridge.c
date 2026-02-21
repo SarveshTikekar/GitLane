@@ -899,3 +899,43 @@ cleanup_conflicts:
     free(json);
     return result_str;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 14. deleteBranch(path: String, branchName: String): Int
+ *     Deletes a local branch. Cannot delete the current branch.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jint JNICALL
+Java_com_example_gitlane_GitBridge_deleteBranch(
+        JNIEnv *env, jobject obj, jstring jpath, jstring jbranchName) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    const char *branchName = (*env)->GetStringUTFChars(env, jbranchName, NULL);
+
+    git_repository *repo = NULL;
+    git_reference  *ref  = NULL;
+    int result = 0;
+
+    result = git_repository_open(&repo, path);
+    if (result < 0) goto cleanup_delete;
+
+    result = git_branch_lookup(&ref, repo, branchName, GIT_BRANCH_LOCAL);
+    if (result < 0) {
+        LOGE("Branch lookup failed: %s", git_error_str(result));
+        goto cleanup_delete;
+    }
+
+    result = git_branch_delete(ref);
+    if (result < 0) {
+        LOGE("Branch delete failed: %s", git_error_str(result));
+    }
+
+cleanup_delete:
+    if (ref) git_reference_free(ref);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    (*env)->ReleaseStringUTFChars(env, jbranchName, branchName);
+    git_libgit2_shutdown();
+
+    return (jint) result;
+}

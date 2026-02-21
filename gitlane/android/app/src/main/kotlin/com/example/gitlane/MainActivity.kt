@@ -113,6 +113,14 @@ class MainActivity : FlutterActivity() {
                         result.success(bridge.getCurrentBranch(path))
                     }
                     
+                    "deleteBranch" -> {
+                        val path       = call.argument<String>("path")
+                        val branchName = call.argument<String>("branchName")
+                        if (path == null || branchName == null) { result.error("INVALID_ARG", "path and branchName are required", null); return@setMethodCallHandler }
+                        val code = bridge.deleteBranch(path, branchName)
+                        if (code == 0) result.success(code) else result.error("GIT_ERROR", "deleteBranch failed: $code", code)
+                    }
+                    
                     "getConflicts" -> {
                         val path = call.argument<String>("path")
                         if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
