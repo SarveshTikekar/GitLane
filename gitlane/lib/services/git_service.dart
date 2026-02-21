@@ -412,7 +412,6 @@ class GitService {
     }
   }
 
-  /// Applies a patch to the repository index.
   static Future<int> applyPatchToIndex(String path, String patch) async {
     try {
       return await _channel.invokeMethod('applyPatchToIndex', {
@@ -422,6 +421,8 @@ class GitService {
     } on PlatformException catch (e) {
       // Log error
       return -1;
+    }
+  }
 
   static Future<String> runHealthCheck(String path) async {
     try {
