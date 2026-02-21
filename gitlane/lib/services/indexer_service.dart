@@ -63,7 +63,7 @@ class IndexerService {
         }
       }
     } catch (e) {
-      print("Indexing error: $e");
+      // Log indexing error
     } finally {
       _isIndexing = false;
     }

@@ -42,7 +42,7 @@ class SSHService {
       final List<dynamic> list = jsonDecode(result);
       return list.map((e) => SSHKey.fromJson(e)).toList();
     } catch (e) {
-      print("SSH list error: $e");
+      // Log error internally
       return [];
     }
   }
