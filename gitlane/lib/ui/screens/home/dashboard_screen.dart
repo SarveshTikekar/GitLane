@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 import '../repository/repository_root_screen.dart';
+import 'qr_scanner_dialog.dart';
 import '../../../services/git_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -85,14 +86,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: const TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: urlController,
-              decoration: const InputDecoration(
-                labelText: 'Clone URL (optional)',
-                labelStyle: TextStyle(color: AppTheme.textDim),
-                hintText: 'https://github.com/user/repo.git',
-              ),
-              style: const TextStyle(color: Colors.white),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: urlController,
+                    decoration: const InputDecoration(
+                      labelText: 'Clone URL (optional)',
+                      labelStyle: TextStyle(color: AppTheme.textDim),
+                      hintText: 'https://github.com/...',
+                    ),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.qr_code_scanner, color: AppTheme.accentCyan),
+                  onPressed: () async {
+                    final scannedUrl = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(builder: (context) => const QRScannerDialog()),
+                    );
+                    if (scannedUrl != null) {
+                      urlController.text = scannedUrl;
+                      // Auto-extract name if possible
+                      if (nameController.text.isEmpty) {
+                        final parts = scannedUrl.split('/');
+                        if (parts.isNotEmpty) {
+                          var name = parts.last;
+                          if (name.endsWith('.git')) name = name.substring(0, name.length - 4);
+                          nameController.text = name;
+                        }
+                      }
+                    }
+                  },
+                ),
+              ],
             ),
           ],
         ),

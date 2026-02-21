@@ -1168,3 +1168,102 @@ cleanup_pull:
     git_libgit2_shutdown();
     return (jint) result;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 20. getRemoteUrl(path: String): String
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getRemoteUrl(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository *repo = NULL;
+    git_remote     *remote = NULL;
+    const char     *url = NULL;
+    char            result[1024] = "";
+
+    if (git_repository_open(&repo, path) < 0) {
+        snprintf(result, sizeof(result), "{\"error\":\"Repo not found\"}");
+        goto cleanup_url;
+    }
+
+    if (git_remote_lookup(&remote, repo, "origin") < 0) {
+        snprintf(result, sizeof(result), "{\"error\":\"Remote 'origin' not found\"}");
+        goto cleanup_url;
+    }
+
+    url = git_remote_url(remote);
+    if (url) {
+        snprintf(result, sizeof(result), "%s", url);
+    } else {
+        snprintf(result, sizeof(result), "{\"error\":\"No URL set\"}");
+    }
+
+cleanup_url:
+    if (remote) git_remote_free(remote);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    return (*env)->NewStringUTF(env, result);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 21. getReflog(path: String): String
+ *     Returns JSON array of reflog entries: [{ "msg": "...", "id": "..." }]
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getReflog(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository *repo = NULL;
+    git_reflog     *reflog = NULL;
+    char           *json = NULL;
+    int             result = 0;
+
+    json = (char *)malloc(MAX_COMMITS * 512);
+    if (!json) goto cleanup_reflog;
+
+    if (git_repository_open(&repo, path) < 0) {
+        snprintf(json, 512, "{\"error\":\"Repo not found\"}");
+        goto log_out;
+    }
+
+    if (git_reflog_read(&reflog, repo, "HEAD") < 0) {
+        snprintf(json, 512, "{\"error\":\"Reflog not found\"}");
+        goto log_out;
+    }
+
+    size_t count = git_reflog_entrycount(reflog);
+    int pos = 0;
+    pos += snprintf(json + pos, 512, "[");
+
+    for (size_t i = 0; i < count && i < MAX_COMMITS; i++) {
+        const git_reflog_entry *entry = git_reflog_entry_byindex(reflog, i);
+        const char *msg = git_reflog_entry_message(entry);
+        const git_oid *oid = git_reflog_entry_id_new(entry);
+        char oid_str[GIT_OID_SHA1_HEXSIZE + 1];
+        git_oid_tostr(oid_str, sizeof(oid_str), oid);
+
+        pos += snprintf(json + pos, (MAX_COMMITS * 512) - pos,
+                        "%s{\"msg\":\"%s\",\"id\":\"%s\"}",
+                        (i == 0 ? "" : ","), msg ? msg : "none", oid_str);
+    }
+    snprintf(json + pos, (MAX_COMMITS * 512) - pos, "]");
+
+log_out:
+cleanup_reflog:
+    if (reflog) git_reflog_free(reflog);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    jstring jres = (*env)->NewStringUTF(env, json ? json : "[]");
+    if (json) free(json);
+    return jres;
+}

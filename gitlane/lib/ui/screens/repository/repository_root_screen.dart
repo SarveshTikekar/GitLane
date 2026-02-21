@@ -6,6 +6,8 @@ import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
 import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
+import 'share_repo_screen.dart';
+import 'reflog_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -543,6 +545,29 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     );
   }
 
+  Future<void> _shareRepo() async {
+    final url = await GitService.getRemoteUrl(widget.repoPath);
+    if (url.startsWith("http") || url.startsWith("git@")) {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ShareRepoScreen(
+              repoName: widget.repoName,
+              remoteUrl: url,
+            ),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Only repositories with a remote 'origin' can be shared via QR.")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final relativePath = _currentDir.length > widget.repoPath.length 
@@ -591,6 +616,21 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_2_rounded),
+            tooltip: "Share (QR)",
+            onPressed: _shareRepo,
+          ),
+          IconButton(
+            icon: const Icon(Icons.history_edu_rounded),
+            tooltip: "Action History (Reflog)",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ReflogScreen(repoPath: widget.repoPath)),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {

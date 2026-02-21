@@ -109,6 +109,14 @@ class MainActivity : FlutterActivity() {
                                     val token = call.argument<String>("token")!!
                                     bridge.pullRepository(path, token)
                                 }
+                                "getRemoteUrl" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getRemoteUrl(path)
+                                }
+                                "getReflog" -> {
+                                    val path = call.argument<String>("path")!!
+                                    bridge.getReflog(path)
+                                }
                                 else -> "NOT_IMPLEMENTED"
                             }
                         } catch (e: Exception) {

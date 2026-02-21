@@ -211,4 +211,22 @@ class GitService {
       return -1;
     }
   }
+
+  static Future<String> getRemoteUrl(String path) async {
+    try {
+      return await _channel.invokeMethod('getRemoteUrl', {'path': path});
+    } on PlatformException catch (e) {
+      print("Failed to get remote URL: '${e.message}'.");
+      return "";
+    }
+  }
+
+  static Future<String> getReflog(String path) async {
+    try {
+      return await _channel.invokeMethod('getReflog', {'path': path});
+    } on PlatformException catch (e) {
+      print("Failed to get reflog: '${e.message}'.");
+      return "[]";
+    }
+  }
 }
