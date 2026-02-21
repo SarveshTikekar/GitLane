@@ -100,6 +100,24 @@ class MainActivity : FlutterActivity() {
                         val code = bridge.cloneRepository(url, path)
                         if (code >= 0) result.success(code) else result.error("GIT_ERROR", "cloneRepository failed: $code", code)
                     }
+                    
+                    "getBranches" -> {
+                        val path = call.argument<String>("path")
+                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
+                        result.success(bridge.getBranches(path))
+                    }
+                    
+                    "getCurrentBranch" -> {
+                        val path = call.argument<String>("path")
+                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
+                        result.success(bridge.getCurrentBranch(path))
+                    }
+                    
+                    "getConflicts" -> {
+                        val path = call.argument<String>("path")
+                        if (path == null) { result.error("INVALID_ARG", "path is required", null); return@setMethodCallHandler }
+                        result.success(bridge.getConflicts(path))
+                    }
 
                     else -> result.notImplemented()
                 }

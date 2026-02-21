@@ -109,4 +109,43 @@ class GitService {
       return -1;
     }
   }
+
+  /// Returns a list of local branches.
+  static Future<List<String>> getBranches(String path) async {
+    try {
+      final String? json = await _channel.invokeMethod('getBranches', {'path': path});
+      if (json == null) return [];
+      // Basic JSON parsing as a simple workaround for now
+      final String content = json.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+      if (content.isEmpty) return [];
+      return content.split(',').map((e) => e.trim()).toList();
+    } on PlatformException catch (e) {
+      print("Failed to get branches: '${e.message}'.");
+      return [];
+    }
+  }
+
+  /// Returns the current branch name.
+  static Future<String> getCurrentBranch(String path) async {
+    try {
+      return await _channel.invokeMethod('getCurrentBranch', {'path': path});
+    } on PlatformException catch (e) {
+      print("Failed to get current branch: '${e.message}'.");
+      return 'HEAD';
+    }
+  }
+
+  /// Returns a list of filenames with active conflicts.
+  static Future<List<String>> getConflicts(String path) async {
+    try {
+      final String? json = await _channel.invokeMethod('getConflicts', {'path': path});
+      if (json == null) return [];
+      final String content = json.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+      if (content.isEmpty) return [];
+      return content.split(',').map((e) => e.trim()).toList();
+    } on PlatformException catch (e) {
+      print("Failed to get conflicts: '${e.message}'.");
+      return [];
+    }
+  }
 }

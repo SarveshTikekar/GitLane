@@ -320,8 +320,17 @@ Java_com_example_gitlane_GitBridge_mergeBranch(
                            &merge_opts, &co_opts);
         if (result < 0) { LOGE("mergeBranch: merge failed: %s", git_error_str(result)); goto cleanup_merge; }
 
+        /* Check for conflicts */
+        git_index *index = NULL;
+        git_repository_index(&index, repo);
+        if (git_index_has_conflicts(index)) {
+            LOGI("mergeBranch: conflicts detected");
+            git_index_free(index);
+            result = -100; /* Signal: Conflicts! */
+            goto cleanup_merge;
+        }
+
         /* Create merge commit */
-        git_index      *index      = NULL;
         git_oid         tree_oid;
         git_tree       *tree       = NULL;
         git_signature  *sig       = NULL;
@@ -349,7 +358,7 @@ Java_com_example_gitlane_GitBridge_mergeBranch(
         git_commit_free(their_commit);
         git_tree_free(tree);
         git_signature_free(sig);
-        git_index_free(index);
+        if (index) git_index_free(index);
 
         if (result < 0) {
             LOGE("mergeBranch: commit create failed: %s", git_error_str(result));
@@ -747,4 +756,146 @@ Java_com_example_gitlane_GitBridge_cloneRepository(
     git_libgit2_shutdown();
 
     return (jint) result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 11. getBranches(path: String): String
+ *     Returns a JSON array of local branch names: ["main", "feature", ...]
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getBranches(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository      *repo = NULL;
+    git_branch_iterator *iter = NULL;
+    git_reference       *ref  = NULL;
+    git_branch_t         type;
+    int result = 0;
+
+    char *json = malloc(4096);
+    strcpy(json, "[");
+    size_t offset = 1;
+
+    result = git_repository_open(&repo, path);
+    if (result < 0) {
+        snprintf(json, 4096, "{\"error\":\"Open failed: %s\"}", git_error_str(result));
+        goto cleanup_branches;
+    }
+
+    result = git_branch_iterator_new(&iter, repo, GIT_BRANCH_LOCAL);
+    if (result < 0) {
+        snprintf(json, 4096, "{\"error\":\"Iterator failed: %s\"}", git_error_str(result));
+        goto cleanup_branches;
+    }
+
+    int first = 1;
+    while (git_branch_next(&ref, &type, iter) == 0) {
+        const char *name = NULL;
+        git_branch_name(&name, ref);
+        if (name) {
+            if (!first) {
+                json[offset++] = ',';
+            }
+            offset += snprintf(json + offset, 4096 - offset, "\"%s\"", name);
+            first = 0;
+        }
+        git_reference_free(ref);
+    }
+    strcat(json, "]");
+
+cleanup_branches:
+    if (iter) git_branch_iterator_free(iter);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    jstring result_str = (*env)->NewStringUTF(env, json);
+    free(json);
+    return result_str;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 12. getCurrentBranch(path: String): String
+ *     Returns the shorthand name of the current branch (e.g., "main").
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getCurrentBranch(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository *repo = NULL;
+    git_reference  *head = NULL;
+    const char     *name = "HEAD";
+    int result = 0;
+
+    result = git_repository_open(&repo, path);
+    if (result == 0) {
+        result = git_repository_head(&head, repo);
+        if (result == 0) {
+            name = git_reference_shorthand(head);
+        }
+    }
+
+    jstring result_str = (*env)->NewStringUTF(env, name);
+
+    if (head) git_reference_free(head);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    return result_str;
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 13. getConflicts(path: String): String
+ *     Returns a JSON array of filenames with active conflicts.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+JNIEXPORT jstring JNICALL
+Java_com_example_gitlane_GitBridge_getConflicts(
+        JNIEnv *env, jobject obj, jstring jpath) {
+
+    git_libgit2_init();
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+
+    git_repository       *repo  = NULL;
+    git_index            *index = NULL;
+    git_index_conflict_iterator *iter = NULL;
+    const git_index_entry *ancestor, *ours, *theirs;
+    int result = 0;
+
+    char *json = malloc(4096);
+    strcpy(json, "[");
+    size_t offset = 1;
+
+    result = git_repository_open(&repo, path);
+    if (result < 0) goto cleanup_conflicts;
+
+    git_repository_index(&index, repo);
+    git_index_conflict_iterator_new(&iter, index);
+
+    int first = 1;
+    while (git_index_conflict_next(&ancestor, &ours, &theirs, iter) == 0) {
+        const char *filename = ours ? ours->path : (theirs ? theirs->path : (ancestor ? ancestor->path : NULL));
+        if (filename) {
+            if (!first) { json[offset++] = ','; }
+            offset += snprintf(json + offset, 4096 - offset, "\"%s\"", filename);
+            first = 0;
+        }
+    }
+    strcat(json, "]");
+
+cleanup_conflicts:
+    if (iter) git_index_conflict_iterator_free(iter);
+    if (index) git_index_free(index);
+    if (repo) git_repository_free(repo);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    git_libgit2_shutdown();
+
+    jstring result_str = (*env)->NewStringUTF(env, json);
+    free(json);
+    return result_str;
 }

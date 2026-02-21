@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../../services/git_service.dart';
 import '../commit/commit_detail_screen.dart';
+import 'merge_conflict_screen.dart';
 
 class RepositoryRootScreen extends StatefulWidget {
   final String repoName;
@@ -23,6 +24,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
 
   List<dynamic> _statusFiles = [];
   bool _isStatusLoading = false;
+  
+  String _currentBranch = "HEAD";
+  List<String> _branches = [];
 
   List<FileSystemEntity> _currentFiles = [];
   String _currentDir = "";
@@ -111,7 +115,22 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
             }
           }
         }
+        
+        // Fetch branch metadata
+        _updateBranchInfo();
+        
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateBranchInfo() async {
+    final current = await GitService.getCurrentBranch(widget.repoPath);
+    final list = await GitService.getBranches(widget.repoPath);
+    if (mounted) {
+      setState(() {
+        _currentBranch = current;
+        _branches = list;
       });
     }
   }
@@ -169,68 +188,134 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
     final TextEditingController controller = TextEditingController();
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceSlate,
-        title: const Text("Git Branches", style: TextStyle(color: AppTheme.accentCyan)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Only 'main' is tracked currently in this UI view, but you can create a new one:", 
-              style: TextStyle(color: AppTheme.textDim, fontSize: 12)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              style: const TextStyle(color: AppTheme.textLight),
-              decoration: const InputDecoration(
-                hintText: "Branch name (to create or merge)",
-                hintStyle: TextStyle(color: AppTheme.textDim),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.surfaceSlate,
+          title: const Text("Git Branches", style: TextStyle(color: AppTheme.accentCyan)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextButton(
-                onPressed: () async {
-                  final name = controller.text.trim();
-                  if (name.isEmpty) return;
-                  Navigator.pop(context);
-                  setState(() => _isLoading = true);
-                  final code = await GitService.mergeBranch(widget.repoPath, name);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(code >= 0 ? "Merged '$name'!" : "Merge failed (code: $code)"))
+              const Text("Available Branches:", style: TextStyle(color: AppTheme.textDim, fontSize: 12)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 120,
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _branches.length,
+                  itemBuilder: (context, index) {
+                    final b = _branches[index];
+                    final isCurrent = b == _currentBranch;
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        isCurrent ? Icons.check_circle : Icons.radio_button_unchecked,
+                        size: 16,
+                        color: isCurrent ? AppTheme.accentCyan : AppTheme.textDim,
+                      ),
+                      title: Text(
+                        b,
+                        style: TextStyle(
+                          color: isCurrent ? AppTheme.textLight : AppTheme.textDim,
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: isCurrent 
+                        ? null 
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextButton(
+                                child: const Text("Checkout", style: TextStyle(fontSize: 10)),
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  setState(() => _isLoading = true);
+                                  final code = await GitService.checkoutBranch(widget.repoPath, b);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(code == 0 ? "Checked out '$b'" : "Checkout failed (code: $code)"))
+                                    );
+                                    _fetchData();
+                                    _listRepoFiles();
+                                  }
+                                },
+                              ),
+                              TextButton(
+                                child: const Text("Merge", style: TextStyle(fontSize: 10, color: Colors.orange)),
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  setState(() => _isLoading = true);
+                                  final code = await GitService.mergeBranch(widget.repoPath, b);
+                                  if (mounted) {
+                                    if (code == -100) {
+                                      // Conflict!
+                                      final conflicts = await GitService.getConflicts(widget.repoPath);
+                                      if (mounted) {
+                                        final resolved = await Navigator.push<bool>(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => MergeConflictScreen(
+                                            repoPath: widget.repoPath,
+                                            conflictingFiles: conflicts,
+                                          )),
+                                        );
+                                        if (resolved == true) {
+                                          await GitService.commitAll(widget.repoPath, "Merge branch '$b' (resolved conflicts)");
+                                          _fetchData();
+                                        } else {
+                                          setState(() => _isLoading = false);
+                                        }
+                                      }
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(code >= 0 ? "Merged '$b'!" : "Merge failed (code: $code)"))
+                                      );
+                                      _fetchData();
+                                    }
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
                     );
-                    _fetchData();
-                  }
-                },
-                child: const Text("Merge", style: TextStyle(color: Colors.orange)),
+                  },
+                ),
               ),
-              TextButton(
-                onPressed: () async {
-                  final name = controller.text.trim();
-                  if (name.isEmpty) return;
-                  Navigator.pop(context);
-                  setState(() => _isLoading = true);
-                  final code = await GitService.createBranch(widget.repoPath, name);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(code == 0 ? "Branch '$name' created!" : "Failed to create branch (code: $code)"))
-                    );
-                    _fetchData();
-                  }
-                },
-                child: const Text("Create", style: TextStyle(color: AppTheme.accentCyan)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Close", style: TextStyle(color: AppTheme.textDim)),
+              const Divider(color: AppTheme.textDim, height: 24),
+              TextField(
+                controller: controller,
+                style: const TextStyle(color: AppTheme.textLight),
+                decoration: const InputDecoration(
+                  hintText: "New branch name",
+                  hintStyle: TextStyle(color: AppTheme.textDim),
+                ),
               ),
             ],
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isEmpty) return;
+                Navigator.pop(context);
+                setState(() => _isLoading = true);
+                final code = await GitService.createBranch(widget.repoPath, name);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(code == 0 ? "Branch '$name' created!" : "Failed to create branch (code: $code)"))
+                  );
+                  _fetchData();
+                }
+              },
+              child: const Text("Create", style: TextStyle(color: AppTheme.accentCyan)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close", style: TextStyle(color: AppTheme.textDim)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -322,7 +407,24 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.repoName),
+            Row(
+              children: [
+                Text(widget.repoName),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentCyan.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppTheme.accentCyan.withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    _currentBranch,
+                    style: const TextStyle(fontSize: 10, color: AppTheme.accentCyan, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
             if (relativePath.isNotEmpty)
               Text(
                 relativePath,
