@@ -303,6 +303,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     final tagCtrl = TextEditingController();
     bool pushAfter = false;
     bool createTag = false;
+    bool signWithGPG = false;
 
     final result = await showDialog<bool>(
       context: context,
@@ -330,6 +331,15 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppTheme.accentCyan,
                 onChanged: (val) => setDialogState(() => pushAfter = val ?? false),
+              ),
+              CheckboxListTile(
+                title: Text('Sign with GPG',
+                    style: GoogleFonts.inter(fontSize: 14)),
+                value: signWithGPG,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.accentOrange,
+                onChanged: (val) => setDialogState(() => signWithGPG = val ?? false),
               ),
               CheckboxListTile(
                 title: Text('Create tag',
