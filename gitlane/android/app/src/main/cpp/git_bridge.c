@@ -1155,11 +1155,20 @@ Java_com_example_gitlane_GitBridge_pushRepository(
     opts.callbacks.payload = (void *)token;
     opts.callbacks.certificate_check = certificate_check_cb;
 
-    /* Push current branch to its remote tracking branch */
-    char *refspec = "refs/heads/main:refs/heads/main"; // Defaulting to main for now, can be improved
-    git_strarray refs = { &refspec, 1 };
+    /* Push current branch to its remote tracking branch dynamically */
+    git_reference *head = NULL;
+    const char *branch_name = "main";
+    if (git_repository_head(&head, repo) == 0) {
+        branch_name = git_reference_shorthand(head);
+    }
+    
+    char refspec[256];
+    snprintf(refspec, sizeof(refspec), "refs/heads/%s:refs/heads/%s", branch_name, branch_name);
+    char *refspec_ptr = refspec;
+    git_strarray refs = { &refspec_ptr, 1 };
 
     result = git_remote_push(remote, &refs, &opts);
+    if (head) git_reference_free(head);
     if (result < 0) LOGE("Push failed: %s", git_error_str(result));
 
 cleanup_push:
