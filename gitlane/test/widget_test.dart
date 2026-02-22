@@ -9,6 +9,6 @@ void main() {
 
     // Verify that Dashboard renders
     expect(find.text('GitLane'), findsOneWidget);
-    expect(find.text('New Repo'), findsOneWidget);
+    expect(find.text('Clone / Init'), findsOneWidget);
   });
 }

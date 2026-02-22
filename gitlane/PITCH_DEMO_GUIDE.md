@@ -36,7 +36,13 @@ Here is your exact, step-by-step script to verify and present each USP.
 **How to demo it:**
 1. Open the **Security Workbench** (Shield icon in the Overflow Menu ⦙).
 2. For SSH: Tap the **SSH KEYS** tab and generate a new Ed25519 key natively on the phone. Show the judges the public key.
-3. For GPG: Tap the **GPG KEYS** tab and import a test PGP key.
+3. For GPG: Tap the **GPG KEYS** tab, tap "Import", and paste the following test key:
+```
+-----BEGIN PGP PRIVATE KEY BLOCK-----
+
+lQdGBGUyV9wBEAC5... (Test Key Block) ... <demo@gitlane.app>
+-----END PGP PRIVATE KEY BLOCK-----
+```
 4. Go back to the repository and edit `main.py` (change "Sum" to "Total Sum").
 5. Go to the **Commit Screen**. 
 6. Under the commit message field, **toggle the GPG switch on**.
