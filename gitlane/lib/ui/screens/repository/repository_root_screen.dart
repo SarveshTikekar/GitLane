@@ -1299,6 +1299,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           'Share (QR)',
           AppTheme.textSecondary,
         ),
+        const PopupMenuDivider(height: 1),
+        _menuItem(
+          'delete',
+          Icons.delete_forever_rounded,
+          'Delete Repository',
+          AppTheme.accentRed,
+        ),
       ],
     );
 
@@ -1429,6 +1436,49 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       case 'bundle':
         _exportBundle();
         break;
+      case 'delete':
+        _confirmDeleteRepository();
+        break;
+    }
+  }
+
+  Future<void> _confirmDeleteRepository() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Repository', style: TextStyle(color: AppTheme.accentRed)),
+        content: Text("Are you sure you want to permanently delete '${widget.repoName}' and all its files from this device? This action cannot be undone.", style: GoogleFonts.inter(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentRed),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isLoading = true);
+      try {
+        final dir = Directory(widget.repoPath);
+        if (await dir.exists()) {
+          await dir.delete(recursive: true);
+        }
+        if (mounted) {
+          _showSnack('Repository deleted successfully.', AppTheme.accentGreen);
+          Navigator.pop(context, true); // Pop back to dashboard
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showSnack('Failed to delete repository: $e', AppTheme.accentRed);
+        }
+      }
     }
   }
 
