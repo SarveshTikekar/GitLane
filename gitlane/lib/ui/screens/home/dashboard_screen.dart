@@ -12,6 +12,10 @@ import '../../widgets/empty_state.dart';
 import '../repository/repository_root_screen.dart';
 import '../../../services/git_service.dart';
 import 'qr_scanner_dialog.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:archive/archive.dart';
+import 'package:http/http.dart' as http;
+import 'package:device_info_plus/device_info_plus.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -1117,13 +1121,28 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
     });
 
     final path = '${widget.docsPath}/$name';
-    int result;
+    int result = -1;
 
-    if (url.isNotEmpty) {
-      result = await GitService.cloneRepository(url, path);
-    } else {
-      await Directory(path).create(recursive: true);
-      result = await GitService.initRepository(path);
+    try {
+      if (url.isNotEmpty) {
+        if (url.startsWith('gitlane://hub/')) {
+          await _cloneFromHub(url, path);
+          result = 0; // Success if no exception
+        } else {
+          result = await GitService.cloneRepository(url, path);
+        }
+      } else {
+        await Directory(path).create(recursive: true);
+        result = await GitService.initRepository(path);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Clone complete, but encountered error: $e';
+        });
+      }
+      return;
     }
 
     if (mounted) {
@@ -1138,6 +1157,68 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
               : 'Init failed (code: $result).';
         });
       }
+    }
+  }
+
+  Future<void> _cloneFromHub(String url, String targetPath) async {
+    // URL format: gitlane://hub/<ip>:<port>/repo/<repoId>
+    final uri = Uri.parse(url.replaceFirst('gitlane://hub/', 'http://'));
+    final hubUrl = "http://${uri.host}:${uri.port}";
+    final repoId = uri.pathSegments.length >= 2 ? uri.pathSegments[1] : null;
+
+    if (repoId == null) throw Exception("Invalid Hub QR code");
+
+    final deviceInfo = DeviceInfoPlugin();
+    String deviceId = 'unknown-device';
+    if (Platform.isAndroid) {
+      final info = await deviceInfo.androidInfo;
+      deviceId = info.id;
+    } else if (Platform.isIOS) {
+      final info = await deviceInfo.iosInfo;
+      deviceId = info.identifierForVendor ?? 'unknown-ios';
+    }
+
+    // 1. Handshake
+    final handshakeResp = await http.post(
+      Uri.parse('$hubUrl/handshake'),
+      body: jsonEncode({'id': deviceId, 'name': Platform.operatingSystem}),
+      headers: {'content-type': 'application/json'},
+    );
+
+    if (handshakeResp.statusCode != 200) throw Exception("Handshake failed");
+    final peerData = jsonDecode(handshakeResp.body);
+    if (peerData['status'] == 0) { // Pending
+      throw Exception("Host approval is pending. Wait, then try again.");
+    }
+
+    // 2. Info Check
+    final infoResp = await http.get(
+      Uri.parse('$hubUrl/repo/$repoId/info'),
+      headers: {'x-device-id': deviceId},
+    );
+    if (infoResp.statusCode != 200) throw Exception("Access Denied for this repository");
+
+    // 3. Download and Extact
+    final syncResp = await http.get(
+      Uri.parse('$hubUrl/repo/$repoId/sync'),
+      headers: {'x-device-id': deviceId},
+    );
+
+    if (syncResp.statusCode == 200) {
+      final archive = ZipDecoder().decodeBytes(syncResp.bodyBytes);
+      for (final file in archive) {
+        final filename = file.name;
+        final outPath = '$targetPath/${filename.replaceFirst('$repoId/', '')}';
+        if (file.isFile) {
+          File(outPath)
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(file.content as List<int>);
+        } else {
+          Directory(outPath).createSync(recursive: true);
+        }
+      }
+    } else {
+      throw Exception("Failed to download repository files");
     }
   }
 
@@ -1326,6 +1407,20 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                         ),
                       ],
                     ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _importFromZip,
+                      icon: const Icon(Icons.download_rounded, size: 16),
+                      label: const Text('Import Offline Repository (.zip)'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.accentCyan,
+                        side: const BorderSide(color: AppTheme.accentCyan),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1333,5 +1428,49 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _importFromZip() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip', 'bundle'],
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      setState(() => _isLoading = true);
+      
+      final file = File(result.files.single.path!);
+      final bytes = await file.readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+
+      for (final file in archive) {
+        final filename = file.name;
+        if (file.isFile) {
+          final data = file.content as List<int>;
+          File('${widget.docsPath}/$filename')
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(data);
+        } else {
+          Directory('${widget.docsPath}/$filename').createSync(recursive: true);
+        }
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onComplete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(backgroundColor: AppTheme.accentGreen, content: Text('✓ Repository imported successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Import failed: $e';
+        });
+      }
+    }
   }
 }

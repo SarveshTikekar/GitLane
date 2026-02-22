@@ -875,6 +875,15 @@ static int certificate_check_cb(git_cert *cert, int valid, const char *host, voi
  *     Clones a remote repository to a local path.
  *     Returns 0 on success, negative on failure.
  * ═══════════════════════════════════════════════════════════════════════════ */
+static int credential_cb(
+        git_credential **out,
+        const char *url,
+        const char *username_from_url,
+        unsigned int allowed_types,
+        void *payload) {
+    /* For public HTTPS repos, return an empty default credential */
+    return git_credential_default_new(out);
+}
 JNIEXPORT jint JNICALL
 Java_com_example_gitlane_GitBridge_cloneRepository(
         JNIEnv *env, jobject obj, jstring jurl, jstring jpath) {
@@ -891,6 +900,7 @@ Java_com_example_gitlane_GitBridge_cloneRepository(
     /* Set up callbacks */
     fetch_opts.callbacks.transfer_progress = fetch_progress_cb;
     fetch_opts.callbacks.certificate_check = certificate_check_cb;
+    fetch_opts.callbacks.credentials = credential_cb;
     clone_opts.fetch_opts = fetch_opts;
 
     checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
@@ -1289,18 +1299,16 @@ Java_com_example_gitlane_GitBridge_pushRepository(
     opts.callbacks.payload = (void *)token;
     opts.callbacks.certificate_check = certificate_check_cb;
 
-    /* Push current branch to same remote branch name */
-    const char *head_name = git_reference_name(head_ref); /* refs/heads/<branch> */
-    if (!head_name || strncmp(head_name, "refs/heads/", 11) != 0) {
-        result = -211;
-        goto cleanup_push;
+    /* Push current branch to its remote tracking branch dynamically */
+    const char *branch_name = "main";
+    if (head_ref) {
+        branch_name = git_reference_shorthand(head_ref);
     }
-    const char *branch = head_name + 11;
-    char refspec[1024];
-    snprintf(refspec, sizeof(refspec), "refs/heads/%s:refs/heads/%s", branch, branch);
-    char *refspec_arr[1];
-    refspec_arr[0] = refspec;
-    git_strarray refs = { refspec_arr, 1 };
+    
+    char refspec[256];
+    snprintf(refspec, sizeof(refspec), "refs/heads/%s:refs/heads/%s", branch_name, branch_name);
+    char *refspec_ptr = refspec;
+    git_strarray refs = { &refspec_ptr, 1 };
 
     LOGI("Pushing to remote %s with token: %s", git_remote_url(remote), token ? "provided" : "none");
 
@@ -2604,6 +2612,7 @@ Java_com_example_gitlane_GitBridge_runHealthCheck(
     git_libgit2_shutdown();
     return (*env)->NewStringUTF(env, result_msg);
 }
+<<<<<<< HEAD
 
 JNIEXPORT jint JNICALL
 Java_com_example_gitlane_GitBridge_createBundle(
@@ -2628,3 +2637,5 @@ Java_com_example_gitlane_GitBridge_createBundle(
     return (jint)result;
 }
 
+=======
+>>>>>>> main

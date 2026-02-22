@@ -1,0 +1,37 @@
+Running Gradle task 'assembleDebug'...                          
+lib/ui/screens/repository/maintenance_dashboard.dart:94:21: Error: Member not found: 'Difference_rounded'.
+              Icons.Difference_rounded,
+                    ^^^^^^^^^^^^^^^^^^
+lib/ui/screens/repository/maintenance_dashboard.dart:113:13: Error: The method 'File' isn't defined for the type '_MaintenanceDashboardState'.
+ - '_MaintenanceDashboardState' is from 'package:gitlane/ui/screens/repository/maintenance_dashboard.dart' ('lib/ui/screens/repository/maintenance_dashboard.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'File'.
+      await File(filePath).writeAsString("Line 1\nBase Content\nLine 3\n");
+            ^^^^
+lib/ui/screens/repository/maintenance_dashboard.dart:121:13: Error: The method 'File' isn't defined for the type '_MaintenanceDashboardState'.
+ - '_MaintenanceDashboardState' is from 'package:gitlane/ui/screens/repository/maintenance_dashboard.dart' ('lib/ui/screens/repository/maintenance_dashboard.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'File'.
+      await File(filePath).writeAsString("Line 1\nBranch Modification\nLine 3\n");
+            ^^^^
+lib/ui/screens/repository/maintenance_dashboard.dart:126:13: Error: The method 'File' isn't defined for the type '_MaintenanceDashboardState'.
+ - '_MaintenanceDashboardState' is from 'package:gitlane/ui/screens/repository/maintenance_dashboard.dart' ('lib/ui/screens/repository/maintenance_dashboard.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'File'.
+      await File(filePath).writeAsString("Line 1\nMain Modification\nLine 3\n");
+            ^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command 'E:\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 41s
+Running Gradle task 'assembleDebug'...                             41.6s
+Gradle task assembleDebug failed with exit code 1

@@ -4,6 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/responsive.dart';
 import '../../widgets/empty_state.dart';
@@ -15,15 +16,16 @@ import '../../../services/git_sync_service.dart';
 import '../commit/commit_detail_screen.dart';
 import '../commit/commit_graph_screen.dart';
 import 'native_terminal_screen.dart';
+import 'quantum_hub_screen.dart';
 import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
+import 'security_workbench.dart';
 import 'reflog_screen.dart';
 import 'analytics_screen.dart';
 import 'remotes_screen.dart';
 import 'hunk_staging_screen.dart';
 import '../../../services/indexer_service.dart';
-import 'ssh_workbench_screen.dart';
 import 'rebase_workbench.dart';
 import 'semantic_search_screen.dart';
 import 'git_hooks_screen.dart';
@@ -76,6 +78,29 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     });
     _fetchData();
     _listRepoFiles();
+    _loadToken();
+  }
+
+  // ── Secure Token Storage ───────────────────────────────────────────────────
+  Future<File> _getTokenFile() async {
+    final docs = await getApplicationDocumentsDirectory();
+    return File('${docs.path}/gitlane_pat.txt');
+  }
+
+  Future<void> _loadToken() async {
+    try {
+      final file = await _getTokenFile();
+      if (await file.exists()) {
+        _personalAccessToken = await file.readAsString();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveToken(String token) async {
+    try {
+      final file = await _getTokenFile();
+      await file.writeAsString(token);
+    } catch (_) {}
   }
 
   @override
@@ -317,6 +342,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     final tagCtrl = TextEditingController();
     bool pushAfter = false;
     bool createTag = false;
+    bool signWithGPG = false;
 
     final result = await showDialog<bool>(
       context: context,
@@ -349,10 +375,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     setDialogState(() => pushAfter = val ?? false),
               ),
               CheckboxListTile(
-                title: Text(
-                  'Create tag',
-                  style: GoogleFonts.inter(fontSize: 14),
-                ),
+              CheckboxListTile(
+                title: Text('Sign with GPG',
+                    style: GoogleFonts.inter(fontSize: 14)),
+                value: signWithGPG,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.accentOrange,
+                onChanged: (val) => setDialogState(() => signWithGPG = val ?? false),
+              ),
+              CheckboxListTile(
+                title: Text('Create tag',
+                    style: GoogleFonts.inter(fontSize: 14)),
                 value: createTag,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
@@ -951,9 +985,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             ),
             const SizedBox(height: 10),
             Text(
-              'Token is stored for this session only.',
+              'Token is securely saved on your device.',
               style: GoogleFonts.inter(
-                color: AppTheme.textMuted,
+                color: AppTheme.accentCyan,
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
@@ -970,6 +1004,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               final token = controller.text.trim();
               if (token.isNotEmpty) {
                 _personalAccessToken = token;
+                _saveToken(token);
                 Navigator.pop(context);
                 onConfirm(token);
               }
@@ -1199,28 +1234,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentPurple,
         ),
         _menuItem(
-          'ssh',
-          Icons.vpn_key_rounded,
-          'SSH Workbench',
+          'security',
+          Icons.security_rounded,
+          'Security Workbench',
           AppTheme.accentPurple,
-        ),
-        _menuItem(
-          'hooks',
-          Icons.webhook_rounded,
-          'Git Hooks',
-          AppTheme.accentGreen,
-        ),
-        _menuItem(
-          'social',
-          Icons.groups_rounded,
-          'Collaboration',
-          AppTheme.accentCyan,
-        ),
-        _menuItem(
-          'gpg',
-          Icons.verified_user_rounded,
-          'GPG Workbench',
-          AppTheme.accentOrange,
         ),
         _menuItem(
           'health',
@@ -1305,10 +1322,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       case 'share':
         _shareRepo();
         break;
-      case 'ssh':
+      case 'security':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const SSHWorkbenchScreen()),
+          MaterialPageRoute(builder: (_) => const SecurityWorkbench()),
         );
         break;
       case 'rebase':
@@ -1323,6 +1340,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         ).then((res) {
           if (res == true) _fetchData();
         });
+        break;
+        // Consolidated into reordered switch
+      case 'quantum':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuantumHubScreen(
+              repoPath: widget.repoPath,
+              repoName: widget.repoName,
+            ),
+          ),
+        );
         break;
       case 'hooks':
         Navigator.push(
@@ -1340,12 +1369,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
         break;
-      case 'gpg':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const GPGWorkbench()),
-        );
-        break;
+        // Consolidated into 'security'
       case 'health':
         Navigator.push(
           context,
@@ -1451,10 +1475,20 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final narrowTitle = constraints.maxWidth < 220;
-                  final branchChip = GestureDetector(
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    widget.repoName,
+                    style: GoogleFonts.inter(
+                      color: AppTheme.textPrimary,
+                      fontSize: compact ? 15 : 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  GestureDetector(
                     onTap: _showBranchDialog,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -1488,47 +1522,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         ],
                       ),
                     ),
-                  );
-
-                  if (narrowTitle) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.repoName,
-                          style: GoogleFonts.inter(
-                            color: AppTheme.textPrimary,
-                            fontSize: compact ? 15 : 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        branchChip,
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.repoName,
-                          style: GoogleFonts.inter(
-                            color: AppTheme.textPrimary,
-                            fontSize: compact ? 15 : 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      branchChip,
-                    ],
-                  );
-                },
+                  ),
+                ],
               ),
               if (_currentDir != widget.repoPath)
                 Text(
@@ -2092,11 +2087,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                       ],
                     ),
                     const SizedBox(height: 6),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final narrow = constraints.maxWidth < 290;
-
-                        final authorChip = Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
@@ -2121,20 +2117,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                author,
-                                style: GoogleFonts.inter(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              author,
+                              style: GoogleFonts.inter(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
                               ),
                             ),
                           ],
-                        );
-
-                        final hashChip = Container(
+                        ),
+                        Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 2,
@@ -2150,48 +2142,15 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                               fontSize: 10,
                             ),
                           ),
-                        );
-
-                        if (narrow) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              authorChip,
-                              const SizedBox(height: 6),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 6,
-                                children: [
-                                  hashChip,
-                                  Text(
-                                    timeAgo,
-                                    style: GoogleFonts.inter(
-                                      color: AppTheme.textMuted,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          children: [
-                            Expanded(child: authorChip),
-                            const SizedBox(width: 8),
-                            hashChip,
-                            const SizedBox(width: 8),
-                            Text(
-                              timeAgo,
-                              style: GoogleFonts.inter(
-                                color: AppTheme.textMuted,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                        ),
+                        Text(
+                          timeAgo,
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -2221,11 +2180,30 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       return EmptyState(
         icon: Icons.check_circle_outline_rounded,
         title: 'Working directory clean',
-        subtitle: 'Everything is up to date and committed',
-        action: ElevatedButton.icon(
-          onPressed: _fetchData,
-          icon: const Icon(Icons.refresh_rounded, size: 16),
-          label: const Text('Refresh'),
+        subtitle: 'Everything is locally committed and ready',
+        action: Wrap(
+          spacing: 12,
+          alignment: WrapAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _fetchData,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Refresh'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.bg1,
+                foregroundColor: AppTheme.textPrimary,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _pushRepo,
+              icon: const Icon(Icons.upload_rounded, size: 16),
+              label: const Text('Push to Remote'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentBlue,
+                foregroundColor: Colors.black,
+              ),
+            ),
+          ],
         ),
       );
     }

@@ -66,9 +66,9 @@ void main() {
     // Verify Empty State message - matching the text in dashboard_screen.dart:556
     expect(find.text('No repositories yet'), findsOneWidget);
 
-    // Verify FAB - It says 'New Repo' in dashboard_screen.dart:276
+    // Verify FAB - It says 'Clone / Init' in dashboard_screen.dart:276
     expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.text('New Repo'), findsOneWidget);
+    expect(find.text('Clone / Init'), findsOneWidget);
 
     FlutterError.onError = originalOnError;
   });

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../../theme/app_theme.dart';
 
 import '../../../services/git_service.dart';
@@ -159,20 +162,47 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _isExporting ? null : _exportBundle,
+          child: ElevatedButton.icon(
+            onPressed: _isExporting ? null : _shareDirect,
             icon: _isExporting
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentOrange))
-                : const Icon(Icons.archive_rounded, size: 16, color: AppTheme.accentOrange),
-            label: Text(_isExporting ? 'Exporting...' : 'Export Offline Bundle (.bundle)', style: const TextStyle(color: AppTheme.accentOrange)),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppTheme.accentOrange),
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                : const Icon(Icons.share_rounded, size: 16),
+            label: Text(_isExporting ? 'Preparing Bundle...' : 'Direct P2P Share'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentOrange,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _shareDirect() async {
+    setState(() => _isExporting = true);
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final bundlePath = '${tempDir.path}/${widget.repoName}.zip';
+      
+      // We use the Zip logic we added to MainActivity.kt
+      final result = await GitService.createBundle(widget.repoPath, bundlePath);
+      
+      if (result == 0) {
+        final file = XFile(bundlePath);
+        await Share.shareXFiles([file], text: 'GitLane Repository: ${widget.repoName}');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: AppTheme.accentRed, content: Text('Error preparing bundle: $result')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: AppTheme.accentRed, content: Text('Share failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   Future<void> _exportBundle() async {

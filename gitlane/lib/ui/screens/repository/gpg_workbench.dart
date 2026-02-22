@@ -67,8 +67,42 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
     );
 
     if (result == true && keyController.text.trim().isNotEmpty) {
-      // Logic for importing key would go here
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Importing GPG keys is a placeholder in this demo.")));
+      try {
+        setState(() => _isLoading = true);
+        await GPGService.importKey(keyController.text.trim());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("GPG Key imported successfully.")));
+          _refreshKeys();
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Import failed: $e"), backgroundColor: AppTheme.accentRed));
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteKey(String label) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.bg2,
+        title: const Text("Delete GPG Key?"),
+        content: Text("This will permanently remove the imported key '$label'. You cannot undo this action."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: AppTheme.accentRed)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await GPGService.deleteKey(label);
+      _refreshKeys();
     }
   }
 
@@ -76,13 +110,6 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.bg0,
-      appBar: AppBar(
-        title: const Text("GPG Workbench"),
-        backgroundColor: AppTheme.bg0,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _refreshKeys),
-        ],
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
           : Column(
@@ -96,7 +123,7 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _importKey,
         backgroundColor: AppTheme.accentCyan,
-        icon: const Icon(Icons.add_rounded, color: Colors.black),
+        icon: const Icon(Icons.download_rounded, color: Colors.black),
         label: const Text("Import GPG Key", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
     );
@@ -152,6 +179,10 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
             ),
             title: Text(key, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             subtitle: const Text("GPG Key • Verified", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_rounded, color: AppTheme.textMuted),
+              onPressed: () => _deleteKey(key),
+            ),
           ),
         );
       },

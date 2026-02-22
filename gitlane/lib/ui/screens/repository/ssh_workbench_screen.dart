@@ -172,13 +172,6 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundBlack,
-      appBar: AppBar(
-        title: const Text("SSH Workbench"),
-        backgroundColor: AppTheme.accentPurple.withValues(alpha: 0.05),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _refreshKeys),
-        ],
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.accentPurple))
           : Column(
