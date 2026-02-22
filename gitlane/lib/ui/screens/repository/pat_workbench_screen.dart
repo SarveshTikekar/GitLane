@@ -269,6 +269,8 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
                           children: [
                             Text(
                               label,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                               style: GoogleFonts.inter(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -280,11 +282,14 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
                               children: [
                                 const Icon(Icons.timer_outlined, size: 12, color: AppTheme.accentOrange),
                                 const SizedBox(width: 4),
-                                Text(
-                                  'Expires: $formatExp',
-                                  style: GoogleFonts.firaMono(
-                                    color: AppTheme.accentOrange,
-                                    fontSize: 11,
+                                Flexible(
+                                  child: Text(
+                                    'Expires: $formatExp',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.firaMono(
+                                      color: AppTheme.accentOrange,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                               ],

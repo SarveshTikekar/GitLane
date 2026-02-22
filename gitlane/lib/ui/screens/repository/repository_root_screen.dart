@@ -1592,7 +1592,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 tooltip: 'New File',
                 child: const Icon(Icons.add_rounded),
               )
-            : _selectedIndex == 2 && _statusFiles.isNotEmpty
+            : _selectedIndex == 2 && _statusFiles.any((f) => f['isStaged'] == true)
             ? compact
                   ? FloatingActionButton(
                       onPressed: _showCommitDialog,
@@ -1603,7 +1603,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                       onPressed: _showCommitDialog,
                       icon: const Icon(Icons.check_rounded),
                       label: Text(
-                        'Commit ${_statusFiles.length} files',
+                        'Commit ${_statusFiles.where((f) => f['isStaged'] == true).length} files',
                         style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                       ),
                     )
