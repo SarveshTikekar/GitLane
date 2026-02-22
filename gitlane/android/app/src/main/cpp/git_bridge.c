@@ -556,6 +556,7 @@ Java_com_example_gitlane_GitBridge_getRepositoryStatus(
     int first = 1;
     pos += snprintf(json + pos, 32768 - pos, "[");
 
+    int is_first = 1;
     for (size_t i = 0; i < count; i++) {
         const git_status_entry *entry = git_status_byindex(status, i);
         const unsigned int st = entry->status;
@@ -582,6 +583,7 @@ Java_com_example_gitlane_GitBridge_getRepositoryStatus(
                 workdir_path = entry->index_to_workdir->old_file.path;
             }
         }
+
 
         if ((st & GIT_STATUS_INDEX_NEW) && staged_path) {
             pos += snprintf(json + pos, 32768 - pos,
@@ -635,6 +637,7 @@ Java_com_example_gitlane_GitBridge_getRepositoryStatus(
                             "%s{\"path\":\"%s\",\"status\":\"typechange\",\"isStaged\":false}",
                             first ? "" : ",", workdir_path);
             first = 0;
+
         }
     }
 
@@ -1264,11 +1267,14 @@ static int cred_acquire_cb(git_cred **out, const char *url, const char *username
     if (!token || strlen(token) == 0) {
         return -1; // No token provided
     }
-    // Most remote git hosts use "git" or the username for the username, and the token for the password.
-    // For GitHub PATs or GitLab tokens, usually the username doesn't strictly matter as long as the token is right,
-    // but we'll use "git" if username_from_url is null.
-    const char *user = username_from_url ? username_from_url : "git";
-    return git_cred_userpass_plaintext_new(out, user, token);
+    if (allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT) {
+        const char *user = username_from_url ? username_from_url : "git";
+        return git_cred_userpass_plaintext_new(out, user, token);
+    } else if (allowed_types & GIT_CREDTYPE_DEFAULT) {
+        return git_cred_default_new(out);
+    }
+    LOGE("Unsupported credential type requested: %d", allowed_types);
+    return -1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -21,6 +21,8 @@ import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'security_workbench.dart';
+import 'pat_workbench_screen.dart';
+import '../../../services/pat_service.dart';
 import 'reflog_screen.dart';
 import 'analytics_screen.dart';
 import 'remotes_screen.dart';
@@ -1020,21 +1022,28 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     );
   }
 
-  Future<void> _pullRepo() => _showCredentialDialog(
-    onConfirm: (token) async {
-      setState(() => _isLoading = true);
-      final code = await GitService.pullRepository(widget.repoPath, token);
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showSnack(
-          code == 0 ? '⬇ Pull successful' : 'Pull failed ($code)',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-        );
-        _fetchData();
-        _listRepoFiles();
-      }
-    },
-  );
+  Future<void> _pullRepo() async {
+    final activePat = await PATService.getActiveTokenString();
+    if (activePat != null) {
+      _executePull(activePat);
+    } else {
+      _showCredentialDialog(onConfirm: _executePull);
+    }
+  }
+
+  Future<void> _executePull(String token) async {
+    setState(() => _isLoading = true);
+    final code = await GitService.pullRepository(widget.repoPath, token);
+    if (mounted) {
+      setState(() => _isLoading = false);
+      _showSnack(
+        code == 0 ? '⬇ Pull successful' : 'Pull failed ($code)',
+        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      );
+      _fetchData();
+      _listRepoFiles();
+    }
+  }
 
   Future<void> _pushRepo() => _showCredentialDialog(
     onConfirm: (token) async {
@@ -1238,6 +1247,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentPurple,
         ),
         _menuItem(
+          'pat_manager',
+          Icons.vpn_key_rounded,
+          'PAT Manager',
+          AppTheme.accentGreen,
+        ),
+        _menuItem(
           'security',
           Icons.security_rounded,
           'Security Workbench',
@@ -1330,6 +1345,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SecurityWorkbench()),
+        );
+        break;
+      case 'pat_manager':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PATWorkbenchScreen()),
         );
         break;
       case 'rebase':
@@ -1648,7 +1669,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 tooltip: 'New File',
                 child: const Icon(Icons.add_rounded),
               )
-            : _selectedIndex == 2 && _statusFiles.isNotEmpty
+            : _selectedIndex == 2 &&
+                  _statusFiles.any((f) => f['isStaged'] == true)
             ? compact
                   ? FloatingActionButton(
                       onPressed: _showCommitDialog,
@@ -1659,7 +1681,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                       onPressed: _showCommitDialog,
                       icon: const Icon(Icons.check_rounded),
                       label: Text(
-                        'Commit ${_statusFiles.length} files',
+                        'Commit ${_statusFiles.where((f) => f['isStaged'] == true).length} files',
                         style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                       ),
                     )

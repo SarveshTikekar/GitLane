@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
 import 'ssh_workbench_screen.dart';
 import 'gpg_workbench.dart';
+import 'pat_workbench_screen.dart';
 
 class SecurityWorkbench extends StatelessWidget {
   const SecurityWorkbench({super.key});
@@ -10,7 +11,7 @@ class SecurityWorkbench extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: AppTheme.bg0,
         appBar: AppBar(
@@ -21,12 +22,14 @@ class SecurityWorkbench extends StatelessWidget {
           ),
           bottom: TabBar(
             indicatorColor: AppTheme.accentPurple,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 10),
             labelColor: Colors.white,
             unselectedLabelColor: AppTheme.textMuted,
             labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
             tabs: const [
               Tab(text: "SSH KEYS", icon: Icon(Icons.vpn_key_rounded, size: 20)),
               Tab(text: "GPG KEYS", icon: Icon(Icons.verified_user_rounded, size: 20)),
+              Tab(text: "PAT TOKENS", icon: Icon(Icons.token_rounded, size: 20)),
             ],
           ),
         ),
@@ -34,6 +37,7 @@ class SecurityWorkbench extends StatelessWidget {
           children: [
             SSHWorkbenchScreen(),
             GPGWorkbench(),
+            PATWorkbenchScreen(),
           ],
         ),
       ),
