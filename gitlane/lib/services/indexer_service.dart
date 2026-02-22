@@ -57,7 +57,8 @@ class IndexerService {
               path.contains('.git/') ||
               path.contains('android/.gradle')) continue;
 
-          if (path.endsWith('.dart') || path.endsWith('.kt') || path.endsWith('.c') || path.endsWith('.h')) {
+          final validExts = ['.dart', '.kt', '.java', '.c', '.cpp', '.h', '.py', '.js', '.ts', '.go', '.rs'];
+          if (validExts.any((ext) => path.endsWith(ext))) {
             await _indexFile(entity);
           }
         }
