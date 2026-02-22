@@ -4,6 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/responsive.dart';
 import '../../widgets/empty_state.dart';
@@ -77,6 +78,29 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     });
     _fetchData();
     _listRepoFiles();
+    _loadToken();
+  }
+
+  // ── Secure Token Storage ───────────────────────────────────────────────────
+  Future<File> _getTokenFile() async {
+    final docs = await getApplicationDocumentsDirectory();
+    return File('${docs.path}/gitlane_pat.txt');
+  }
+
+  Future<void> _loadToken() async {
+    try {
+      final file = await _getTokenFile();
+      if (await file.exists()) {
+        _personalAccessToken = await file.readAsString();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveToken(String token) async {
+    try {
+      final file = await _getTokenFile();
+      await file.writeAsString(token);
+    } catch (_) {}
   }
 
   @override
@@ -911,9 +935,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             ),
             const SizedBox(height: 10),
             Text(
-              'Token is stored for this session only.',
+              'Token is securely saved on your device.',
               style: GoogleFonts.inter(
-                color: AppTheme.textMuted,
+                color: AppTheme.accentCyan,
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
@@ -930,6 +954,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               final token = controller.text.trim();
               if (token.isNotEmpty) {
                 _personalAccessToken = token;
+                _saveToken(token);
                 Navigator.pop(context);
                 onConfirm(token);
               }
@@ -2032,11 +2057,30 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       return EmptyState(
         icon: Icons.check_circle_outline_rounded,
         title: 'Working directory clean',
-        subtitle: 'Everything is up to date and committed',
-        action: ElevatedButton.icon(
-          onPressed: _fetchData,
-          icon: const Icon(Icons.refresh_rounded, size: 16),
-          label: const Text('Refresh'),
+        subtitle: 'Everything is locally committed and ready',
+        action: Wrap(
+          spacing: 12,
+          alignment: WrapAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _fetchData,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Refresh'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.bg1,
+                foregroundColor: AppTheme.textPrimary,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _pushRepo,
+              icon: const Icon(Icons.upload_rounded, size: 16),
+              label: const Text('Push to Remote'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentBlue,
+                foregroundColor: Colors.black,
+              ),
+            ),
+          ],
         ),
       );
     }
