@@ -35,12 +35,13 @@ Here is your exact, step-by-step script to verify and present each USP.
 
 **How to demo it:**
 1. Go to the **Security Workbench** (Shield icon in Tools).
-2. Tap **Generate New GPG Key**. Enter a test name and email.
-3. Once generated, go back to the repository and edit `main.py` (change "Sum" to "Total Sum").
-4. Go to the **Commit Screen**. 
-5. Under the commit message field, **toggle the GPG switch on**.
-6. Hit Commit. 
-7. *The Flex:* Push the code, open GitHub.com on your laptop, and show the judges the green **"Verified"** badge next to the commit you just made from your phone.
+2. For SSH: Tap **SSH Workbench** and generate a new Ed25519 key natively on the phone. Show the judges the public key.
+3. For GPG: Tap **GPG Workbench** and import a test PGP key.
+4. Go back to the repository and edit `main.py` (change "Sum" to "Total Sum").
+5. Go to the **Commit Screen**. 
+6. Under the commit message field, **toggle the GPG switch on**.
+7. Hit Commit. 
+8. *The Flex:* Push the code, open GitHub.com on your laptop, and show the judges the green **"Verified"** badge next to the commit you just made from your phone.
 
 ---
 

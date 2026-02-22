@@ -47,7 +47,7 @@ Merging code on a phone sounds impossible. We made it beautiful. When a conflict
 ### 🔐 USP 3: **Enterprise-Grade Security (GPG & SSH Workbench)**
 GitHub Mobile relies on web-based OAuth. GitLane provides a complete **Cryptographic Workbench**. 
 - Generate Ed25519 SSH keys directly on your phone.
-- Generate GPG keys to mathematically cryptosign every single commit you make from your phone, getting that coveted "Verified" badge on GitHub.
+- Import GPG keys to mathematically cryptosign every single commit you make from your phone, getting that coveted "Verified" badge on GitHub.
 
 ### 🧠 USP 4: **LSP-Lite Semantic Intelligence**
 Reading code is hard on mobile. GitLane features a custom **Semantic Indexer** that understands your repository using an AST-lite traversal. You can search for "class Authentication" and GitLane instantly finds exactly where it's defined, jumping straight to the class definition rather than doing a "dumb" text match.
