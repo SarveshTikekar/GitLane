@@ -34,9 +34,9 @@ Here is your exact, step-by-step script to verify and present each USP.
 *The Pitch:* "Making a commit on your phone usually means it's unverified. We brought cryptographic signing to mobile."
 
 **How to demo it:**
-1. Go to the **Security Workbench** (Shield icon in Tools).
-2. For SSH: Tap **SSH Workbench** and generate a new Ed25519 key natively on the phone. Show the judges the public key.
-3. For GPG: Tap **GPG Workbench** and import a test PGP key.
+1. Open the **Security Workbench** (Shield icon in the Overflow Menu ⦙).
+2. For SSH: Tap the **SSH KEYS** tab and generate a new Ed25519 key natively on the phone. Show the judges the public key.
+3. For GPG: Tap the **GPG KEYS** tab and import a test PGP key.
 4. Go back to the repository and edit `main.py` (change "Sum" to "Total Sum").
 5. Go to the **Commit Screen**. 
 6. Under the commit message field, **toggle the GPG switch on**.

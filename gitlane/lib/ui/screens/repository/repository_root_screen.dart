@@ -18,12 +18,12 @@ import 'quantum_hub_screen.dart';
 import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
+import 'security_workbench.dart';
 import 'reflog_screen.dart';
 import 'analytics_screen.dart';
 import 'remotes_screen.dart';
 import 'hunk_staging_screen.dart';
 import '../../../services/indexer_service.dart';
-import 'ssh_workbench_screen.dart';
 import 'rebase_workbench.dart';
 import 'semantic_search_screen.dart';
 import 'git_hooks_screen.dart';
@@ -1120,34 +1120,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentPurple,
         ),
         _menuItem(
-          'ssh',
-          Icons.vpn_key_rounded,
-          'SSH Workbench',
+          'security',
+          Icons.security_rounded,
+          'Security Workbench',
           AppTheme.accentPurple,
-        ),
-        _menuItem(
-          'hooks',
-          Icons.webhook_rounded,
-          'Git Hooks',
-          AppTheme.accentGreen,
-        ),
-        _menuItem(
-          'social',
-          Icons.groups_rounded,
-          'Collaboration',
-          AppTheme.accentCyan,
-        ),
-        _menuItem(
-          'quantum',
-          Icons.hub_rounded,
-          'Quantum Mesh',
-          AppTheme.accentCyan,
-        ),
-        _menuItem(
-          'gpg',
-          Icons.verified_user_rounded,
-          'GPG Workbench',
-          AppTheme.accentOrange,
         ),
         _menuItem(
           'health',
@@ -1231,10 +1207,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       case 'share':
         _shareRepo();
         break;
-      case 'ssh':
+      case 'security':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const SSHWorkbenchScreen()),
+          MaterialPageRoute(builder: (_) => const SecurityWorkbench()),
         );
         break;
       case 'rebase':
@@ -1249,6 +1225,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         ).then((res) {
           if (res == true) _fetchData();
         });
+        break;
+        // Consolidated into reordered switch
+      case 'quantum':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuantumHubScreen(
+              repoPath: widget.repoPath,
+              repoName: widget.repoName,
+            ),
+          ),
+        );
         break;
       case 'hooks':
         Navigator.push(
@@ -1266,25 +1254,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
         break;
-      case 'quantum':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QuantumHubScreen(
-              repoPath: widget.repoPath,
-              repoName: widget.repoName,
-            ),
-          ),
-        );
-        break;
-      case 'gpg':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const GPGWorkbench(),
-          ),
-        );
-        break;
+        // Consolidated into 'security'
       case 'health':
         Navigator.push(
           context,

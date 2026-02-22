@@ -57,7 +57,7 @@ class IndexerService {
               path.contains('.git/') ||
               path.contains('android/.gradle')) continue;
 
-          final validExts = ['.dart', '.kt', '.java', '.c', '.cpp', '.h', '.py', '.js', '.ts', '.go', '.rs'];
+          final validExts = ['.dart', '.kt', '.java', '.c', '.cpp', '.h', '.py', '.js', '.ts', '.go', '.rs', '.md'];
           if (validExts.any((ext) => path.endsWith(ext))) {
             await _indexFile(entity);
           }
@@ -122,6 +122,21 @@ class IndexerService {
               line: i + 1,
               documentation: _getDocs(lines, i),
             );
+          }
+        }
+
+        // 4. Markdown Headers
+        if (path.endsWith('.md') && line.startsWith('#')) {
+          final mdMatch = RegExp(r'^#{1,6}\s+(.+)').firstMatch(line);
+          if (mdMatch != null) {
+            final symbolName = mdMatch.group(1)!.trim();
+            if (symbolName.isNotEmpty) {
+              _index[symbolName] = SymbolLocation(
+                path: path,
+                line: i + 1,
+                documentation: 'Markdown Section',
+              );
+            }
           }
         }
       }
