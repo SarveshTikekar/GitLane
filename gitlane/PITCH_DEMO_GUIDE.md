@@ -26,7 +26,7 @@ Here is your exact, step-by-step script to verify and present each USP.
 2. Go to the **Semantic Search** tab (the magnifying glass icon on the bottom nav).
 3. Search for `calculate_totals`.
 4. Tap the result. Show the judges how it jumps instantly to the definition of the function using AST (Abstract Syntax Tree) logic, not just dumb text matching.
-5. Next, open the **Analytics Dashboard** (from the Tools menu). Show them the graphs—this proves GitLane locally parsed the `.git` folder to calculate commit frequencies without asking a remote server.
+5. Next, open **Insights** (from the top-right Overflow menu ⦙). Show them the graphs—this proves GitLane locally parsed the `.git` folder to calculate commit frequencies without asking a remote server.
 
 ---
 
