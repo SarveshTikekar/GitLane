@@ -94,7 +94,7 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
             border: InputBorder.none,
             suffixIcon: _queryController.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear_rounded, color: AppTheme.textMuted, size: 20),
+                    icon: Icon(Icons.clear_rounded, color: AppTheme.textMuted, size: 20),
                     onPressed: () => _queryController.clear(),
                   )
                 : null,
@@ -215,7 +215,7 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 16),
+                Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 16),
               ],
             ),
           ),

@@ -189,7 +189,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                 ),
                 subtitle: Text(
                   loc.path.split(Platform.pathSeparator).last,
-                  style: const TextStyle(color: AppTheme.textMuted),
+                  style: TextStyle(color: AppTheme.textMuted),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -231,7 +231,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                     ),
                     child: Text(
                       loc.documentation!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.textLight,
                         fontSize: 12,
                         fontFamily: 'monospace',
@@ -307,7 +307,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
     if (_isBlameLoading) {
       return Container(
         width: 80,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.bg1,
           border: Border(right: BorderSide(color: AppTheme.border)),
         ),
@@ -317,7 +317,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
 
     return Container(
       width: 100,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppTheme.bg1,
         border: Border(right: BorderSide(color: AppTheme.border)),
       ),
@@ -348,7 +348,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                 Expanded(
                   child: Text(
                     author,
-                    style: const TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -373,7 +373,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
 
   Map<String, TextStyle> _getEditorStyles() {
     return {
-      'root': const TextStyle(backgroundColor: AppTheme.backgroundBlack, color: AppTheme.textLight),
+      'root': TextStyle(backgroundColor: AppTheme.backgroundBlack, color: AppTheme.textLight),
       'keyword': const TextStyle(color: Color(0xFFC678DD)),
       'string': const TextStyle(color: Color(0xFF98C379)),
       'comment': const TextStyle(color: Color(0xFF5C6370), fontStyle: FontStyle.italic),

@@ -98,7 +98,7 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+              child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentGreen),
@@ -170,8 +170,8 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.all(24),
+      decoration: BoxDecoration(
         color: AppTheme.bg1,
         border: Border(bottom: BorderSide(color: AppTheme.border)),
       ),
@@ -181,7 +181,7 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppTheme.accentGreen.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -223,7 +223,7 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
 
   Widget _buildTokenList() {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // padding for fab
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 100), // padding for fab
       itemCount: _tokens.length,
       itemBuilder: (context, index) {
         final t = _tokens[index];
@@ -310,7 +310,7 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
                       ),
                       if (isActive)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppTheme.accentGreen.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(4),

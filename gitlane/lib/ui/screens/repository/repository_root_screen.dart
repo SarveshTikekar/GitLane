@@ -1215,7 +1215,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       color: AppTheme.bg2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppTheme.border),
+        side: BorderSide(color: AppTheme.border),
       ),
       items: [
         _menuItem(
@@ -1451,7 +1451,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentRed),
@@ -1781,18 +1781,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+            style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Search files...',
-              hintStyle: const TextStyle(color: AppTheme.textMuted),
-              prefixIcon: const Icon(
+              hintStyle: TextStyle(color: AppTheme.textMuted),
+              prefixIcon: Icon(
                 Icons.search_rounded,
                 size: 20,
                 color: AppTheme.textMuted,
               ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         size: 16,
                         color: AppTheme.textMuted,
@@ -1808,11 +1808,11 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               fillColor: AppTheme.surfaceSlate,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.border),
+                borderSide: BorderSide(color: AppTheme.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.border),
+                borderSide: BorderSide(color: AppTheme.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1860,7 +1860,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                       color: AppTheme.bg2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: const BorderSide(color: AppTheme.border),
+                        side: BorderSide(color: AppTheme.border),
                       ),
                       onSelected: (value) async {
                         if (value == 'delete') {
@@ -2027,7 +2027,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                               )
                             : null,
                         trailing: isDir
-                            ? const Icon(
+                            ? Icon(
                                 Icons.chevron_right_rounded,
                                 color: AppTheme.textMuted,
                                 size: 18,
@@ -2390,7 +2390,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 fontWeight: FontWeight.w500,
               ),
             ),
-            trailing: const Icon(
+            trailing: Icon(
               Icons.chevron_right_rounded,
               color: AppTheme.textMuted,
               size: 18,
@@ -2438,7 +2438,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {

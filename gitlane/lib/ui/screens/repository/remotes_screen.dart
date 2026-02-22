@@ -48,8 +48,8 @@ class _RemotesScreenState extends State<RemotesScreen> {
           children: [
             TextField(
               controller: nameController,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
                 labelText: 'Remote Name (e.g. upstream)',
                 labelStyle: TextStyle(color: AppTheme.textMuted),
               ),
@@ -57,8 +57,8 @@ class _RemotesScreenState extends State<RemotesScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: urlController,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
                 labelText: 'Remote URL',
                 labelStyle: TextStyle(color: AppTheme.textMuted),
               ),
@@ -68,7 +68,7 @@ class _RemotesScreenState extends State<RemotesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -101,8 +101,8 @@ class _RemotesScreenState extends State<RemotesScreen> {
         title: Text('Edit Remote: $name', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
         content: TextField(
           controller: urlController,
-          style: const TextStyle(color: AppTheme.textPrimary),
-          decoration: const InputDecoration(
+          style: TextStyle(color: AppTheme.textPrimary),
+          decoration: InputDecoration(
             labelText: 'New URL',
             labelStyle: TextStyle(color: AppTheme.textMuted),
           ),
@@ -110,7 +110,7 @@ class _RemotesScreenState extends State<RemotesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -138,8 +138,8 @@ class _RemotesScreenState extends State<RemotesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.bg2,
-        title: const Text('Delete Remote', style: TextStyle(color: AppTheme.textPrimary)),
-        content: Text('Are you sure you want to remove remote "$name"?', style: const TextStyle(color: AppTheme.textSecondary)),
+        title: Text('Delete Remote', style: TextStyle(color: AppTheme.textPrimary)),
+        content: Text('Are you sure you want to remove remote "$name"?', style: TextStyle(color: AppTheme.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(

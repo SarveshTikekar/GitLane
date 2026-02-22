@@ -8,7 +8,7 @@ class VisualMergeEditor extends StatefulWidget {
   final String repoPath;
   final String filePath;
 
-  const VisualMergeEditor({
+  VisualMergeEditor({
     super.key,
     required this.repoPath,
     required this.filePath,
@@ -97,12 +97,12 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
                   child: Row(
                     children: [
                       Expanded(child: _buildSourcePane("YOURS", 'local', AppTheme.accentCyan, _mineScroll)),
-                      const VerticalDivider(width: 1, color: AppTheme.border),
+                      VerticalDivider(width: 1, color: AppTheme.border),
                       Expanded(child: _buildSourcePane("THEIRS", 'remote', AppTheme.accentOrange, _theirsScroll)),
                     ],
                   ),
                 ),
-                const Divider(height: 1, color: AppTheme.border),
+                Divider(height: 1, color: AppTheme.border),
                 Container(
                   height: 200,
                   color: AppTheme.bg1,
@@ -115,7 +115,7 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
 
   Widget _buildConflictNavigator() {
     final conflicts = _chunks.where((c) => c['local'] != c['remote']).toList();
-    if (conflicts.isEmpty) return const SizedBox.shrink();
+    if (conflicts.isEmpty) return SizedBox.shrink();
 
     final symbols = IndexerService.getSymbolsInText(conflicts[_currentConflictIndex]['local'] + "\n" + conflicts[_currentConflictIndex]['remote']);
 

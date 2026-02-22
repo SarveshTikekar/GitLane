@@ -8,16 +8,18 @@ class AppTheme {
   static final ValueNotifier<ThemeMode> themeNotifier =
       ValueNotifier(ThemeMode.dark);
 
+  static bool get _isDark => themeNotifier.value == ThemeMode.dark;
+
   // ── Backgrounds ────────────────────────────────────────────────────────────
-  static const Color bg0 = Color(0xFF0D1117); // page background (GitHub dark)
-  static const Color bg1 = Color(0xFF161B22); // card surface
-  static const Color bg2 = Color(0xFF21262D); // elevated card / dialog
-  static const Color border = Color(0xFF30363D); // subtle dividers
+  static Color get bg0 => _isDark ? const Color(0xFF0D1117) : const Color(0xFFFFFFFF);
+  static Color get bg1 => _isDark ? const Color(0xFF161B22) : const Color(0xFFF6F8FA);
+  static Color get bg2 => _isDark ? const Color(0xFF21262D) : const Color(0xFFEAEEF2);
+  static Color get border => _isDark ? const Color(0xFF30363D) : const Color(0xFFD0D7DE);
 
   // ── Text ────────────────────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFFE6EDF3); // headings
-  static const Color textSecondary = Color(0xFF8B949E); // meta info
-  static const Color textMuted = Color(0xFF484F58); // placeholder
+  static Color get textPrimary => _isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F2328);
+  static Color get textSecondary => _isDark ? const Color(0xFF8B949E) : const Color(0xFF636C76);
+  static Color get textMuted => _isDark ? const Color(0xFF484F58) : const Color(0xFF8C959F);
 
   // ── Semantic / Dev-centric accents ──────────────────────────────────────────
   static const Color accentCyan = Color(0xFF39C5CF); // primary CTA, links
@@ -36,10 +38,10 @@ class AppTheme {
 
   // ── Legacy aliases (keep for backward compat) ───────────────────────────────
   static const Color primaryNavy = Color(0xFF0B1223);
-  static const Color backgroundBlack = bg0;
-  static const Color surfaceSlate = bg1;
-  static const Color textLight = textPrimary;
-  static const Color textDim = textSecondary;
+  static Color backgroundBlack = bg0;
+  static Color surfaceSlate = bg1;
+  static Color textLight = textPrimary;
+  static Color textDim = textSecondary;
 
   // ── Gradients ────────────────────────────────────────────────────────────────
   static const LinearGradient bgGradient = LinearGradient(
@@ -95,7 +97,7 @@ class AppTheme {
       scaffoldBackgroundColor: bg0,
       primaryColor: accentCyan,
 
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme.dark(
         primary: accentCyan,
         onPrimary: Colors.black,
         secondary: accentGreen,
@@ -164,8 +166,8 @@ class AppTheme {
           fontSize: 17,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: const IconThemeData(color: textSecondary, size: 22),
-        actionsIconTheme: const IconThemeData(color: textSecondary, size: 22),
+        iconTheme: IconThemeData(color: textSecondary, size: 22),
+        actionsIconTheme: IconThemeData(color: textSecondary, size: 22),
       ),
 
       navigationBarTheme: NavigationBarThemeData(
@@ -176,7 +178,7 @@ class AppTheme {
           if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: accentCyan, size: 22);
           }
-          return const IconThemeData(color: textSecondary, size: 22);
+          return IconThemeData(color: textSecondary, size: 22);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -197,7 +199,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: border, width: 1),
+          side: BorderSide(color: border, width: 1),
         ),
       ),
 
@@ -212,11 +214,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: border),
+          borderSide: BorderSide(color: border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: border),
+          borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -231,7 +233,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
 
-      dividerTheme: const DividerThemeData(
+      dividerTheme: DividerThemeData(
         color: border,
         thickness: 1,
         space: 1,
@@ -243,7 +245,7 @@ class AppTheme {
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: border),
+          side: BorderSide(color: border),
         ),
         titleTextStyle: GoogleFonts.inter(
           color: textPrimary,
@@ -255,7 +257,7 @@ class AppTheme {
 
       chipTheme: ChipThemeData(
         backgroundColor: bg2,
-        side: const BorderSide(color: border),
+        side: BorderSide(color: border),
         labelStyle: GoogleFonts.inter(color: textSecondary, fontSize: 12),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -273,7 +275,7 @@ class AppTheme {
         contentTextStyle: GoogleFonts.inter(color: textPrimary, fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: border),
+          side: BorderSide(color: border),
         ),
         behavior: SnackBarBehavior.floating,
         actionTextColor: accentCyan,
@@ -284,7 +286,7 @@ class AppTheme {
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: border),
+          side: BorderSide(color: border),
         ),
         textStyle: GoogleFonts.inter(color: textPrimary, fontSize: 14),
       ),

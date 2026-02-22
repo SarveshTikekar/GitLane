@@ -79,7 +79,7 @@ class _MergeConflictScreenState extends State<MergeConflictScreen> {
             )
           : Column(
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
                     "The following files have merge conflicts. Edit them to remove markers (<<<<, ====, >>>>) and stage the final version.",
@@ -104,9 +104,9 @@ class _MergeConflictScreenState extends State<MergeConflictScreen> {
                           ),
                           title: Text(
                             f,
-                            style: const TextStyle(color: AppTheme.textLight),
+                            style: TextStyle(color: AppTheme.textLight),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             "Conflicting markers detected",
                             style: TextStyle(
                               color: AppTheme.textDim,
@@ -125,7 +125,7 @@ class _MergeConflictScreenState extends State<MergeConflictScreen> {
                   ),
                 ),
                 if (_files.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.all(32.0),
                     child: Column(
                       children: [

@@ -162,7 +162,7 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
             itemBuilder: (context, index) {
               final commit = _allCommits[index];
               return ListTile(
-                leading: const Icon(Icons.radio_button_unchecked_rounded, color: AppTheme.textMuted, size: 20),
+                leading: Icon(Icons.radio_button_unchecked_rounded, color: AppTheme.textMuted, size: 20),
                 title: Text(commit['message'] ?? "No message", style: const TextStyle(color: Colors.white, fontSize: 14)),
                 subtitle: Text(commit['hash']?.toString().substring(0, 7) ?? "", style: GoogleFonts.firaCode(color: AppTheme.textMuted, fontSize: 11)),
                 onTap: () => _prepareRebase(commit['hash']),
@@ -239,7 +239,7 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
                   ],
                 ),
                 title: Text(item['message'] ?? "", style: const TextStyle(color: Colors.white, fontSize: 13)),
-                trailing: const Icon(Icons.drag_indicator_rounded, color: AppTheme.textMuted),
+                trailing: Icon(Icons.drag_indicator_rounded, color: AppTheme.textMuted),
               );
             },
           ),

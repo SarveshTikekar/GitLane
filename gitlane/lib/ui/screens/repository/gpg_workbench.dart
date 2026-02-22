@@ -135,7 +135,7 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppTheme.accentCyan.withValues(alpha: 0.05),
-        border: const Border(bottom: BorderSide(color: AppTheme.border)),
+        border: Border(bottom: BorderSide(color: AppTheme.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,14 +173,14 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               backgroundColor: AppTheme.bg2,
               child: Icon(Icons.verified_rounded, color: AppTheme.accentCyan, size: 20),
             ),
             title: Text(key, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            subtitle: const Text("GPG Key • Verified", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+            subtitle: Text("GPG Key • Verified", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
             trailing: IconButton(
-              icon: const Icon(Icons.delete_rounded, color: AppTheme.textMuted),
+              icon: Icon(Icons.delete_rounded, color: AppTheme.textMuted),
               onPressed: () => _deleteKey(key),
             ),
           ),

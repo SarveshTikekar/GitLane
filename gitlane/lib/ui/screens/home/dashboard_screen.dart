@@ -207,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.bg2,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         side: BorderSide(color: AppTheme.border),
       ),
@@ -506,7 +506,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 color: AppTheme.textMuted,
                 fontSize: 14,
               ),
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.search_rounded,
                 color: AppTheme.textSecondary,
                 size: 20,
@@ -593,7 +593,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               label: const Text('Scan QR Code'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppTheme.textSecondary,
-                side: const BorderSide(color: AppTheme.border),
+                side: BorderSide(color: AppTheme.border),
               ),
             ),
           ),
@@ -855,7 +855,7 @@ class _RepoCard extends StatelessWidget {
                                       margin: const EdgeInsets.symmetric(horizontal: 6),
                                       width: 3,
                                       height: 3,
-                                      decoration: const BoxDecoration(
+                                      decoration: BoxDecoration(
                                         color: AppTheme.textMuted,
                                         shape: BoxShape.circle,
                                       ),
@@ -1327,7 +1327,7 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppTheme.textSecondary,
-                              side: const BorderSide(color: AppTheme.border),
+                              side: BorderSide(color: AppTheme.border),
                               padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
                             child: const Text('Cancel'),
@@ -1371,7 +1371,7 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppTheme.textSecondary,
-                              side: const BorderSide(color: AppTheme.border),
+                              side: BorderSide(color: AppTheme.border),
                               padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
                             child: const Text('Cancel'),

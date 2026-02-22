@@ -46,12 +46,12 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
               TextField(
                 controller: labelController,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Key Label",
                   hintText: "e.g. My Phone Pro",
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: bits,
                 dropdownColor: AppTheme.bg1,
@@ -197,7 +197,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppTheme.accentPurple.withValues(alpha: 0.05),
-        border: const Border(bottom: BorderSide(color: AppTheme.border)),
+        border: Border(bottom: BorderSide(color: AppTheme.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,13 +235,13 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               backgroundColor: AppTheme.bg2,
               child: Icon(Icons.key_rounded, color: AppTheme.accentPurple, size: 20),
             ),
             title: Text(key.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             subtitle: Text("${key.type} • Created ${key.created.toLocal().toString().split(' ')[0]}", 
-              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
             trailing: PopupMenuButton<String>(
               onSelected: (val) {
                 if (val == 'copy') SSHService.getPublicKey(key.label).then((k) => _showPublicKey(key.label, k));

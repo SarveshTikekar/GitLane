@@ -190,10 +190,10 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
         onTap: onTap,
         leading: Icon(icon, color: color),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
         trailing: loading 
           ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentCyan))
-          : const Icon(Icons.chevron_right_rounded, size: 20, color: AppTheme.textMuted),
+          : Icon(Icons.chevron_right_rounded, size: 20, color: AppTheme.textMuted),
       ),
     );
   }

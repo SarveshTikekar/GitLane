@@ -133,7 +133,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 child: Center(
                   child: Column(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.difference_outlined,
                         size: 36,
                         color: AppTheme.textMuted,
@@ -308,7 +308,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.schedule_rounded,
                       size: 13,
                       color: AppTheme.textMuted,
@@ -396,7 +396,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
           color: AppTheme.bg2,
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.description_outlined,
                 size: 14,
                 color: AppTheme.textSecondary,

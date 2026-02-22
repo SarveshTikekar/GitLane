@@ -142,14 +142,14 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
     int lastMatchEnd = 0;
     for (final match in regex.allMatches(text)) {
       if (match.start > lastMatchEnd) {
-        spans.add(TextSpan(text: text.substring(lastMatchEnd, match.start), style: const TextStyle(color: AppTheme.textLight)));
+        spans.add(TextSpan(text: text.substring(lastMatchEnd, match.start), style: TextStyle(color: AppTheme.textLight)));
       }
       
       final matchText = match.group(0)!;
       
       if (match.group(1) != null) {
         // Hash
-        spans.add(TextSpan(text: matchText, style: const TextStyle(color: AppTheme.accentYellow)));
+        spans.add(TextSpan(text: matchText, style: TextStyle(color: AppTheme.accentYellow)));
       } else if (match.group(2) != null) {
         // Status keyword
         Color statusColor = AppTheme.textMuted;
@@ -161,16 +161,16 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
         spans.add(TextSpan(text: matchText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)));
       } else if (match.group(3) != null) {
          // On branch X
-         spans.add(TextSpan(text: "On branch ", style: const TextStyle(color: AppTheme.textMuted)));
+         spans.add(TextSpan(text: "On branch ", style: TextStyle(color: AppTheme.textMuted)));
          spans.add(TextSpan(text: match.group(4) ?? "", style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)));
       } else if (match.group(5) != null) {
           // clean wd
          spans.add(TextSpan(text: matchText, style: const TextStyle(color: AppTheme.accentGreen)));
       } else if (match.group(6) != null || match.group(7) != null || match.group(8) != null) {
           // Headers
-         spans.add(TextSpan(text: matchText, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold)));
+         spans.add(TextSpan(text: matchText, style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold)));
       } else {
-        spans.add(TextSpan(text: matchText, style: const TextStyle(color: AppTheme.textLight)));
+        spans.add(TextSpan(text: matchText, style: TextStyle(color: AppTheme.textLight)));
       }
       
       lastMatchEnd = match.end;
@@ -181,7 +181,7 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
       if (text.startsWith("\t") && !regex.hasMatch(text)) {
           spans.add(TextSpan(text: text.substring(lastMatchEnd), style: const TextStyle(color: AppTheme.accentRed))); // untracked usually
       } else {
-          spans.add(TextSpan(text: text.substring(lastMatchEnd), style: const TextStyle(color: AppTheme.textLight)));
+          spans.add(TextSpan(text: text.substring(lastMatchEnd), style: TextStyle(color: AppTheme.textLight)));
       }
     }
 
@@ -290,4 +290,3 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
     );
   }
 }
-

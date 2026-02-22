@@ -88,7 +88,7 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
                 TextField(
                   controller: controller,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'e.g. 192.168.1.5',
                     hintStyle: TextStyle(color: AppTheme.textMuted),
                   ),
@@ -371,12 +371,12 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_rounded, color: AppTheme.textMuted, size: 18),
+                icon: Icon(Icons.edit_rounded, color: AppTheme.textMuted, size: 18),
                 onPressed: _manualIP,
                 tooltip: 'Manual IP Override',
               ),
               IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: AppTheme.textMuted, size: 18),
+                icon: Icon(Icons.refresh_rounded, color: AppTheme.textMuted, size: 18),
                 onPressed: _loadIP,
                 tooltip: 'Refresh IP',
               ),
@@ -453,7 +453,7 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(p.name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                    Text(p.id, style: const TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                    Text(p.id, style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
                   ])),
                   if (p.status == PeerStatus.pending) ...[
                     IconButton(icon: const Icon(Icons.check_circle_rounded, color: AppTheme.accentGreen, size: 20), onPressed: () => _updatePeerStatus(p.id, PeerStatus.approved)),
@@ -464,7 +464,7 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
                 ],
               ),
               if (p.status == PeerStatus.approved) ...[
-                const Divider(height: 24, color: AppTheme.border),
+                Divider(height: 24, color: AppTheme.border),
                 Text('GRANULAR ACCESS', style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 ..._syncService.sharedRepos.map((repoId) => Padding(
@@ -472,7 +472,7 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(repoId, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      Text(repoId, style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                       _roleChip(p, repoId),
                     ],
                   ),
@@ -495,18 +495,18 @@ class _QuantumHubScreenState extends State<QuantumHubScreen> {
       itemBuilder: (context) => [
         const PopupMenuItem(value: PeerRole.read, child: Text('Read Only')),
         const PopupMenuItem(value: PeerRole.write, child: Text('Read & Write')),
-        const PopupMenuItem(value: PeerRole.admin, child: Text('Admin')),
+        PopupMenuItem(value: PeerRole.admin, child: Text('Admin')),
         PopupMenuItem(
           onTap: () {
             _syncService.updatePeerRepoRole(p.id, repoId, PeerRole.read); // default back
             p.repoRoles.remove(repoId);
             setState(() {});
           },
-          child: const Text('Revoke Access', style: TextStyle(color: AppTheme.accentRed)),
+          child: Text('Revoke Access', style: TextStyle(color: AppTheme.accentRed)),
         ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: role != null ? _getRoleColor(role).withOpacity(0.1) : AppTheme.border.withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),

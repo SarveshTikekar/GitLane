@@ -212,7 +212,7 @@ class _StashScreenState extends State<StashScreen> {
                           ],
                         ),
                       ),
-                      const Divider(height: 1, color: AppTheme.border),
+                      Divider(height: 1, color: AppTheme.border),
                       IntrinsicHeight(
                         child: Row(
                           children: [
@@ -224,7 +224,7 @@ class _StashScreenState extends State<StashScreen> {
                                 onTap: () => _applyStash(stashIndex),
                               ),
                             ),
-                            const VerticalDivider(width: 1, color: AppTheme.border),
+                            VerticalDivider(width: 1, color: AppTheme.border),
                             Expanded(
                               child: _StashAction(
                                 icon: Icons.unarchive_rounded,
@@ -233,7 +233,7 @@ class _StashScreenState extends State<StashScreen> {
                                 onTap: () => _popStash(stashIndex),
                               ),
                             ),
-                            const VerticalDivider(width: 1, color: AppTheme.border),
+                            VerticalDivider(width: 1, color: AppTheme.border),
                             Expanded(
                               child: _StashAction(
                                 icon: Icons.delete_outline_rounded,

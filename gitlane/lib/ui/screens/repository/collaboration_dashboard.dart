@@ -137,7 +137,7 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
             ],
           ],
         ),
-        trailing: const Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.textMuted),
+        trailing: Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.textMuted),
       ),
     );
   }
@@ -170,7 +170,7 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
             ],
           ],
         ),
-        trailing: const Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.textMuted),
+        trailing: Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.textMuted),
       ),
     );
   }

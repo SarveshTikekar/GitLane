@@ -160,7 +160,7 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.bg2,
         title: Text('Delete $name?', style: const TextStyle(color: Colors.white)),
-        content: Text('This will permanently remove the $name hook script.', style: const TextStyle(color: AppTheme.textSecondary)),
+        content: Text('This will permanently remove the $name hook script.', style: TextStyle(color: AppTheme.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
@@ -282,12 +282,12 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
           children: [
             if (exists) ...[
               IconButton(
-                icon: const Icon(Icons.edit_rounded, size: 18, color: AppTheme.accentCyan),
+                icon: Icon(Icons.edit_rounded, size: 18, color: AppTheme.accentCyan),
                 tooltip: 'Edit',
                 onPressed: () => _editHook(name),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                icon: Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
                 tooltip: 'Delete',
                 onPressed: () => _deleteHook(name),
               ),
