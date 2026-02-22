@@ -20,6 +20,7 @@ import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'security_workbench.dart';
+import 'pat_workbench_screen.dart';
 import '../../../services/pat_service.dart';
 import 'reflog_screen.dart';
 import 'analytics_screen.dart';
@@ -1170,6 +1171,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           AppTheme.accentPurple,
         ),
         _menuItem(
+          'pat_manager',
+          Icons.vpn_key_rounded,
+          'PAT Manager',
+          AppTheme.accentGreen,
+        ),
+        _menuItem(
           'security',
           Icons.security_rounded,
           'Security Workbench',
@@ -1261,6 +1268,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SecurityWorkbench()),
+        );
+        break;
+      case 'pat_manager':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PATWorkbenchScreen()),
         );
         break;
       case 'rebase':

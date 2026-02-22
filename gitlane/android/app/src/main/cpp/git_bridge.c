@@ -1129,7 +1129,13 @@ static int cred_acquire_cb(git_cred **out, const char *url, const char *user_fro
                            unsigned int allowed_types, void *payload) {
     const char *token = (const char *)payload;
     LOGI("Acquiring credentials for: %s", url);
-    return git_cred_userpass_plaintext_new(out, "git", token);
+    if (allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT) {
+        return git_cred_userpass_plaintext_new(out, "x-access-token", token);
+    } else if (allowed_types & GIT_CREDTYPE_DEFAULT) {
+        return git_cred_default_new(out);
+    }
+    LOGE("Unsupported credential type requested: %d", allowed_types);
+    return -1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
