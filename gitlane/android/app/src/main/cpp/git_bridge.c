@@ -1277,6 +1277,15 @@ static int cred_acquire_cb(git_cred **out, const char *url, const char *username
     return -1;
 }
 
+/* ─── Callback: Push Update Reference ────────────────────────────────────── */
+static int push_update_reference_cb(const char *refname, const char *status, void *payload) {
+    if (status != NULL) {
+        LOGE("Push rejected by server for %s: %s", refname, status);
+        return -1; /* Abort push and cause git_remote_push to return < 0 */
+    }
+    return 0;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
  * 18. pushRepository(path: String, token: String): Int
  * ═══════════════════════════════════════════════════════════════════════════ */
@@ -1304,6 +1313,7 @@ Java_com_example_gitlane_GitBridge_pushRepository(
     opts.callbacks.credentials = cred_acquire_cb;
     opts.callbacks.payload = (void *)token;
     opts.callbacks.certificate_check = certificate_check_cb;
+    opts.callbacks.push_update_reference = push_update_reference_cb;
 
     /* Push current branch to its remote tracking branch dynamically */
     const char *branch_name = "main";
@@ -1422,8 +1432,11 @@ Java_com_example_gitlane_GitBridge_pullRepository(
             git_reference_free(head_ref);
             git_reference_free(new_head_ref);
         } else if (analysis & GIT_MERGE_ANALYSIS_NORMAL) {
-            /* Normal merge would need full implementation, skipping for now */
-            LOGI("Normal merge required, skipping for hackathon prototype.");
+            /* Normal merge would need full implementation, returning error -2 */
+            LOGE("Normal merge required: Conflict or divergence detected.");
+            result = -2;
+        } else if (analysis & GIT_MERGE_ANALYSIS_UP_TO_DATE) {
+            LOGI("Pull: Already up to date.");
         }
         
         git_annotated_commit_free(heads[0]);

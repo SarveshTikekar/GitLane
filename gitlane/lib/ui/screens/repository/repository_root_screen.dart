@@ -1036,46 +1036,69 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     final code = await GitService.pullRepository(widget.repoPath, token);
     if (mounted) {
       setState(() => _isLoading = false);
-      _showSnack(
-        code == 0 ? '⬇ Pull successful' : 'Pull failed ($code)',
-        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-      );
+
+      String msg = 'Pull failed ($code)';
+      Color color = AppTheme.accentRed;
+
+      if (code == 0) {
+        msg = '⬇ Pull successful (Fast-forward)';
+        color = AppTheme.accentGreen;
+      } else if (code == -2) {
+        msg = '⚠ Branch diverged. Normal Merge/Rebase required.';
+        color = AppTheme.accentYellow;
+      } else if (code == -12) {
+        msg = '⛔ Authentication failed. Active PAT was rejected.';
+      }
+
+      _showSnack(msg, color);
       _fetchData();
       _listRepoFiles();
     }
   }
 
-  Future<void> _pushRepo() => _showCredentialDialog(
-    onConfirm: (token) async {
-      setState(() => _isLoading = true);
-      try {
-        final pushResult = await GitSyncService.startPush(
-          widget.repoPath,
-          token,
-        );
-        if (mounted) {
-          setState(() => _isLoading = false);
-          _showSnack(
-            pushResult == 0
-                ? '⬆ Push successful or reconciled'
-                : 'Push failed ($pushResult)',
-            pushResult == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-          );
-          _fetchData();
+  Future<void> _pushRepo() async {
+    final activePat = await PATService.getActiveTokenString();
+    if (activePat != null) {
+      _executePush(activePat);
+    } else {
+      _showCredentialDialog(onConfirm: _executePush);
+    }
+  }
+
+  Future<void> _executePush(String token) async {
+    setState(() => _isLoading = true);
+    try {
+      final code = await GitSyncService.startPush(widget.repoPath, token);
+      if (mounted) {
+        setState(() => _isLoading = false);
+
+        String msg = 'Push failed ($code)';
+        Color color = AppTheme.accentRed;
+
+        if (code == 0) {
+          msg = '⬆ Push successful or reconciled';
+          color = AppTheme.accentGreen;
+        } else if (code == -1) {
+          msg = '⛔ Push rejected by server (Unauthorized / Diverged)';
+        } else if (code == -12) {
+          msg = '⛔ Authentication failed. Active PAT was rejected.';
         }
-      } on PushAlreadyRunningException catch (e) {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          _showSnack(e.message, AppTheme.accentYellow);
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          _showSnack('Unexpected error: $e', AppTheme.accentRed);
-        }
+
+        _showSnack(msg, color);
+        _fetchData();
       }
-    },
-  );
+    } on PushAlreadyRunningException catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnack(e.message, AppTheme.accentYellow);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnack('Unexpected error: $e', AppTheme.accentRed);
+      }
+    }
+  }
 
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
