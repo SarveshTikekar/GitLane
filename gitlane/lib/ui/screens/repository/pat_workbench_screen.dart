@@ -137,6 +137,17 @@ class _PATWorkbenchScreenState extends State<PATWorkbenchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.bg0,
+      appBar: AppBar(
+        backgroundColor: AppTheme.bg1,
+        title: Text(
+          'PAT Manager',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.accentGreen))
           : Column(

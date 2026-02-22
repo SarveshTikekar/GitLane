@@ -555,6 +555,7 @@ Java_com_example_gitlane_GitBridge_getRepositoryStatus(
     int pos = 0;
     pos += snprintf(json + pos, 32768 - pos, "[");
 
+    int is_first = 1;
     for (size_t i = 0; i < count; i++) {
         const git_status_entry *entry = git_status_byindex(status, i);
         const char *file_path = NULL;
@@ -577,10 +578,11 @@ Java_com_example_gitlane_GitBridge_getRepositoryStatus(
         else if (entry->status & GIT_STATUS_WT_RENAMED) status_str = "renamed";
 
         if (file_path) {
-            if (i > 0) pos += snprintf(json + pos, 32768 - pos, ",");
+            if (!is_first) pos += snprintf(json + pos, 32768 - pos, ",");
             pos += snprintf(json + pos, 32768 - pos, 
                            "{\"path\":\"%s\",\"status\":\"%s\"}", 
                            file_path, status_str);
+            is_first = 0;
         }
     }
 

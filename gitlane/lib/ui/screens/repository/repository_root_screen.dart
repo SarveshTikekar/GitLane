@@ -157,9 +157,19 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         }
         if (statusJson != null) {
           try {
-            final d = jsonDecode(statusJson);
-            if (d is List) _statusFiles = d;
-          } catch (_) {}
+            final List<dynamic> raw = jsonDecode(statusJson);
+            // Translate the C-level 'path' and 'status' into the UI-level 'file' and 'isStaged'
+            _statusFiles = raw.map((f) {
+              final statusStr = f['status'] as String? ?? '';
+              return {
+                'file': f['path'],
+                'status': statusStr,
+                'isStaged': statusStr.startsWith('staged'),
+              };
+            }).toList();
+          } catch (e) {
+            _statusFiles = [];
+          }
         }
       }
       _isLoading = false;
