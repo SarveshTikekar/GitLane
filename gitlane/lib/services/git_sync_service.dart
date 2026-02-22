@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'git_service.dart';
@@ -14,6 +16,7 @@ class PushTx {
   PushTxState state;
   int attempt;
   DateTime updatedAt;
+  String? token; // stored so we can retry without prompting
 
   PushTx({
     required this.txId,
@@ -23,6 +26,7 @@ class PushTx {
     this.state = PushTxState.pending,
     this.attempt = 1,
     DateTime? updatedAt,
+    this.token,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
@@ -33,6 +37,7 @@ class PushTx {
     'state': state.name,
     'attempt': attempt,
     'updatedAt': updatedAt.toIso8601String(),
+    'token': token,
   };
 
   factory PushTx.fromJson(Map<String, dynamic> json) => PushTx(
@@ -46,6 +51,7 @@ class PushTx {
     ),
     attempt: json['attempt'] ?? 1,
     updatedAt: DateTime.parse(json['updatedAt']),
+    token: json['token'],
   );
 }
 
@@ -59,27 +65,97 @@ class PushAlreadyRunningException implements Exception {
 class GitSyncService {
   static const String _journalFileName = 'git_push_journal.json';
   static final Map<String, bool> _repoBranchLocks = {};
-
-  // For thread-safe journal writes
   static bool _isWritingJournal = false;
 
-  /// Acquires an in-memory lock for the given repo and branch.
+  // ── Connectivity watcher ────────────────────────────────────────────────────
+  static StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
+  /// Notifier that emits the count of pending/failed transactions.
+  /// Listen to this in UI to show a sync-pending badge.
+  static final StreamController<int> pendingCountStream =
+      StreamController<int>.broadcast();
+
+  /// Start watching network changes. Call once from `main()`.
+  static void startConnectivityWatcher() {
+    _connectivitySub?.cancel();
+    _connectivitySub = Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> results) async {
+      final hasNetwork = results.any(
+        (r) => r != ConnectivityResult.none,
+      );
+      if (hasNetwork) {
+        await _retryPendingPushes();
+      }
+    });
+  }
+
+  static void stopConnectivityWatcher() {
+    _connectivitySub?.cancel();
+    _connectivitySub = null;
+  }
+
+  // ── Retry pending pushes ───────────────────────────────────────────────────
+
+  static Future<void> _retryPendingPushes() async {
+    final journal = await _readJournal();
+    final retryable = journal
+        .where(
+          (t) =>
+              (t.state == PushTxState.pending ||
+                  t.state == PushTxState.failed) &&
+              t.token != null &&
+              t.token!.isNotEmpty,
+        )
+        .toList();
+
+    if (retryable.isEmpty) return;
+
+    for (final tx in retryable) {
+      // Exponential backoff: wait 2^attempt seconds before retrying (max 64s)
+      final backoff = Duration(seconds: (1 << tx.attempt.clamp(0, 6)));
+      await Future.delayed(backoff);
+
+      if (!_acquireLock(tx.repoPath, tx.branch)) continue;
+
+      try {
+        final code = await GitService.pushRepository(tx.repoPath, tx.token!);
+        tx.attempt++;
+        await _finishOrReconcile(tx, tx.token!, pushSucceeded: code == 0);
+      } finally {
+        _releaseLock(tx.repoPath, tx.branch);
+      }
+    }
+
+    // Update UI badge
+    await _emitPendingCount();
+  }
+
+  static Future<void> _emitPendingCount() async {
+    final journal = await _readJournal();
+    final count = journal
+        .where(
+          (t) =>
+              t.state == PushTxState.pending || t.state == PushTxState.failed,
+        )
+        .length;
+    pendingCountStream.add(count);
+  }
+
+  // ── Lock management ────────────────────────────────────────────────────────
+
   static bool _acquireLock(String repoPath, String branch) {
     final key = '$repoPath|$branch';
-    if (_repoBranchLocks[key] == true) {
-      return false; // Already locked
-    }
+    if (_repoBranchLocks[key] == true) return false;
     _repoBranchLocks[key] = true;
     return true;
   }
 
-  /// Releases the in-memory lock for the given repo and branch.
   static void _releaseLock(String repoPath, String branch) {
-    final key = '$repoPath|$branch';
-    _repoBranchLocks[key] = false;
+    _repoBranchLocks['$repoPath|$branch'] = false;
   }
 
-  // ==== Journal Management ====
+  // ── Journal management ─────────────────────────────────────────────────────
 
   static Future<File> _getJournalFile() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -97,8 +173,7 @@ class GitSyncService {
       if (content.isEmpty) return [];
       final List<dynamic> jsonList = jsonDecode(content);
       return jsonList.map((j) => PushTx.fromJson(j)).toList();
-    } catch (e) {
-      print('Failed to read journal: $e');
+    } catch (_) {
       return [];
     }
   }
@@ -110,8 +185,7 @@ class GitSyncService {
     _isWritingJournal = true;
     try {
       final file = await _getJournalFile();
-      final jsonList = journal.map((tx) => tx.toJson()).toList();
-      await file.writeAsString(jsonEncode(jsonList));
+      await file.writeAsString(jsonEncode(journal.map((t) => t.toJson()).toList()));
     } finally {
       _isWritingJournal = false;
     }
@@ -125,7 +199,7 @@ class GitSyncService {
     } else {
       journal.add(tx);
     }
-    // Cleanup old DONE/FAILED transactions (keep only pending and recent)
+    // Prune old completed/failed entries older than 7 days
     final now = DateTime.now();
     journal.removeWhere(
       (t) =>
@@ -133,9 +207,10 @@ class GitSyncService {
           now.difference(t.updatedAt).inDays > 7,
     );
     await _writeJournal(journal);
+    await _emitPendingCount();
   }
 
-  // ==== Core Logic ====
+  // ── Core push logic ────────────────────────────────────────────────────────
 
   static Future<String> _getCurrentBranch(String repoPath) async {
     try {
@@ -150,13 +225,10 @@ class GitSyncService {
 
   static Future<String?> _getHeadOid(String repoPath) async {
     try {
-      // Use log to get the first commit hash
       final logJson = await GitService.getCommitLog(repoPath);
       if (logJson != null) {
         final List<dynamic> commits = jsonDecode(logJson);
-        if (commits.isNotEmpty) {
-          return commits.first['hash'];
-        }
+        if (commits.isNotEmpty) return commits.first['hash'];
       }
     } catch (_) {}
     return null;
@@ -168,42 +240,30 @@ class GitSyncService {
     String oid,
     String token,
   ) async {
-    // 1. Fetch the remote
-    await GitService.runGitCommand(
-      repoPath,
-      'fetch origin',
-    ); // Or native fetch via bridge if implemented
-    // Note: If authentication is required for fetch, we should ideally use a native fetch command passing the token.
-    // Assuming runGitCommand handles tokens or the token is cached by the native layer for https.
-    // For this simple fallback, we just check via log on the remote tracking branch.
-
+    await GitService.runGitCommand(repoPath, 'fetch origin');
     try {
-      final remoteBranchLog = await GitService.runGitCommand(
+      final log = await GitService.runGitCommand(
         repoPath,
         'log origin/$branch --format="%H"',
       );
-      if (remoteBranchLog.contains(oid)) {
-        return true;
-      }
+      return log.contains(oid);
     } catch (_) {}
     return false;
   }
 
-  /// Starts the push flow ensuring ACID compliance.
-  /// Throws [PushAlreadyRunningException] if already in progress.
+  /// Initiates a push, stores a journal entry, and sets up auto-retry if it fails.
   static Future<int> startPush(String repoPath, String token) async {
     final branch = await _getCurrentBranch(repoPath);
 
     if (!_acquireLock(repoPath, branch)) {
-      throw PushAlreadyRunningException('Push already in progress for $branch');
+      throw PushAlreadyRunningException(
+        'Push already in progress for $branch',
+      );
     }
 
     try {
       final headOid = await _getHeadOid(repoPath);
-      if (headOid == null) {
-        // Nothing to push or invalid repo
-        return -1;
-      }
+      if (headOid == null) return -1;
 
       final tx = PushTx(
         txId: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -211,23 +271,22 @@ class GitSyncService {
         branch: branch,
         headOidAtStart: headOid,
         state: PushTxState.pending,
+        token: token, // persisted for auto-retry
       );
 
       await _upsertTx(tx);
 
-      // Execute native push
-      final pushResultCode = await GitService.pushRepository(repoPath, token);
-      final pushSucceeded = (pushResultCode == 0);
+      final code = await GitService.pushRepository(repoPath, token);
+      final succeeded = (code == 0);
 
-      return await _finishOrReconcile(tx, token, pushSucceeded: pushSucceeded)
-          ? pushResultCode
+      return await _finishOrReconcile(tx, token, pushSucceeded: succeeded)
+          ? code
           : -1;
     } finally {
       _releaseLock(repoPath, branch);
     }
   }
 
-  /// Finalizes or reconciles a transaction based on the push outcome or startup recovery.
   static Future<bool> _finishOrReconcile(
     PushTx tx,
     String token, {
@@ -241,11 +300,7 @@ class GitSyncService {
       return true;
     }
 
-    // Push failed or timed out. Reconcile by checking ancestry on remote.
-    // If we're during startup recovery, we might not have a token.
     if (token.isEmpty) {
-      // Need a token to fetch and reconcile accurately. Keep it pending or mark failed.
-      // For now, mark failed so user can manually retry with prompt.
       tx.state = PushTxState.failed;
       await _upsertTx(tx);
       return false;
@@ -258,32 +313,29 @@ class GitSyncService {
       token,
     );
 
-    if (containsOid) {
-      // Remote actually received it before we crashed or timed out.
-      tx.state = PushTxState.done;
-    } else {
-      // Push genuinely failed (e.g., auth error, branch diverging).
-      tx.state = PushTxState.failed;
-      tx.attempt++;
-    }
+    tx.state = containsOid ? PushTxState.done : PushTxState.failed;
+    if (!containsOid) tx.attempt++;
 
     await _upsertTx(tx);
     return tx.state == PushTxState.done;
   }
 
-  /// Runs on application startup to clean up dangling states.
+  /// Runs on startup — keeps pending txs as pending so connectivity watcher can retry them.
   static Future<void> recoverPendingTxOnStartup() async {
-    final journal = await _readJournal();
-    final pendingTxs = journal
-        .where((t) => t.state == PushTxState.pending)
-        .toList();
+    // Start the watcher immediately — it will retry any pending/failed txs
+    // as soon as the network becomes available.
+    startConnectivityWatcher();
+    await _emitPendingCount();
+  }
 
-    for (var tx in pendingTxs) {
-      // We don't have a token at startup without prompting the user.
-      // Safest fallback: Mark as failed so the user can see it in the UI and retry manually.
-      tx.state = PushTxState.failed;
-      tx.updatedAt = DateTime.now();
-      await _upsertTx(tx);
-    }
+  /// Returns the current count of pending/failed pushes (for UI badges).
+  static Future<int> getPendingCount() async {
+    final journal = await _readJournal();
+    return journal
+        .where(
+          (t) =>
+              t.state == PushTxState.pending || t.state == PushTxState.failed,
+        )
+        .length;
   }
 }

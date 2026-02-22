@@ -5,7 +5,7 @@ import 'services/git_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await GitSyncService.recoverPendingTxOnStartup();
+  await GitSyncService.recoverPendingTxOnStartup(); // also starts connectivity watcher
   runApp(const GitLaneApp());
 }
 

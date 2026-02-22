@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,6 +12,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/empty_state.dart';
 import '../repository/repository_root_screen.dart';
 import '../../../services/git_service.dart';
+import '../../../services/git_sync_service.dart';
 import 'qr_scanner_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:archive/archive.dart';
@@ -30,6 +32,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   List<Map<String, dynamic>> _repos = [];
   List<Map<String, dynamic>> _filteredRepos = [];
   bool _initializing = true;
+  int _pendingSyncs = 0;
+  StreamSubscription<int>? _syncSub;
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animController;
 
@@ -42,10 +46,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
     _searchController.addListener(_onSearchChanged);
     _initStorage();
+    // Listen to pending sync count
+    _syncSub = GitSyncService.pendingCountStream.stream.listen((count) {
+      if (mounted) setState(() => _pendingSyncs = count);
+    });
+    GitSyncService.getPendingCount().then((c) {
+      if (mounted) setState(() => _pendingSyncs = c);
+    });
   }
 
   @override
   void dispose() {
+    _syncSub?.cancel();
     _searchController.dispose();
     _animController.dispose();
     super.dispose();
@@ -261,6 +273,37 @@ class _DashboardScreenState extends State<DashboardScreen>
                 maxContentWidth: maxContentWidth,
               ),
             ),
+            // ── Pending sync banner ─────────────────────────────────────────
+            if (_pendingSyncs > 0)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: context.accentOrange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: context.accentOrange.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.sync_problem_rounded, color: context.accentOrange, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '$_pendingSyncs push${_pendingSyncs > 1 ? 'es' : ''} pending — will auto-sync when connected',
+                            style: GoogleFonts.inter(
+                              color: context.accentOrange,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             if (_initializing)
               _buildShimmerList(
                 horizontalPadding: horizontalPadding,
