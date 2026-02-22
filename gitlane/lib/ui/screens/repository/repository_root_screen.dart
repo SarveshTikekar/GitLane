@@ -1299,6 +1299,31 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           'Share (QR)',
           context.textSecondary,
         ),
+        _menuItem(
+          'upload',
+          Icons.file_open_rounded,
+          'Import File',
+          context.textSecondary,
+        ),
+        const PopupMenuDivider(height: 1),
+        _menuItem(
+          'quantum',
+          Icons.hub_rounded,
+          'Quantum Mesh',
+          context.accentCyan,
+        ),
+        _menuItem(
+          'hooks',
+          Icons.code_rounded,
+          'Git Hooks',
+          context.accentPurple,
+        ),
+        _menuItem(
+          'social',
+          Icons.people_rounded,
+          'Collaboration',
+          context.accentGreen,
+        ),
         const PopupMenuDivider(height: 1),
         _menuItem(
           'delete',
