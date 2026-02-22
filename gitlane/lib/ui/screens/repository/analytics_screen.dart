@@ -55,12 +55,12 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
 
   Color _getAuthorColor(String name) {
     final colors = [
-      AppTheme.accentCyan,
-      AppTheme.accentGreen,
-      AppTheme.accentPurple,
-      AppTheme.accentOrange,
-      AppTheme.accentYellow,
-      AppTheme.accentBlue,
+      context.accentCyan,
+      context.accentGreen,
+      context.accentPurple,
+      context.accentOrange,
+      context.accentYellow,
+      context.accentBlue,
     ];
     return colors[name.hashCode % colors.length];
   }
@@ -71,12 +71,12 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: Text(
           'Contributor Analytics',
           style: GoogleFonts.inter(
-            color: AppTheme.textPrimary,
+            color: context.textPrimary,
             fontSize: 17,
             fontWeight: FontWeight.w600,
           ),
@@ -89,7 +89,7 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? Center(child: CircularProgressIndicator(color: context.accentCyan))
           : _counts.isEmpty
               ? const EmptyState(
                   icon: Icons.person_search_rounded,
@@ -104,7 +104,7 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
                     Text(
                       'CONTRIBUTORS',
                       style: GoogleFonts.inter(
-                        color: AppTheme.textMuted,
+                        color: context.textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
@@ -123,26 +123,26 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.accentCyan.withValues(alpha: 0.15),
-            AppTheme.accentPurple.withValues(alpha: 0.1),
+            context.accentCyan.withValues(alpha: 0.15),
+            context.accentPurple.withValues(alpha: 0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.2)),
+        border: Border.all(color: context.accentCyan.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.analytics_rounded, color: AppTheme.accentCyan, size: 20),
+              Icon(Icons.analytics_rounded, color: context.accentCyan, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Repository Pulse',
                 style: GoogleFonts.inter(
-                  color: AppTheme.textPrimary,
+                  color: context.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -169,13 +169,13 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 11),
+          style: GoogleFonts.inter(color: context.textMuted, fontSize: 11),
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: GoogleFonts.firaMono(
-            color: AppTheme.textPrimary,
+            color: context.textPrimary,
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
@@ -192,9 +192,9 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bg1,
+        color: context.bg1,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: context.border),
       ),
       child: Column(
         children: [
@@ -220,7 +220,7 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
                     Text(
                       name,
                       style: GoogleFonts.inter(
-                        color: AppTheme.textPrimary,
+                        color: context.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -228,7 +228,7 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
                     Text(
                       '$count commits',
                       style: GoogleFonts.inter(
-                        color: AppTheme.textSecondary,
+                        color: context.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -250,7 +250,7 @@ class _ContributorAnalyticsScreenState extends State<ContributorAnalyticsScreen>
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: percent,
-              backgroundColor: AppTheme.bg2,
+              backgroundColor: context.bg2,
               color: color,
               minHeight: 6,
             ),

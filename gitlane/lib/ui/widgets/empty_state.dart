@@ -44,12 +44,12 @@ class EmptyState extends StatelessWidget {
                 width: iconContainerSize,
                 height: iconContainerSize,
                 decoration: BoxDecoration(
-                  color: (iconColor ?? AppTheme.accentCyan).withValues(
+                  color: (iconColor ?? context.accentCyan).withValues(
                     alpha: 0.1,
                   ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: (iconColor ?? AppTheme.accentCyan).withValues(
+                    color: (iconColor ?? context.accentCyan).withValues(
                       alpha: 0.3,
                     ),
                     width: 1.5,
@@ -58,7 +58,7 @@ class EmptyState extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: iconSize,
-                  color: iconColor ?? AppTheme.accentCyan,
+                  color: iconColor ?? context.accentCyan,
                 ),
               ),
               const SizedBox(height: 20),
@@ -66,7 +66,7 @@ class EmptyState extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  color: AppTheme.textPrimary,
+                  color: context.textPrimary,
                   fontSize: compact ? 16 : 17,
                   fontWeight: FontWeight.w600,
                 ),
@@ -76,7 +76,7 @@ class EmptyState extends StatelessWidget {
                 subtitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  color: AppTheme.textSecondary,
+                  color: context.textSecondary,
                   fontSize: compact ? 13 : 14,
                   height: 1.5,
                 ),
@@ -110,12 +110,12 @@ class EmptyStateInline extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 18, color: color ?? AppTheme.textMuted),
+          Icon(icon, size: 18, color: color ?? context.textMuted),
           const SizedBox(width: 8),
           Text(
             message,
             style: GoogleFonts.inter(
-              color: color ?? AppTheme.textSecondary,
+              color: color ?? context.textSecondary,
               fontSize: 14,
             ),
           ),

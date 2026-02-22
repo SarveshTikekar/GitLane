@@ -13,18 +13,18 @@ class SecurityWorkbench extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AppTheme.bg0,
+        backgroundColor: context.bg0,
         appBar: AppBar(
-          backgroundColor: AppTheme.bg0,
+          backgroundColor: context.bg0,
           title: Text(
             'Security Workbench',
             style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           bottom: TabBar(
-            indicatorColor: AppTheme.accentPurple,
+            indicatorColor: context.accentPurple,
             labelPadding: const EdgeInsets.symmetric(horizontal: 10),
             labelColor: Colors.white,
-            unselectedLabelColor: AppTheme.textMuted,
+            unselectedLabelColor: context.textMuted,
             labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
             tabs: const [
               Tab(text: "SSH KEYS", icon: Icon(Icons.vpn_key_rounded, size: 20)),

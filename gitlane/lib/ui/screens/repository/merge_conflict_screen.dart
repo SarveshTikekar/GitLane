@@ -74,8 +74,8 @@ class _MergeConflictScreenState extends State<MergeConflictScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentCyan),
+          ? Center(
+              child: CircularProgressIndicator(color: context.accentCyan),
             )
           : Column(
               children: [
@@ -113,9 +113,9 @@ class _MergeConflictScreenState extends State<MergeConflictScreen> {
                               fontSize: 11,
                             ),
                           ),
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.edit,
-                            color: AppTheme.accentCyan,
+                            color: context.accentCyan,
                             size: 20,
                           ),
                           onTap: () => _openResolver(f),
@@ -131,7 +131,7 @@ class _MergeConflictScreenState extends State<MergeConflictScreen> {
                       children: [
                         Icon(
                           Icons.check_circle_outline,
-                          color: AppTheme.accentCyan,
+                          color: context.accentCyan,
                           size: 64,
                         ),
                         SizedBox(height: 16),

@@ -38,14 +38,14 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.bg2,
+          backgroundColor: context.bg2,
           title: Text("Generate SSH Key", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: labelController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: "Key Label",
                   hintText: "e.g. My Phone Pro",
@@ -54,7 +54,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
               SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: bits,
-                dropdownColor: AppTheme.bg1,
+                dropdownColor: context.bg1,
                 decoration: const InputDecoration(labelText: "Key Strength (RSA)"),
                 items: const [
                   DropdownMenuItem(value: 2048, child: Text("2048-bit", style: TextStyle(color: Colors.white))),
@@ -68,7 +68,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentPurple),
+              style: ElevatedButton.styleFrom(backgroundColor: context.accentPurple),
               child: const Text("Generate", style: TextStyle(color: Colors.black)),
             ),
           ],
@@ -96,7 +96,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
   void _showPublicKey(String label, String pubKey) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.bg1,
+      backgroundColor: context.bg1,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24.0),
@@ -106,7 +106,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.key_rounded, color: AppTheme.accentPurple),
+                Icon(Icons.key_rounded, color: context.accentPurple),
                 const SizedBox(width: 12),
                 Text("Public Key: $label", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
               ],
@@ -117,11 +117,11 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
               decoration: BoxDecoration(
                 color: AppTheme.surfaceSlate.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.border),
+                border: Border.all(color: context.border),
               ),
               child: SelectableText(
                 pubKey,
-                style: GoogleFonts.firaCode(color: AppTheme.textSecondary, fontSize: 11),
+                style: GoogleFonts.firaCode(color: context.textSecondary, fontSize: 11),
               ),
             ),
             const SizedBox(height: 24),
@@ -134,7 +134,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
               icon: const Icon(Icons.copy_rounded, size: 18),
               label: const Text("Copy Public Key"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentPurple,
+                backgroundColor: context.accentPurple,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -149,7 +149,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bg2,
+        backgroundColor: context.bg2,
         title: const Text("Delete SSH Key?"),
         content: Text("This will permanently remove '$label'. You cannot undo this action."),
         actions: [
@@ -173,7 +173,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundBlack,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentPurple))
+          ? Center(child: CircularProgressIndicator(color: context.accentPurple))
           : Column(
               children: [
                 _buildHeader(),
@@ -184,7 +184,7 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _generateNewKey,
-        backgroundColor: AppTheme.accentPurple,
+        backgroundColor: context.accentPurple,
         icon: const Icon(Icons.add_rounded, color: Colors.black),
         label: const Text("Generate New Key", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
@@ -196,16 +196,16 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.accentPurple.withValues(alpha: 0.05),
-        border: Border(bottom: BorderSide(color: AppTheme.border)),
+        color: context.accentPurple.withValues(alpha: 0.05),
+        border: Border(bottom: BorderSide(color: context.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Secure Authentication", style: GoogleFonts.inter(color: AppTheme.accentPurple, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text("Secure Authentication", style: GoogleFonts.inter(color: context.accentPurple, fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text("Manage your on-device cryptographic keys for secure Git operations over SSH.", 
-            style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 13)),
+            style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13)),
         ],
       ),
     );
@@ -216,11 +216,11 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.vpn_key_outlined, size: 64, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+          Icon(Icons.vpn_key_outlined, size: 64, color: context.textMuted.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
-          Text("No SSH Keys Found", style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 16)),
+          Text("No SSH Keys Found", style: GoogleFonts.inter(color: context.textSecondary, fontSize: 16)),
           const SizedBox(height: 8),
-          Text("Generate your first key to get started.", style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 13)),
+          Text("Generate your first key to get started.", style: GoogleFonts.inter(color: context.textMuted, fontSize: 13)),
         ],
       ),
     );
@@ -236,12 +236,12 @@ class _SSHWorkbenchScreenState extends State<SSHWorkbenchScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: AppTheme.bg2,
-              child: Icon(Icons.key_rounded, color: AppTheme.accentPurple, size: 20),
+              backgroundColor: context.bg2,
+              child: Icon(Icons.key_rounded, color: context.accentPurple, size: 20),
             ),
             title: Text(key.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             subtitle: Text("${key.type} • Created ${key.created.toLocal().toString().split(' ')[0]}", 
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+              style: TextStyle(color: context.textSecondary, fontSize: 11)),
             trailing: PopupMenuButton<String>(
               onSelected: (val) {
                 if (val == 'copy') SSHService.getPublicKey(key.label).then((k) => _showPublicKey(key.label, k));

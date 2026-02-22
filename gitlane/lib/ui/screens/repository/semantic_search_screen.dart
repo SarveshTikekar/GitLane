@@ -81,20 +81,20 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
     final fileCount = IndexerService.fileCount;
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
-        backgroundColor: AppTheme.bg0,
+        backgroundColor: context.bg0,
         title: TextField(
           controller: _queryController,
           autofocus: true,
           style: GoogleFonts.inter(color: Colors.white, fontSize: 16),
           decoration: InputDecoration(
             hintText: 'Search symbols or text...',
-            hintStyle: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 16),
+            hintStyle: GoogleFonts.inter(color: context.textMuted, fontSize: 16),
             border: InputBorder.none,
             suffixIcon: _queryController.text.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.clear_rounded, color: AppTheme.textMuted, size: 20),
+                    icon: Icon(Icons.clear_rounded, color: context.textMuted, size: 20),
                     onPressed: () => _queryController.clear(),
                   )
                 : null,
@@ -102,7 +102,7 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.accentCyan,
+          indicatorColor: context.accentCyan,
           labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12),
           unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.normal, fontSize: 12),
           tabs: [
@@ -135,7 +135,7 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
       child: Column(
         children: [
           const SizedBox(height: 32),
-          Icon(Icons.manage_search_rounded, size: 56, color: AppTheme.accentCyan.withValues(alpha: 0.6)),
+          Icon(Icons.manage_search_rounded, size: 56, color: context.accentCyan.withValues(alpha: 0.6)),
           const SizedBox(height: 16),
           Text(
             "Semantic Search",
@@ -144,14 +144,14 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
           const SizedBox(height: 8),
           Text(
             "Search across $symbols symbols in $files files.",
-            style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 13),
+            style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13),
             textAlign: TextAlign.center,
           ),
           if (symbols == 0) ...[
             const SizedBox(height: 16),
             Text(
               "Index is still loading. Results will appear shortly.",
-              style: GoogleFonts.inter(color: AppTheme.accentOrange, fontSize: 12),
+              style: GoogleFonts.inter(color: context.accentOrange, fontSize: 12),
             ),
           ],
         ],
@@ -165,9 +165,9 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off_rounded, size: 48, color: AppTheme.textMuted.withValues(alpha: 0.4)),
+            Icon(Icons.search_off_rounded, size: 48, color: context.textMuted.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
-            Text("No ${isSymbol ? 'symbols' : 'matches'} found", style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 15)),
+            Text("No ${isSymbol ? 'symbols' : 'matches'} found", style: GoogleFonts.inter(color: context.textSecondary, fontSize: 15)),
           ],
         ),
       );
@@ -203,19 +203,19 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen>
                         children: [
                           Text(
                             fileName,
-                            style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 11),
+                            style: GoogleFonts.inter(color: context.textSecondary, fontSize: 11),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             ':${result.line}',
-                            style: GoogleFonts.firaCode(color: AppTheme.accentCyan, fontSize: 11),
+                            style: GoogleFonts.firaCode(color: context.accentCyan, fontSize: 11),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 16),
+                Icon(Icons.chevron_right_rounded, color: context.textMuted, size: 16),
               ],
             ),
           ),
@@ -236,11 +236,11 @@ class _FileIcon extends StatelessWidget {
     Color color;
     String label;
     switch (ext) {
-      case 'dart': color = AppTheme.accentCyan; label = 'D'; break;
-      case 'kt':   color = AppTheme.accentPurple; label = 'K'; break;
-      case 'c':    color = AppTheme.accentOrange; label = 'C'; break;
-      case 'h':    color = AppTheme.accentYellow; label = 'H'; break;
-      default:      color = AppTheme.textMuted; label = ext.isNotEmpty ? ext[0].toUpperCase() : '?';
+      case 'dart': color = context.accentCyan; label = 'D'; break;
+      case 'kt':   color = context.accentPurple; label = 'K'; break;
+      case 'c':    color = context.accentOrange; label = 'C'; break;
+      case 'h':    color = context.accentYellow; label = 'H'; break;
+      default:      color = context.textMuted; label = ext.isNotEmpty ? ext[0].toUpperCase() : '?';
     }
     return Container(
       width: 32,
@@ -265,27 +265,27 @@ class _HighlightedText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (query.isEmpty) {
-      return Text(text, style: GoogleFonts.firaCode(color: AppTheme.textPrimary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis);
+      return Text(text, style: GoogleFonts.firaCode(color: context.textPrimary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis);
     }
     final lower = text.toLowerCase();
     final idx = lower.indexOf(query.toLowerCase());
     if (idx < 0) {
-      return Text(text, style: GoogleFonts.firaCode(color: AppTheme.textPrimary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis);
+      return Text(text, style: GoogleFonts.firaCode(color: context.textPrimary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis);
     }
 
     return RichText(
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       text: TextSpan(
-        style: GoogleFonts.firaCode(color: AppTheme.textPrimary, fontSize: 13),
+        style: GoogleFonts.firaCode(color: context.textPrimary, fontSize: 13),
         children: [
           TextSpan(text: text.substring(0, idx)),
           TextSpan(
             text: text.substring(idx, idx + query.length),
             style: GoogleFonts.firaCode(
-              color: isSymbol ? AppTheme.accentCyan : AppTheme.accentYellow,
+              color: isSymbol ? context.accentCyan : context.accentYellow,
               fontWeight: FontWeight.bold,
-              backgroundColor: (isSymbol ? AppTheme.accentCyan : AppTheme.accentYellow).withValues(alpha: 0.15),
+              backgroundColor: (isSymbol ? context.accentCyan : context.accentYellow).withValues(alpha: 0.15),
             ),
           ),
           TextSpan(text: text.substring(idx + query.length)),

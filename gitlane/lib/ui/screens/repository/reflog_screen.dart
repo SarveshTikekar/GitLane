@@ -52,24 +52,24 @@ class _ReflogScreenState extends State<ReflogScreen> {
   (IconData, Color) _actionStyle(String msg) {
     final m = msg.toLowerCase();
     if (m.contains('commit')) {
-      return (Icons.commit_rounded, AppTheme.accentGreen);
+      return (Icons.commit_rounded, context.accentGreen);
     }
     if (m.contains('merge')) {
-      return (Icons.merge_rounded, AppTheme.accentOrange);
+      return (Icons.merge_rounded, context.accentOrange);
     }
     if (m.contains('checkout') || m.contains('branch')) {
-      return (Icons.account_tree_rounded, AppTheme.accentBlue);
+      return (Icons.account_tree_rounded, context.accentBlue);
     }
     if (m.contains('reset')) {
-      return (Icons.restart_alt_rounded, AppTheme.accentRed);
+      return (Icons.restart_alt_rounded, context.accentRed);
     }
     if (m.contains('stash')) {
-      return (Icons.inventory_2_outlined, AppTheme.accentOrange);
+      return (Icons.inventory_2_outlined, context.accentOrange);
     }
     if (m.contains('rebase')) {
-      return (Icons.rebase_edit, AppTheme.accentPurple);
+      return (Icons.rebase_edit, context.accentPurple);
     }
-    return (Icons.history_toggle_off_rounded, AppTheme.textSecondary);
+    return (Icons.history_toggle_off_rounded, context.textSecondary);
   }
 
   @override
@@ -77,12 +77,12 @@ class _ReflogScreenState extends State<ReflogScreen> {
     final compact = MediaQuery.of(context).size.width < 360;
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: Text(
           'Action History',
           style: GoogleFonts.inter(
-            color: AppTheme.textPrimary,
+            color: context.textPrimary,
             fontSize: compact ? 15 : 17,
             fontWeight: FontWeight.w600,
           ),
@@ -95,8 +95,8 @@ class _ReflogScreenState extends State<ReflogScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentCyan),
+          ? Center(
+              child: CircularProgressIndicator(color: context.accentCyan),
             )
           : _entries.isEmpty
           ? const EmptyState(
@@ -161,7 +161,7 @@ class _ReflogScreenState extends State<ReflogScreen> {
                               Container(
                                 width: 2,
                                 height: 32,
-                                color: AppTheme.border,
+                                color: context.border,
                               ),
                           ],
                         ),
@@ -177,7 +177,7 @@ class _ReflogScreenState extends State<ReflogScreen> {
                               Text(
                                 msg,
                                 style: GoogleFonts.inter(
-                                  color: AppTheme.textPrimary,
+                                  color: context.textPrimary,
                                   fontSize: compact ? 13 : 14,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -191,7 +191,7 @@ class _ReflogScreenState extends State<ReflogScreen> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentCyan.withValues(
+                                      color: context.accentCyan.withValues(
                                         alpha: 0.08,
                                       ),
                                       borderRadius: BorderRadius.circular(4),
@@ -199,7 +199,7 @@ class _ReflogScreenState extends State<ReflogScreen> {
                                     child: Text(
                                       id.length > 7 ? id.substring(0, 7) : id,
                                       style: GoogleFonts.firaMono(
-                                        color: AppTheme.accentCyan,
+                                        color: context.accentCyan,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -208,7 +208,7 @@ class _ReflogScreenState extends State<ReflogScreen> {
                                   Text(
                                     'View Details',
                                     style: GoogleFonts.inter(
-                                      color: AppTheme.textMuted,
+                                      color: context.textMuted,
                                       fontSize: 11,
                                     ),
                                   ),

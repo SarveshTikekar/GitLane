@@ -158,9 +158,9 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.bg2,
+        backgroundColor: context.bg2,
         title: Text('Delete $name?', style: const TextStyle(color: Colors.white)),
-        content: Text('This will permanently remove the $name hook script.', style: TextStyle(color: AppTheme.textSecondary)),
+        content: Text('This will permanently remove the $name hook script.', style: TextStyle(color: context.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
@@ -182,16 +182,16 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
     final phases = _kHooks.map((h) => h['phase']!).toSet().toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: const Text('Git Hooks'),
-        backgroundColor: AppTheme.bg0,
+        backgroundColor: context.bg0,
         actions: [
           IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _refresh),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? Center(child: CircularProgressIndicator(color: context.accentCyan))
           : ListView(
               padding: const EdgeInsets.only(bottom: 32),
               children: [
@@ -212,18 +212,18 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.accentCyan.withValues(alpha: 0.05),
+        color: context.accentCyan.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.2)),
+        border: Border.all(color: context.accentCyan.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.webhook_rounded, color: AppTheme.accentCyan, size: 24),
+          Icon(Icons.webhook_rounded, color: context.accentCyan, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Manage lifecycle scripts that run automatically during Git operations.',
-              style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 12),
+              style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12),
             ),
           ),
         ],
@@ -237,7 +237,7 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
       child: Text(
         phase.toUpperCase(),
         style: GoogleFonts.inter(
-          color: AppTheme.accentCyan,
+          color: context.accentCyan,
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
@@ -259,13 +259,13 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: (active ? AppTheme.accentGreen : AppTheme.textMuted).withValues(alpha: 0.12),
+            color: (active ? context.accentGreen : context.textMuted).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             active ? Icons.webhook_rounded : Icons.code_off_rounded,
             size: 18,
-            color: active ? AppTheme.accentGreen : AppTheme.textMuted,
+            color: active ? context.accentGreen : context.textMuted,
           ),
         ),
         title: Text(
@@ -274,7 +274,7 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
         ),
         subtitle: Text(
           hook['description']!,
-          style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 11),
+          style: GoogleFonts.inter(color: context.textSecondary, fontSize: 11),
           maxLines: 2,
         ),
         trailing: Row(
@@ -282,7 +282,7 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
           children: [
             if (exists) ...[
               IconButton(
-                icon: Icon(Icons.edit_rounded, size: 18, color: AppTheme.accentCyan),
+                icon: Icon(Icons.edit_rounded, size: 18, color: context.accentCyan),
                 tooltip: 'Edit',
                 onPressed: () => _editHook(name),
               ),
@@ -294,7 +294,7 @@ class _GitHooksScreenState extends State<GitHooksScreen> {
             ],
             Switch(
               value: active,
-              activeColor: AppTheme.accentGreen,
+              activeColor: context.accentGreen,
               onChanged: (val) {
                 if (!exists && val) {
                   _createHook(name);

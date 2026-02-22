@@ -48,12 +48,12 @@ class CommitGraphScreen extends StatelessWidget {
         : math.max(_maxLanes, commits.map((c) => c.lane).fold(0, math.max) + 1);
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: Text(
           title,
           style: GoogleFonts.inter(
-            color: AppTheme.textPrimary,
+            color: context.textPrimary,
             fontSize: 17,
             fontWeight: FontWeight.w600,
           ),
@@ -97,7 +97,7 @@ class CommitGraphScreen extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  color: AppTheme.textPrimary,
+                                  color: context.textPrimary,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                   height: 1.3,
@@ -115,7 +115,7 @@ class CommitGraphScreen extends StatelessWidget {
                                       vertical: 1,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentCyan.withValues(
+                                      color: context.accentCyan.withValues(
                                         alpha: 0.08,
                                       ),
                                       borderRadius: BorderRadius.circular(4),
@@ -123,7 +123,7 @@ class CommitGraphScreen extends StatelessWidget {
                                     child: Text(
                                       _shortHash(commit.id),
                                       style: GoogleFonts.firaMono(
-                                        color: AppTheme.accentCyan,
+                                        color: context.accentCyan,
                                         fontSize: compact ? 9.5 : 10,
                                       ),
                                     ),
@@ -134,27 +134,27 @@ class CommitGraphScreen extends StatelessWidget {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: AppTheme.accentYellow
+                                          color: context.accentYellow
                                               .withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(4),
                                           border: Border.all(
-                                            color: AppTheme.accentYellow
+                                            color: context.accentYellow
                                                 .withValues(alpha: 0.3),
                                           ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.local_offer_rounded,
                                               size: 8,
-                                              color: AppTheme.accentYellow,
+                                              color: context.accentYellow,
                                             ),
                                             const SizedBox(width: 3),
                                             Text(
                                               tag,
                                               style: GoogleFonts.inter(
-                                                color: AppTheme.accentYellow,
+                                                color: context.accentYellow,
                                                 fontSize: 9,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -165,7 +165,7 @@ class CommitGraphScreen extends StatelessWidget {
                                   Text(
                                     _formatTimestamp(commit.timestamp),
                                     style: GoogleFonts.inter(
-                                      color: AppTheme.textMuted,
+                                      color: context.textMuted,
                                       fontSize: compact ? 10 : 11,
                                     ),
                                   ),
@@ -233,12 +233,12 @@ List<_RowGraphState> _buildGraphRows(List<CommitNode> commits) {
 }
 
 class _CommitGraphPainter extends CustomPainter {
-  const _CommitGraphPainter({required this.row, required this.laneCount});
+  _CommitGraphPainter({required this.row, required this.laneCount});
 
   final _RowGraphState row;
   final int laneCount;
 
-  static const _laneColors = [
+  static final _laneColors = [
     AppTheme.accentCyan,
     AppTheme.accentPurple,
     AppTheme.accentGreen,

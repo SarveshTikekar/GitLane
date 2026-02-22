@@ -30,7 +30,7 @@ class QRScannerDialog extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.accentCyan,
+        backgroundColor: context.accentCyan,
         onPressed: () {
           // You could add flashlight toggle here
         },

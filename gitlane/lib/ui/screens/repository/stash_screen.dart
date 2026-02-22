@@ -39,7 +39,7 @@ class _StashScreenState extends State<StashScreen> {
     if (mounted) {
       _showSnack(
         result == 0 ? '✓ Changes applied' : 'Failed to apply stash ($result)',
-        result == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+        result == 0 ? context.accentGreen : context.accentRed,
       );
       _loadStashes();
     }
@@ -51,7 +51,7 @@ class _StashScreenState extends State<StashScreen> {
     if (mounted) {
       _showSnack(
         result == 0 ? '✓ Stash applied' : 'Failed to pop stash ($result)',
-        result == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+        result == 0 ? context.accentGreen : context.accentRed,
       );
       _loadStashes();
     }
@@ -65,7 +65,7 @@ class _StashScreenState extends State<StashScreen> {
         content: const Text('Are you sure you want to delete this stash?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Drop', style: TextStyle(color: AppTheme.accentRed))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Drop', style: TextStyle(color: context.accentRed))),
         ],
       ),
     );
@@ -76,7 +76,7 @@ class _StashScreenState extends State<StashScreen> {
     if (mounted) {
       _showSnack(
         result == 0 ? '✓ Stash dropped' : 'Failed to drop stash ($result)',
-        result == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+        result == 0 ? context.accentGreen : context.accentRed,
       );
       _loadStashes();
     }
@@ -87,9 +87,9 @@ class _StashScreenState extends State<StashScreen> {
       SnackBar(
         content: Text(
           msg,
-          style: GoogleFonts.inter(color: AppTheme.textPrimary),
+          style: GoogleFonts.inter(color: context.textPrimary),
         ),
-        backgroundColor: AppTheme.bg2,
+        backgroundColor: context.bg2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(color: color.withValues(alpha: 0.5)),
@@ -105,12 +105,12 @@ class _StashScreenState extends State<StashScreen> {
     final compact = screenWidth < 360;
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: Text(
           'Stashes',
           style: GoogleFonts.inter(
-            color: AppTheme.textPrimary,
+            color: context.textPrimary,
             fontSize: compact ? 15 : 17,
             fontWeight: FontWeight.w600,
           ),
@@ -124,8 +124,8 @@ class _StashScreenState extends State<StashScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentCyan),
+          ? Center(
+              child: CircularProgressIndicator(color: context.accentCyan),
             )
           : _stashes.isEmpty
           ? EmptyState(
@@ -133,7 +133,7 @@ class _StashScreenState extends State<StashScreen> {
               title: 'No stashes',
               subtitle:
                   'Stash allows you to save WIP changes\nwithout committing them.',
-              iconColor: AppTheme.accentOrange,
+              iconColor: context.accentOrange,
             )
           : ListView.separated(
               padding: EdgeInsets.all(compact ? 12 : 16),
@@ -151,9 +151,9 @@ class _StashScreenState extends State<StashScreen> {
                 return Container(
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: AppTheme.bg1,
+                    color: context.bg1,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.border),
+                    border: Border.all(color: context.border),
                   ),
                   child: Column(
                     children: [
@@ -170,12 +170,12 @@ class _StashScreenState extends State<StashScreen> {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentOrange.withValues(
+                                    color: context.accentOrange.withValues(
                                       alpha: 0.12,
                                     ),
                                     borderRadius: BorderRadius.circular(5),
                                     border: Border.all(
-                                      color: AppTheme.accentOrange.withValues(
+                                      color: context.accentOrange.withValues(
                                         alpha: 0.3,
                                       ),
                                     ),
@@ -183,7 +183,7 @@ class _StashScreenState extends State<StashScreen> {
                                   child: Text(
                                     'stash@{$stashIndex}',
                                     style: GoogleFonts.firaMono(
-                                      color: AppTheme.accentOrange,
+                                      color: context.accentOrange,
                                       fontSize: compact ? 10 : 11,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -194,7 +194,7 @@ class _StashScreenState extends State<StashScreen> {
                                   Text(
                                     hash.substring(0, 7),
                                     style: GoogleFonts.firaMono(
-                                      color: AppTheme.textMuted,
+                                      color: context.textMuted,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -204,7 +204,7 @@ class _StashScreenState extends State<StashScreen> {
                             Text(
                               msg,
                               style: GoogleFonts.inter(
-                                color: AppTheme.textPrimary,
+                                color: context.textPrimary,
                                 fontSize: compact ? 13 : 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -212,7 +212,7 @@ class _StashScreenState extends State<StashScreen> {
                           ],
                         ),
                       ),
-                      Divider(height: 1, color: AppTheme.border),
+                      Divider(height: 1, color: context.border),
                       IntrinsicHeight(
                         child: Row(
                           children: [
@@ -220,25 +220,25 @@ class _StashScreenState extends State<StashScreen> {
                               child: _StashAction(
                                 icon: Icons.playlist_add_check_rounded,
                                 label: 'Apply',
-                                color: AppTheme.accentCyan,
+                                color: context.accentCyan,
                                 onTap: () => _applyStash(stashIndex),
                               ),
                             ),
-                            VerticalDivider(width: 1, color: AppTheme.border),
+                            VerticalDivider(width: 1, color: context.border),
                             Expanded(
                               child: _StashAction(
                                 icon: Icons.unarchive_rounded,
                                 label: 'Pop',
-                                color: AppTheme.accentGreen,
+                                color: context.accentGreen,
                                 onTap: () => _popStash(stashIndex),
                               ),
                             ),
-                            VerticalDivider(width: 1, color: AppTheme.border),
+                            VerticalDivider(width: 1, color: context.border),
                             Expanded(
                               child: _StashAction(
                                 icon: Icons.delete_outline_rounded,
                                 label: 'Drop',
-                                color: AppTheme.accentRed,
+                                color: context.accentRed,
                                 onTap: () => _dropStash(stashIndex),
                               ),
                             ),

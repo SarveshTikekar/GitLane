@@ -334,7 +334,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       case '.ts':
         return const Color(0xFFF7DF1E);
       default:
-        return AppTheme.textSecondary;
+        return context.textSecondary;
     }
   }
 
@@ -372,7 +372,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 value: pushAfter,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                activeColor: AppTheme.accentCyan,
+                activeColor: context.accentCyan,
                 onChanged: (val) =>
                     setDialogState(() => pushAfter = val ?? false),
               ),
@@ -384,7 +384,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 value: signWithGPG,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                activeColor: AppTheme.accentOrange,
+                activeColor: context.accentOrange,
                 onChanged: (val) =>
                     setDialogState(() => signWithGPG = val ?? false),
               ),
@@ -396,7 +396,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 value: createTag,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                activeColor: AppTheme.accentCyan,
+                activeColor: context.accentCyan,
                 onChanged: (val) =>
                     setDialogState(() => createTag = val ?? false),
               ),
@@ -460,18 +460,18 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 pushResult == 0
                     ? '⬆ Push successful or reconciled'
                     : 'Push failed ($pushResult)',
-                pushResult == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                pushResult == 0 ? context.accentGreen : context.accentRed,
               );
             }
           } on PushAlreadyRunningException catch (e) {
-            if (mounted) _showSnack(e.message, AppTheme.accentYellow);
+            if (mounted) _showSnack(e.message, context.accentYellow);
           } catch (e) {
-            if (mounted) _showSnack('Unexpected error: $e', AppTheme.accentRed);
+            if (mounted) _showSnack('Unexpected error: $e', context.accentRed);
           }
         } else if (pushAfter) {
           _showSnack(
             'Push failed: No PAT stored for this session',
-            AppTheme.accentYellow,
+            context.accentYellow,
           );
         }
       }
@@ -479,7 +479,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       if (mounted) {
         _showSnack(
           code == 0 ? '✓ Commit successful' : 'Commit failed (code: $code)',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+          code == 0 ? context.accentGreen : context.accentRed,
         );
         _fetchData();
         _updateBranchInfo();
@@ -503,10 +503,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         builder: (context, setDialogState) => AlertDialog(
           title: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.account_tree_rounded,
                 size: 18,
-                color: AppTheme.accentGreen,
+                color: context.accentGreen,
               ),
               const SizedBox(width: 8),
               const Text('Git Branches'),
@@ -521,7 +521,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 Text(
                   'Branches',
                   style: GoogleFonts.inter(
-                    color: AppTheme.textSecondary,
+                    color: context.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -536,8 +536,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                       final b = _branches[idx];
                       final isCurrent = b == _currentBranch;
                       final color = (b == 'main' || b == 'master')
-                          ? AppTheme.accentGreen
-                          : AppTheme.accentBlue;
+                          ? context.accentGreen
+                          : context.accentBlue;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 4),
                         decoration: BoxDecoration(
@@ -566,8 +566,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                           ? "Checked out '$b'"
                                           : "Checkout failed ($code)",
                                       code == 0
-                                          ? AppTheme.accentGreen
-                                          : AppTheme.accentRed,
+                                          ? context.accentGreen
+                                          : context.accentRed,
                                     );
                                     _fetchData();
                                     _listRepoFiles();
@@ -581,14 +581,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                 ? Icons.radio_button_checked_rounded
                                 : Icons.radio_button_off_rounded,
                             size: 16,
-                            color: isCurrent ? color : AppTheme.textMuted,
+                            color: isCurrent ? color : context.textMuted,
                           ),
                           title: Text(
                             b,
                             style: GoogleFonts.firaMono(
                               color: isCurrent
-                                  ? AppTheme.textPrimary
-                                  : AppTheme.textSecondary,
+                                  ? context.textPrimary
+                                  : context.textSecondary,
                               fontSize: 13,
                               fontWeight: isCurrent
                                   ? FontWeight.w600
@@ -618,7 +618,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                   children: [
                                     _branchAction(
                                       'Checkout',
-                                      AppTheme.accentCyan,
+                                      context.accentCyan,
                                       () async {
                                         Navigator.pop(context);
                                         setState(() => _isLoading = true);
@@ -633,8 +633,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                                 ? "Checked out '$b'"
                                                 : "Checkout failed ($code)",
                                             code == 0
-                                                ? AppTheme.accentGreen
-                                                : AppTheme.accentRed,
+                                                ? context.accentGreen
+                                                : context.accentRed,
                                           );
                                           _fetchData();
                                           _listRepoFiles();
@@ -644,7 +644,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                     const SizedBox(width: 4),
                                     _branchAction(
                                       'Merge',
-                                      AppTheme.accentOrange,
+                                      context.accentOrange,
                                       () async {
                                         Navigator.pop(context);
                                         setState(() => _isLoading = true);
@@ -689,8 +689,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                                 ? "Merged '$b'"
                                                 : "Merge failed ($code)",
                                             code >= 0
-                                                ? AppTheme.accentGreen
-                                                : AppTheme.accentRed,
+                                                ? context.accentGreen
+                                                : context.accentRed,
                                           );
                                           _fetchData();
                                         }
@@ -698,10 +698,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                     ),
                                     const SizedBox(width: 4),
                                     IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.delete_outline_rounded,
                                         size: 15,
-                                        color: AppTheme.accentRed,
+                                        color: context.accentRed,
                                       ),
                                       padding: EdgeInsets.zero,
                                       visualDensity: VisualDensity.compact,
@@ -722,8 +722,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                                 ? "Deleted '$b'"
                                                 : "Delete failed ($code)",
                                             code == 0
-                                                ? AppTheme.accentGreen
-                                                : AppTheme.accentRed,
+                                                ? context.accentGreen
+                                                : context.accentRed,
                                           );
                                           _updateBranchInfo();
                                           setState(() => _isLoading = false);
@@ -743,7 +743,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 TextField(
                   controller: controller,
                   style: GoogleFonts.firaMono(
-                    color: AppTheme.textPrimary,
+                    color: context.textPrimary,
                     fontSize: 13,
                   ),
                   decoration: const InputDecoration(
@@ -774,7 +774,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     code == 0
                         ? "Branch '$name' created!"
                         : "Failed (code: $code)",
-                    code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                    code == 0 ? context.accentGreen : context.accentRed,
                   );
                   _fetchData();
                 }
@@ -820,9 +820,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text(
+          child: Text(
             'Delete',
-            style: TextStyle(color: AppTheme.accentRed),
+            style: TextStyle(color: context.accentRed),
           ),
         ),
       ],
@@ -834,12 +834,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(
               Icons.inventory_2_outlined,
               size: 18,
-              color: AppTheme.accentOrange,
+              color: context.accentOrange,
             ),
             SizedBox(width: 8),
             Text('Stash Changes'),
@@ -856,7 +856,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -869,7 +869,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               if (mounted) {
                 _showSnack(
                   code == 0 ? '✓ Changes stashed' : 'Stash failed ($code)',
-                  code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                  code == 0 ? context.accentGreen : context.accentRed,
                 );
                 _fetchData();
                 _listRepoFiles();
@@ -888,12 +888,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(
               Icons.add_comment_outlined,
               size: 18,
-              color: AppTheme.accentCyan,
+              color: context.accentCyan,
             ),
             SizedBox(width: 8),
             Text('Create New File'),
@@ -916,7 +916,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               controller: contentController,
               maxLines: 5,
               style: GoogleFonts.firaMono(
-                color: AppTheme.textPrimary,
+                color: context.textPrimary,
                 fontSize: 13,
               ),
               decoration: const InputDecoration(
@@ -929,7 +929,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -939,7 +939,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               await file.writeAsString(contentController.text);
               if (!mounted) return;
               Navigator.of(this.context).pop();
-              _showSnack('Created $name', AppTheme.accentGreen);
+              _showSnack('Created $name', context.accentGreen);
               _fetchData();
               _listRepoFiles();
             },
@@ -957,9 +957,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.key_rounded, size: 18, color: AppTheme.accentCyan),
+            Icon(Icons.key_rounded, size: 18, color: context.accentCyan),
             SizedBox(width: 8),
             Text('Git Credentials'),
           ],
@@ -971,7 +971,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             Text(
               'Personal Access Token (PAT)',
               style: GoogleFonts.inter(
-                color: AppTheme.textSecondary,
+                color: context.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -981,7 +981,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               obscureText: true,
               autofocus: true,
               style: GoogleFonts.firaMono(
-                color: AppTheme.textPrimary,
+                color: context.textPrimary,
                 fontSize: 13,
               ),
               decoration: const InputDecoration(
@@ -993,7 +993,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             Text(
               'Token is securely saved on your device.',
               style: GoogleFonts.inter(
-                color: AppTheme.accentCyan,
+                color: context.accentCyan,
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
@@ -1038,14 +1038,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       setState(() => _isLoading = false);
 
       String msg = 'Pull failed ($code)';
-      Color color = AppTheme.accentRed;
+      Color color = context.accentRed;
 
       if (code == 0) {
         msg = '⬇ Pull successful (Fast-forward)';
-        color = AppTheme.accentGreen;
+        color = context.accentGreen;
       } else if (code == -2) {
         msg = '⚠ Branch diverged. Normal Merge/Rebase required.';
-        color = AppTheme.accentYellow;
+        color = context.accentYellow;
       } else if (code == -12) {
         msg = '⛔ Authentication failed. Active PAT was rejected.';
       }
@@ -1073,11 +1073,11 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         setState(() => _isLoading = false);
 
         String msg = 'Push failed ($code)';
-        Color color = AppTheme.accentRed;
+        Color color = context.accentRed;
 
         if (code == 0) {
           msg = '⬆ Push successful or reconciled';
-          color = AppTheme.accentGreen;
+          color = context.accentGreen;
         } else if (code == -1) {
           msg = '⛔ Push rejected by server (Unauthorized / Diverged)';
         } else if (code == -12) {
@@ -1090,12 +1090,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     } on PushAlreadyRunningException catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showSnack(e.message, AppTheme.accentYellow);
+        _showSnack(e.message, context.accentYellow);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showSnack('Unexpected error: $e', AppTheme.accentRed);
+        _showSnack('Unexpected error: $e', context.accentRed);
       }
     }
   }
@@ -1106,9 +1106,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       SnackBar(
         content: Text(
           msg,
-          style: GoogleFonts.inter(color: AppTheme.textPrimary),
+          style: GoogleFonts.inter(color: context.textPrimary),
         ),
-        backgroundColor: AppTheme.bg2,
+        backgroundColor: context.bg2,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -1128,7 +1128,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   Future<void> _discardFile(String path) async {
     HapticFeedback.mediumImpact();
     // git checkout -- <path> via bridge — fallback: show snack
-    _showSnack('Discard not yet supported via bridge', AppTheme.accentYellow);
+    _showSnack('Discard not yet supported via bridge', context.accentYellow);
   }
 
   Future<void> _unstageFile(String path) async {
@@ -1138,7 +1138,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     if (mounted) {
       _showSnack(
         code == 0 ? "Unstaged '$path'" : 'Unstage failed ($code)',
-        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+        code == 0 ? context.accentGreen : context.accentRed,
       );
     }
     _fetchData();
@@ -1181,7 +1181,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     if (mounted) {
       _showSnack(
         code == 0 ? 'Unstaged all files' : 'Unstage all failed ($code)',
-        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+        code == 0 ? context.accentGreen : context.accentRed,
       );
     }
     _fetchData();
@@ -1212,99 +1212,99 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     final result = await showMenu<String>(
       context: context,
       position: position,
-      color: AppTheme.bg2,
+      color: context.bg2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: AppTheme.border),
+        side: BorderSide(color: context.border),
       ),
       items: [
         _menuItem(
           'pull',
           Icons.sync_rounded,
           'Sync (Pull)',
-          AppTheme.accentBlue,
+          context.accentBlue,
         ),
-        _menuItem('push', Icons.upload_rounded, 'Push', AppTheme.accentBlue),
+        _menuItem('push', Icons.upload_rounded, 'Push', context.accentBlue),
         const PopupMenuDivider(height: 1),
         _menuItem(
           'stash_save',
           Icons.save_outlined,
           'Stash Changes',
-          AppTheme.accentOrange,
+          context.accentOrange,
         ),
         _menuItem(
           'stash_list',
           Icons.inventory_2_outlined,
           'View Stashes',
-          AppTheme.accentOrange,
+          context.accentOrange,
         ),
         const PopupMenuDivider(height: 1),
         _menuItem(
           'graph',
           Icons.timeline_rounded,
           'Commit Graph',
-          AppTheme.accentPurple,
+          context.accentPurple,
         ),
         _menuItem(
           'reflog',
           Icons.history_edu_rounded,
           'Action History',
-          AppTheme.textSecondary,
+          context.textSecondary,
         ),
         _menuItem(
           'analytics',
           Icons.analytics_rounded,
           'Insights',
-          AppTheme.accentCyan,
+          context.accentCyan,
         ),
         _menuItem(
           'rebase',
           Icons.swap_calls_rounded,
           'Interactive Rebase',
-          AppTheme.accentCyan,
+          context.accentCyan,
         ),
         _menuItem(
           'remotes',
           Icons.settings_input_component_rounded,
           'Manage Remotes',
-          AppTheme.accentPurple,
+          context.accentPurple,
         ),
         _menuItem(
           'pat_manager',
           Icons.vpn_key_rounded,
           'PAT Manager',
-          AppTheme.accentGreen,
+          context.accentGreen,
         ),
         _menuItem(
           'security',
           Icons.security_rounded,
           'Security Workbench',
-          AppTheme.accentPurple,
+          context.accentPurple,
         ),
         _menuItem(
           'health',
           Icons.health_and_safety_rounded,
           'Health & Maintenance',
-          AppTheme.accentGreen,
+          context.accentGreen,
         ),
         _menuItem(
           'bundle',
           Icons.archive_rounded,
           'Export Bundle (P2P)',
-          AppTheme.accentOrange,
+          context.accentOrange,
         ),
         _menuItem(
           'share',
           Icons.qr_code_2_rounded,
           'Share (QR)',
-          AppTheme.textSecondary,
+          context.textSecondary,
         ),
         const PopupMenuDivider(height: 1),
         _menuItem(
           'delete',
           Icons.delete_forever_rounded,
           'Delete Repository',
-          AppTheme.accentRed,
+          context.accentRed,
         ),
       ],
     );
@@ -1446,15 +1446,15 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Repository', style: TextStyle(color: AppTheme.accentRed)),
+        title: Text('Delete Repository', style: TextStyle(color: context.accentRed)),
         content: Text("Are you sure you want to permanently delete '${widget.repoName}' and all its files from this device? This action cannot be undone.", style: GoogleFonts.inter(fontSize: 14)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentRed),
+            style: ElevatedButton.styleFrom(backgroundColor: context.accentRed),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
@@ -1470,13 +1470,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           await dir.delete(recursive: true);
         }
         if (mounted) {
-          _showSnack('Repository deleted successfully.', AppTheme.accentGreen);
+          _showSnack('Repository deleted successfully.', context.accentGreen);
           Navigator.pop(context, true); // Pop back to dashboard
         }
       } catch (e) {
         if (mounted) {
           setState(() => _isLoading = false);
-          _showSnack('Failed to delete repository: $e', AppTheme.accentRed);
+          _showSnack('Failed to delete repository: $e', context.accentRed);
         }
       }
     }
@@ -1491,9 +1491,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     setState(() => _isLoading = false);
 
     if (result == 0) {
-      _showSnack('Bundle exported to: $name.bundle', AppTheme.accentGreen);
+      _showSnack('Bundle exported to: $name.bundle', context.accentGreen);
     } else {
-      _showSnack('Failed to create bundle ($result)', AppTheme.accentRed);
+      _showSnack('Failed to create bundle ($result)', context.accentRed);
     }
   }
 
@@ -1512,7 +1512,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         ),
       );
     } else {
-      _showSnack('No remote origin set', AppTheme.accentYellow);
+      _showSnack('No remote origin set', context.accentYellow);
     }
   }
 
@@ -1530,7 +1530,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         const SizedBox(width: 12),
         Text(
           label,
-          style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: 14),
+          style: GoogleFonts.inter(color: context.textPrimary, fontSize: 14),
         ),
       ],
     ),
@@ -1541,8 +1541,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
   Widget build(BuildContext context) {
     final compact = Responsive.isCompact(context);
     final branchColor = (_currentBranch == 'main' || _currentBranch == 'master')
-        ? AppTheme.accentGreen
-        : AppTheme.accentBlue;
+        ? context.accentGreen
+        : context.accentBlue;
     final statusCount = _statusFiles.length;
 
     return PopScope(
@@ -1556,9 +1556,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: AppTheme.bg0,
+        backgroundColor: context.bg0,
         appBar: AppBar(
-          backgroundColor: AppTheme.bg0,
+          backgroundColor: context.bg0,
           surfaceTintColor: Colors.transparent,
           titleSpacing: 0,
           leading: _currentDir != widget.repoPath
@@ -1581,7 +1581,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                   Text(
                     widget.repoName,
                     style: GoogleFonts.inter(
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimary,
                       fontSize: compact ? 15 : 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1627,7 +1627,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                 Text(
                   _currentRelativePathLabel(),
                   style: GoogleFonts.firaMono(
-                    color: AppTheme.textMuted,
+                    color: context.textMuted,
                     fontSize: 10,
                   ),
                   maxLines: 1,
@@ -1683,8 +1683,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ],
         ),
         body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppTheme.accentCyan),
+            ? Center(
+                child: CircularProgressIndicator(color: context.accentCyan),
               )
             : _isNotGitRepo
             ? _buildNotGitRepoView()
@@ -1781,21 +1781,21 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: TextField(
             controller: _searchController,
-            style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+            style: TextStyle(color: context.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Search files...',
-              hintStyle: TextStyle(color: AppTheme.textMuted),
+              hintStyle: TextStyle(color: context.textMuted),
               prefixIcon: Icon(
                 Icons.search_rounded,
                 size: 20,
-                color: AppTheme.textMuted,
+                color: context.textMuted,
               ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: Icon(
                         Icons.close_rounded,
                         size: 16,
-                        color: AppTheme.textMuted,
+                        color: context.textMuted,
                       ),
                       onPressed: () => _searchController.clear(),
                     )
@@ -1808,16 +1808,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               fillColor: AppTheme.surfaceSlate,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: AppTheme.border),
+                borderSide: BorderSide(color: context.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: AppTheme.border),
+                borderSide: BorderSide(color: context.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                  color: AppTheme.accentCyan,
+                borderSide: BorderSide(
+                  color: context.accentCyan,
                   width: 1.5,
                 ),
               ),
@@ -1853,14 +1853,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     final isDir = entity is Directory;
                     final ext = isDir ? '' : _fileExt(name);
                     final extColor = isDir
-                        ? AppTheme.accentCyan
+                        ? context.accentCyan
                         : _extColor(ext);
 
                     return PopupMenuButton<String>(
-                      color: AppTheme.bg2,
+                      color: context.bg2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: AppTheme.border),
+                        side: BorderSide(color: context.border),
                       ),
                       onSelected: (value) async {
                         if (value == 'delete') {
@@ -1879,9 +1879,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, true),
-                                  child: const Text(
+                                  child: Text(
                                     'Delete',
-                                    style: TextStyle(color: AppTheme.accentRed),
+                                    style: TextStyle(color: context.accentRed),
                                   ),
                                 ),
                               ],
@@ -1934,16 +1934,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                           height: 40,
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.edit_rounded,
                                 size: 16,
-                                color: AppTheme.accentCyan,
+                                color: context.accentCyan,
                               ),
                               const SizedBox(width: 10),
                               Text(
                                 'Rename',
                                 style: GoogleFonts.inter(
-                                  color: AppTheme.textPrimary,
+                                  color: context.textPrimary,
                                   fontSize: 14,
                                 ),
                               ),
@@ -1955,16 +1955,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                           height: 40,
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.delete_outline_rounded,
                                 size: 16,
-                                color: AppTheme.accentRed,
+                                color: context.accentRed,
                               ),
                               const SizedBox(width: 10),
                               Text(
                                 'Delete',
                                 style: GoogleFonts.inter(
-                                  color: AppTheme.accentRed,
+                                  color: context.accentRed,
                                   fontSize: 14,
                                 ),
                               ),
@@ -2013,7 +2013,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         title: Text(
                           name,
                           style: GoogleFonts.inter(
-                            color: AppTheme.textPrimary,
+                            color: context.textPrimary,
                             fontSize: 14,
                           ),
                         ),
@@ -2029,7 +2029,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         trailing: isDir
                             ? Icon(
                                 Icons.chevron_right_rounded,
-                                color: AppTheme.textMuted,
+                                color: context.textMuted,
                                 size: 18,
                               )
                             : null,
@@ -2110,13 +2110,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: AppTheme.bg0,
-                      border: Border.all(color: AppTheme.accentCyan, width: 2),
+                      color: context.bg0,
+                      border: Border.all(color: context.accentCyan, width: 2),
                       shape: BoxShape.circle,
                     ),
                   ),
                   if (!isLast)
-                    Container(width: 2, height: 52, color: AppTheme.border),
+                    Container(width: 2, height: 52, color: context.border),
                 ],
               ),
             ),
@@ -2134,7 +2134,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                           child: Text(
                             msg,
                             style: GoogleFonts.inter(
-                              color: AppTheme.textPrimary,
+                              color: context.textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -2152,12 +2152,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentYellow.withValues(
+                                  color: context.accentYellow.withValues(
                                     alpha: 0.1,
                                   ),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: AppTheme.accentYellow.withValues(
+                                    color: context.accentYellow.withValues(
                                       alpha: 0.3,
                                     ),
                                   ),
@@ -2165,16 +2165,16 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.local_offer_rounded,
                                       size: 10,
-                                      color: AppTheme.accentYellow,
+                                      color: context.accentYellow,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       t['name'].toString(),
                                       style: GoogleFonts.inter(
-                                        color: AppTheme.accentYellow,
+                                        color: context.accentYellow,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -2219,7 +2219,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                             Text(
                               author,
                               style: GoogleFonts.inter(
-                                color: AppTheme.textSecondary,
+                                color: context.textSecondary,
                                 fontSize: 12,
                               ),
                             ),
@@ -2231,13 +2231,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentCyan.withValues(alpha: 0.08),
+                            color: context.accentCyan.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             hash.length >= 7 ? hash.substring(0, 7) : hash,
                             style: GoogleFonts.firaMono(
-                              color: AppTheme.accentCyan,
+                              color: context.accentCyan,
                               fontSize: 10,
                             ),
                           ),
@@ -2245,7 +2245,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         Text(
                           timeAgo,
                           style: GoogleFonts.inter(
-                            color: AppTheme.textMuted,
+                            color: context.textMuted,
                             fontSize: 11,
                           ),
                         ),
@@ -2263,12 +2263,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
 
   Color _authorColor(String author) {
     final hash = author.codeUnits.fold(0, (a, b) => a + b);
-    const colors = [
-      AppTheme.accentCyan,
-      AppTheme.accentGreen,
-      AppTheme.accentPurple,
-      AppTheme.accentOrange,
-      AppTheme.accentBlue,
+    final colors = [
+      context.accentCyan,
+      context.accentGreen,
+      context.accentPurple,
+      context.accentOrange,
+      context.accentBlue,
     ];
     return colors[hash % colors.length];
   }
@@ -2289,8 +2289,8 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Refresh'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.bg1,
-                foregroundColor: AppTheme.textPrimary,
+                backgroundColor: context.bg1,
+                foregroundColor: context.textPrimary,
               ),
             ),
             ElevatedButton.icon(
@@ -2298,7 +2298,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               icon: const Icon(Icons.upload_rounded, size: 16),
               label: const Text('Push to Remote'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentBlue,
+                backgroundColor: context.accentBlue,
                 foregroundColor: Colors.black,
               ),
             ),
@@ -2319,7 +2319,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             _sectionHeader(
               'STAGED',
               staged.length,
-              AppTheme.accentGreen,
+              context.accentGreen,
               onAction: _unstageAll,
               actionLabel: 'UNSTAGE ALL',
             ),
@@ -2330,7 +2330,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             _sectionHeader(
               'CHANGES',
               unstaged.length,
-              AppTheme.accentYellow,
+              context.accentYellow,
               onAction: _stageAll,
               actionLabel: 'STAGE ALL',
             ),
@@ -2370,7 +2370,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             children: [
               SlidableAction(
                 onPressed: (_) => _deleteTag(tagName),
-                backgroundColor: AppTheme.accentRed,
+                backgroundColor: context.accentRed,
                 foregroundColor: Colors.white,
                 icon: Icons.delete_outline_rounded,
                 label: 'Delete',
@@ -2378,21 +2378,21 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             ],
           ),
           child: ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.local_offer_rounded,
-              color: AppTheme.accentCyan,
+              color: context.accentCyan,
               size: 18,
             ),
             title: Text(
               tagName,
               style: GoogleFonts.inter(
-                color: AppTheme.textPrimary,
+                color: context.textPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
             trailing: Icon(
               Icons.chevron_right_rounded,
-              color: AppTheme.textMuted,
+              color: context.textMuted,
               size: 18,
             ),
             onTap: () {
@@ -2455,13 +2455,13 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                   if (res == 0) {
                     _showSnack(
                       'Tag created successfully',
-                      AppTheme.accentGreen,
+                      context.accentGreen,
                     );
                     _fetchTags();
                   } else {
                     _showSnack(
                       'Failed to create tag ($res)',
-                      AppTheme.accentRed,
+                      context.accentRed,
                     );
                   }
                 }
@@ -2483,12 +2483,12 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.accentRed),
-            child: const Text('Delete'),
+            style: TextButton.styleFrom(foregroundColor: context.accentRed),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -2497,10 +2497,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     if (confirm == true) {
       final res = await GitService.deleteTag(widget.repoPath, tagName);
       if (res == 0) {
-        _showSnack('Tag deleted', AppTheme.accentYellow);
+        _showSnack('Tag deleted', context.accentYellow);
         _fetchTags();
       } else {
-        _showSnack('Failed to delete tag', AppTheme.accentRed);
+        _showSnack('Failed to delete tag', context.accentRed);
       }
     }
   }
@@ -2575,7 +2575,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               children: [
                 SlidableAction(
                   onPressed: (_) => _unstageFile(fileName),
-                  backgroundColor: AppTheme.accentOrange,
+                  backgroundColor: context.accentOrange,
                   foregroundColor: Colors.white,
                   icon: Icons.remove_circle_outline_rounded,
                   label: 'Unstage',
@@ -2592,7 +2592,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               children: [
                 SlidableAction(
                   onPressed: (_) => _stageFile(fileName),
-                  backgroundColor: AppTheme.accentGreen,
+                  backgroundColor: context.accentGreen,
                   foregroundColor: Colors.black,
                   icon: Icons.add_circle_outline_rounded,
                   label: 'Stage',
@@ -2611,7 +2611,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
               children: [
                 SlidableAction(
                   onPressed: (_) => _discardFile(fileName),
-                  backgroundColor: AppTheme.accentRed,
+                  backgroundColor: context.accentRed,
                   foregroundColor: Colors.white,
                   icon: Icons.restore_rounded,
                   label: 'Discard',
@@ -2666,14 +2666,14 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     TextSpan(
                       text: dirName,
                       style: GoogleFonts.firaMono(
-                        color: AppTheme.textMuted,
+                        color: context.textMuted,
                         fontSize: 12,
                       ),
                     ),
                   TextSpan(
                     text: baseName,
                     style: GoogleFonts.firaMono(
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2688,10 +2688,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             ),
             trailing: isStaged
                 ? IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.remove_circle_outline_rounded,
                       size: 18,
-                      color: AppTheme.accentOrange,
+                      color: context.accentOrange,
                     ),
                     tooltip: 'Unstage file',
                     padding: EdgeInsets.zero,
@@ -2702,9 +2702,9 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.playlist_add_rounded,
-                          color: AppTheme.accentCyan,
+                          color: context.accentCyan,
                           size: 20,
                         ),
                         tooltip: "Partial Stage",
@@ -2722,10 +2722,10 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                         },
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.add_circle_outline_rounded,
                           size: 18,
-                          color: AppTheme.accentGreen,
+                          color: context.accentGreen,
                         ),
                         tooltip: 'Stage file',
                         padding: EdgeInsets.zero,
@@ -2747,7 +2747,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
       title: 'Not a Git Repository',
       subtitle:
           'This directory has no .git folder.\nInitialize it to start tracking.',
-      iconColor: AppTheme.accentYellow,
+      iconColor: context.accentYellow,
       action: ElevatedButton.icon(
         onPressed: () async {
           setState(() => _isLoading = true);
@@ -2758,7 +2758,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
             setState(() => _isLoading = false);
             _showSnack(
               'Failed to initialize (code: $result)',
-              AppTheme.accentRed,
+              context.accentRed,
             );
           }
         },

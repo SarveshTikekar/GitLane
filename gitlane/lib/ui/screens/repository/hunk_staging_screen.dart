@@ -52,7 +52,7 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
 
   Future<void> _stageSelected() async {
     if (_selectedLines.isEmpty || _selectedLines.values.every((s) => s.isEmpty)) {
-      _showSnack("No lines selected", AppTheme.accentOrange);
+      _showSnack("No lines selected", context.accentOrange);
       return;
     }
 
@@ -100,10 +100,10 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
     final res = await GitService.applyPatchToIndex(widget.repoPath, patch.toString());
     if (mounted) {
       if (res == 0) {
-        _showSnack("✓ Partial changes staged", AppTheme.accentGreen);
+        _showSnack("✓ Partial changes staged", context.accentGreen);
         Navigator.pop(context, true);
       } else {
-        _showSnack("Failed to stage: $res", AppTheme.accentRed);
+        _showSnack("Failed to stage: $res", context.accentRed);
       }
     }
   }
@@ -122,7 +122,7 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
         title: const Text("Partial Staging"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.playlist_add_check_rounded, color: AppTheme.accentCyan),
+            icon: Icon(Icons.playlist_add_check_rounded, color: context.accentCyan),
             onPressed: _stageSelected,
             tooltip: "Stage Selection",
           ),
@@ -145,9 +145,9 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle_outline_rounded, size: 48, color: AppTheme.textMuted),
+          Icon(Icons.check_circle_outline_rounded, size: 48, color: context.textMuted),
           const SizedBox(height: 16),
-          Text("No unstaged changes found", style: GoogleFonts.inter(color: AppTheme.textMuted)),
+          Text("No unstaged changes found", style: GoogleFonts.inter(color: context.textMuted)),
         ],
       ),
     );
@@ -160,9 +160,9 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: AppTheme.bg1,
+        color: context.bg1,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: context.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,7 +175,7 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
             ),
             child: Text(
               hunk['header'],
-              style: GoogleFonts.firaMono(color: AppTheme.textMuted, fontSize: 11),
+              style: GoogleFonts.firaMono(color: context.textMuted, fontSize: 11),
             ),
           ),
           ...List.generate(lines.length, (lIdx) {
@@ -186,8 +186,8 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
             final isSelected = _selectedLines[hunkIdx]?.contains(lIdx) ?? false;
 
             Color bgColor = Colors.transparent;
-            if (type == '+') bgColor = AppTheme.accentGreen.withValues(alpha: isSelected ? 0.15 : 0.05);
-            if (type == '-') bgColor = AppTheme.accentRed.withValues(alpha: isSelected ? 0.15 : 0.05);
+            if (type == '+') bgColor = context.accentGreen.withValues(alpha: isSelected ? 0.15 : 0.05);
+            if (type == '-') bgColor = context.accentRed.withValues(alpha: isSelected ? 0.15 : 0.05);
 
             return InkWell(
               onTap: isSelectable ? () => _toggleLine(hunkIdx, lIdx) : null,
@@ -201,7 +201,7 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
                       child: Text(
                         type,
                         style: TextStyle(
-                          color: type == '+' ? AppTheme.accentGreen : (type == '-' ? AppTheme.accentRed : AppTheme.textMuted),
+                          color: type == '+' ? context.accentGreen : (type == '-' ? context.accentRed : context.textMuted),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -210,7 +210,7 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
                       child: Text(
                         content,
                         style: GoogleFonts.firaMono(
-                          color: isSelectable ? (isSelected ? AppTheme.textPrimary : AppTheme.textSecondary) : AppTheme.textMuted,
+                          color: isSelectable ? (isSelected ? context.textPrimary : context.textSecondary) : context.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -219,7 +219,7 @@ class _HunkStagingScreenState extends State<HunkStagingScreen> {
                       Icon(
                         isSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
                         size: 16,
-                        color: isSelected ? AppTheme.accentCyan : AppTheme.textMuted.withValues(alpha: 0.3),
+                        color: isSelected ? context.accentCyan : context.textMuted.withValues(alpha: 0.3),
                       ),
                   ],
                 ),

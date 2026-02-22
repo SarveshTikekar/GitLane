@@ -121,20 +121,20 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: const Text("Interactive Rebase"),
-        backgroundColor: AppTheme.bg0,
+        backgroundColor: context.bg0,
         actions: [
           if (_rebasePlan.isNotEmpty && !_isRebasing)
             TextButton(
               onPressed: _executeRebase,
-              child: const Text("START", style: TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)),
+              child: Text("START", style: TextStyle(color: context.accentCyan, fontWeight: FontWeight.bold)),
             ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? Center(child: CircularProgressIndicator(color: context.accentCyan))
           : _targetHash == null
               ? _buildTargetSelection()
               : _buildRebaseWorkbench(),
@@ -152,7 +152,7 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
               Text("Select Base Commit", style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text("Interactive rebase will rewrite all commits from your selection up to current HEAD.", 
-                style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 13)),
+                style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13)),
             ],
           ),
         ),
@@ -162,9 +162,9 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
             itemBuilder: (context, index) {
               final commit = _allCommits[index];
               return ListTile(
-                leading: Icon(Icons.radio_button_unchecked_rounded, color: AppTheme.textMuted, size: 20),
+                leading: Icon(Icons.radio_button_unchecked_rounded, color: context.textMuted, size: 20),
                 title: Text(commit['message'] ?? "No message", style: const TextStyle(color: Colors.white, fontSize: 14)),
-                subtitle: Text(commit['hash']?.toString().substring(0, 7) ?? "", style: GoogleFonts.firaCode(color: AppTheme.textMuted, fontSize: 11)),
+                subtitle: Text(commit['hash']?.toString().substring(0, 7) ?? "", style: GoogleFonts.firaCode(color: context.textMuted, fontSize: 11)),
                 onTap: () => _prepareRebase(commit['hash']),
               );
             },
@@ -179,15 +179,15 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          color: AppTheme.accentCyan.withValues(alpha: 0.05),
+          color: context.accentCyan.withValues(alpha: 0.05),
           child: Row(
             children: [
-              const Icon(Icons.info_outline_rounded, size: 16, color: AppTheme.accentCyan),
+              Icon(Icons.info_outline_rounded, size: 16, color: context.accentCyan),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   "Drag to reorder. Tap action to change (pick/squash/drop).",
-                  style: GoogleFonts.inter(color: AppTheme.accentCyan, fontSize: 11),
+                  style: GoogleFonts.inter(color: context.accentCyan, fontSize: 11),
                 ),
               ),
             ],
@@ -206,9 +206,9 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
             itemBuilder: (context, index) {
               final item = _rebasePlan[index];
               final action = item['action'];
-              Color actionColor = AppTheme.accentGreen;
-              if (action == 'drop') actionColor = AppTheme.accentRed;
-              if (action == 'squash') actionColor = AppTheme.accentOrange;
+              Color actionColor = context.accentGreen;
+              if (action == 'drop') actionColor = context.accentRed;
+              if (action == 'squash') actionColor = context.accentOrange;
 
               return ListTile(
                 key: ValueKey(item['hash']),
@@ -239,7 +239,7 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
                   ],
                 ),
                 title: Text(item['message'] ?? "", style: const TextStyle(color: Colors.white, fontSize: 13)),
-                trailing: Icon(Icons.drag_indicator_rounded, color: AppTheme.textMuted),
+                trailing: Icon(Icons.drag_indicator_rounded, color: context.textMuted),
               );
             },
           ),
@@ -247,10 +247,10 @@ class _RebaseWorkbenchState extends State<RebaseWorkbench> {
         if (_isRebasing)
           Container(
             padding: const EdgeInsets.all(24),
-            color: AppTheme.bg2,
+            color: context.bg2,
             child: Row(
               children: [
-                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentCyan)),
+                SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: context.accentCyan)),
                 const SizedBox(width: 16),
                 Text("Executing Rebase Plan...", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
               ],

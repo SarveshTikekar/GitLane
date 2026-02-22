@@ -206,10 +206,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.bg2,
+      backgroundColor: context.bg2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: AppTheme.border),
+        side: BorderSide(color: context.border),
       ),
       isScrollControlled: true,
       builder: (context) => _NewRepoSheet(
@@ -245,8 +245,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
-        color: AppTheme.accentCyan,
-        backgroundColor: AppTheme.bg2,
+        color: context.accentCyan,
+        backgroundColor: context.bg2,
         onRefresh: _refreshRepos,
         child: CustomScrollView(
           slivers: [
@@ -283,7 +283,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ? FloatingActionButton(
               onPressed: _showNewRepoSheet,
               tooltip: 'New Repository',
-              backgroundColor: AppTheme.accentCyan,
+              backgroundColor: context.accentCyan,
               foregroundColor: Colors.black,
               child: const Icon(Icons.add_rounded),
             )
@@ -294,7 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 'New Repo',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w600),
               ),
-              backgroundColor: AppTheme.accentCyan,
+              backgroundColor: context.accentCyan,
               foregroundColor: Colors.black,
             ),
     );
@@ -332,20 +332,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ? ThemeMode.light
                   : ThemeMode.dark;
             },
-            color: AppTheme.textSecondary,
+            color: context.textSecondary,
           ),
         ),
         IconButton(
           icon: const Icon(Icons.qr_code_scanner_rounded),
           tooltip: 'Scan QR to Clone',
           onPressed: _showQrScanner,
-          color: AppTheme.textSecondary,
+          color: context.textSecondary,
         ),
         IconButton(
           icon: const Icon(Icons.refresh_rounded),
           tooltip: 'Refresh',
           onPressed: _refreshRepos,
-          color: AppTheme.textSecondary,
+          color: context.textSecondary,
         ),
         const SizedBox(width: 4),
       ],
@@ -382,19 +382,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                             width: compact ? 30 : 32,
                             height: compact ? 30 : 32,
                             decoration: BoxDecoration(
-                              color: AppTheme.accentCyan.withValues(
+                              color: context.accentCyan.withValues(
                                 alpha: 0.15,
                               ),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: AppTheme.accentCyan.withValues(
+                                color: context.accentCyan.withValues(
                                   alpha: 0.4,
                                 ),
                               ),
                             ),
                             child: Icon(
                               Icons.merge_type_rounded,
-                              color: AppTheme.accentCyan,
+                              color: context.accentCyan,
                               size: compact ? 17 : 18,
                             ),
                           ),
@@ -403,7 +403,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             child: Text(
                               'GitLane',
                               style: GoogleFonts.inter(
-                                color: AppTheme.textPrimary,
+                                color: context.textPrimary,
                                 fontSize: compact ? 20 : 22,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.5,
@@ -423,20 +423,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                               '${_repos.length}',
                               'repos',
                               Icons.folder_rounded,
-                              AppTheme.accentBlue,
+                              context.accentBlue,
                             ),
                             _buildStatChip(
                               '$_cleanCount',
                               'clean',
                               Icons.check_circle_rounded,
-                              AppTheme.accentGreen,
+                              context.accentGreen,
                             ),
                             if (_dirtyCount > 0)
                               _buildStatChip(
                                 '$_dirtyCount',
                                 'dirty',
                                 Icons.edit_rounded,
-                                AppTheme.accentYellow,
+                                context.accentYellow,
                               ),
                           ],
                         ),
@@ -460,7 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppTheme.bg1,
+        color: context.bg1,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -471,7 +471,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           Text(
             '$count $label',
             style: GoogleFonts.inter(
-              color: AppTheme.textPrimary,
+              color: context.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -499,22 +499,22 @@ class _DashboardScreenState extends State<DashboardScreen>
           child: TextField(
             controller: _searchController,
             onChanged: (_) {},
-            style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: 14),
+            style: GoogleFonts.inter(color: context.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Search repositories…',
               hintStyle: GoogleFonts.inter(
-                color: AppTheme.textMuted,
+                color: context.textMuted,
                 fontSize: 14,
               ),
               prefixIcon: Icon(
                 Icons.search_rounded,
-                color: AppTheme.textSecondary,
+                color: context.textSecondary,
                 size: 20,
               ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.close_rounded, size: 18),
-                      color: AppTheme.textSecondary,
+                      color: context.textSecondary,
                       onPressed: () {
                         _searchController.clear();
                         setState(() => _filteredRepos = List.from(_repos));
@@ -566,7 +566,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         icon: Icons.search_off_rounded,
         title: 'No results',
         subtitle: 'No repositories match "${_searchController.text}"',
-        iconColor: AppTheme.textSecondary,
+        iconColor: context.textSecondary,
       );
     }
     return EmptyState(
@@ -592,8 +592,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
               label: const Text('Scan QR Code'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.textSecondary,
-                side: BorderSide(color: AppTheme.border),
+                foregroundColor: context.textSecondary,
+                side: BorderSide(color: context.border),
               ),
             ),
           ),
@@ -691,12 +691,12 @@ class _DashboardScreenState extends State<DashboardScreen>
       SnackBar(
         content: Row(
           children: [
-            const SizedBox(
+            SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppTheme.accentCyan,
+                color: context.accentCyan,
               ),
             ),
             const SizedBox(width: 12),
@@ -756,8 +756,8 @@ class _RepoCard extends StatelessWidget {
     ].join(' ');
 
     final branchColor = (branch == 'main' || branch == 'master')
-        ? AppTheme.accentGreen
-        : AppTheme.accentBlue;
+        ? context.accentGreen
+        : context.accentBlue;
 
     return Hero(
       tag: 'repo_card_${repo['path']}',
@@ -790,7 +790,7 @@ class _RepoCard extends StatelessWidget {
                             child: Text(
                               title,
                               style: GoogleFonts.inter(
-                                color: AppTheme.textPrimary,
+                                color: context.textPrimary,
                                 fontSize: compact ? 15 : 17,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.3,
@@ -805,8 +805,8 @@ class _RepoCard extends StatelessWidget {
                                 ? (dirtyLabel.isEmpty ? 'dirty' : dirtyLabel)
                                 : 'clean',
                             color: isDirty
-                                ? AppTheme.accentYellow
-                                : AppTheme.accentGreen,
+                                ? context.accentYellow
+                                : context.accentGreen,
                             icon: isDirty ? Icons.edit_rounded : Icons.check_rounded,
                           ),
                         ],
@@ -819,10 +819,10 @@ class _RepoCard extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.textPrimary.withValues(alpha: 0.03),
+                            color: context.textPrimary.withValues(alpha: 0.03),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: AppTheme.textPrimary.withValues(alpha: 0.05),
+                              color: context.textPrimary.withValues(alpha: 0.05),
                             ),
                           ),
                           child: Column(
@@ -831,7 +831,7 @@ class _RepoCard extends StatelessWidget {
                               Text(
                                 lastCommit,
                                 style: GoogleFonts.inter(
-                                  color: AppTheme.textPrimary.withValues(alpha: 0.9),
+                                  color: context.textPrimary.withValues(alpha: 0.9),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                   height: 1.3,
@@ -846,7 +846,7 @@ class _RepoCard extends StatelessWidget {
                                     Text(
                                       lastCommitAuthor,
                                       style: GoogleFonts.inter(
-                                        color: AppTheme.textSecondary,
+                                        color: context.textSecondary,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -856,7 +856,7 @@ class _RepoCard extends StatelessWidget {
                                       width: 3,
                                       height: 3,
                                       decoration: BoxDecoration(
-                                        color: AppTheme.textMuted,
+                                        color: context.textMuted,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -864,7 +864,7 @@ class _RepoCard extends StatelessWidget {
                                   Text(
                                     lastCommitTime,
                                     style: GoogleFonts.inter(
-                                      color: AppTheme.textMuted,
+                                      color: context.textMuted,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -996,7 +996,7 @@ class _ActionButtonState extends State<_ActionButton> {
   @override
   Widget build(BuildContext context) {
     final activeColor =
-        widget.isPrimary ? AppTheme.accentCyan : AppTheme.textPrimary;
+        widget.isPrimary ? context.accentCyan : context.textPrimary;
 
     return Tooltip(
       message: widget.tooltip,
@@ -1014,14 +1014,14 @@ class _ActionButtonState extends State<_ActionButton> {
             color: widget.isPrimary
                 ? activeColor.withValues(alpha: _isHovered ? 0.2 : 0.12)
                 : (_isHovered
-                    ? AppTheme.textPrimary.withValues(alpha: 0.1)
+                    ? context.textPrimary.withValues(alpha: 0.1)
                     : Colors.transparent),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: widget.isPrimary
                   ? activeColor.withValues(alpha: 0.2)
                   : (_isHovered
-                      ? AppTheme.textPrimary.withValues(alpha: 0.1)
+                      ? context.textPrimary.withValues(alpha: 0.1)
                       : Colors.transparent),
             ),
           ),
@@ -1033,7 +1033,7 @@ class _ActionButtonState extends State<_ActionButton> {
                 size: 16,
                 color: widget.isPrimary
                     ? activeColor
-                    : (_isHovered ? AppTheme.textPrimary : AppTheme.textSecondary),
+                    : (_isHovered ? context.textPrimary : context.textSecondary),
               ),
               if (widget.label != null) ...[
                 const SizedBox(width: 8),
@@ -1043,8 +1043,8 @@ class _ActionButtonState extends State<_ActionButton> {
                     color: widget.isPrimary
                         ? activeColor
                         : (_isHovered
-                            ? AppTheme.textPrimary
-                            : AppTheme.textSecondary),
+                            ? context.textPrimary
+                            : context.textSecondary),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1251,7 +1251,7 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 20),
                       decoration: BoxDecoration(
-                        color: AppTheme.border,
+                        color: context.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -1259,7 +1259,7 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                   Text(
                     'New Repository',
                     style: GoogleFonts.inter(
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimary,
                       fontSize: compact ? 17 : 18,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1268,14 +1268,14 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                   Text(
                     'Clone a remote repo or initialize an empty local one',
                     style: GoogleFonts.inter(
-                      color: AppTheme.textSecondary,
+                      color: context.textSecondary,
                       fontSize: compact ? 12 : 13,
                     ),
                   ),
                   const SizedBox(height: 24),
                   TextField(
                     controller: _nameController,
-                    style: GoogleFonts.inter(color: AppTheme.textPrimary),
+                    style: GoogleFonts.inter(color: context.textPrimary),
                     decoration: const InputDecoration(
                       labelText: 'Repository Name',
                       prefixIcon: Icon(Icons.folder_rounded, size: 18),
@@ -1286,7 +1286,7 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                     controller: _urlController,
                     onChanged: (_) => setState(() {}),
                     style: GoogleFonts.firaMono(
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimary,
                       fontSize: compact ? 12 : 13,
                     ),
                     decoration: const InputDecoration(
@@ -1299,17 +1299,17 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.error_outline_rounded,
                           size: 14,
-                          color: AppTheme.accentRed,
+                          color: context.accentRed,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             _error!,
                             style: GoogleFonts.inter(
-                              color: AppTheme.accentRed,
+                              color: context.accentRed,
                               fontSize: 12,
                             ),
                           ),
@@ -1326,8 +1326,8 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppTheme.textSecondary,
-                              side: BorderSide(color: AppTheme.border),
+                              foregroundColor: context.textSecondary,
+                              side: BorderSide(color: context.border),
                               padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
                             child: const Text('Cancel'),
@@ -1370,8 +1370,8 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppTheme.textSecondary,
-                              side: BorderSide(color: AppTheme.border),
+                              foregroundColor: context.textSecondary,
+                              side: BorderSide(color: context.border),
                               padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
                             child: const Text('Cancel'),
@@ -1415,8 +1415,8 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
                       icon: const Icon(Icons.download_rounded, size: 16),
                       label: const Text('Import Offline Repository (.zip)'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.accentCyan,
-                        side: const BorderSide(color: AppTheme.accentCyan),
+                        foregroundColor: context.accentCyan,
+                        side: BorderSide(color: context.accentCyan),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
                     ),
@@ -1461,7 +1461,7 @@ class _NewRepoSheetState extends State<_NewRepoSheet> {
         Navigator.pop(context);
         widget.onComplete();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: AppTheme.accentGreen, content: Text('✓ Repository imported successfully')),
+          SnackBar(backgroundColor: context.accentGreen, content: Text('✓ Repository imported successfully')),
         );
       }
     } catch (e) {

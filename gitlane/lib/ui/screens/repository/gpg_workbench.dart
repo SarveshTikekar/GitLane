@@ -35,12 +35,12 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bg2,
+        backgroundColor: context.bg2,
         title: Text("Import GPG Key", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Paste your GPG private key block below.", style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 12)),
+            Text("Paste your GPG private key block below.", style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12)),
             const SizedBox(height: 12),
             TextField(
               controller: keyController,
@@ -48,7 +48,7 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
               style: GoogleFonts.firaCode(color: Colors.white, fontSize: 11),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: AppTheme.bg1,
+                fillColor: context.bg1,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 hintText: "-----BEGIN PGP PRIVATE KEY BLOCK-----",
               ),
@@ -59,7 +59,7 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+            style: ElevatedButton.styleFrom(backgroundColor: context.accentCyan),
             child: const Text("Import", style: TextStyle(color: Colors.black)),
           ),
         ],
@@ -77,7 +77,7 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
       } catch (e) {
         if (mounted) {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Import failed: $e"), backgroundColor: AppTheme.accentRed));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Import failed: $e"), backgroundColor: context.accentRed));
         }
       }
     }
@@ -87,14 +87,14 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bg2,
+        backgroundColor: context.bg2,
         title: const Text("Delete GPG Key?"),
         content: Text("This will permanently remove the imported key '$label'. You cannot undo this action."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: AppTheme.accentRed)),
+            child: Text("Delete", style: TextStyle(color: context.accentRed)),
           ),
         ],
       ),
@@ -109,9 +109,9 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? Center(child: CircularProgressIndicator(color: context.accentCyan))
           : Column(
               children: [
                 _buildHeader(),
@@ -122,7 +122,7 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _importKey,
-        backgroundColor: AppTheme.accentCyan,
+        backgroundColor: context.accentCyan,
         icon: const Icon(Icons.download_rounded, color: Colors.black),
         label: const Text("Import GPG Key", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
@@ -134,16 +134,16 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.accentCyan.withValues(alpha: 0.05),
-        border: Border(bottom: BorderSide(color: AppTheme.border)),
+        color: context.accentCyan.withValues(alpha: 0.05),
+        border: Border(bottom: BorderSide(color: context.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Commit Security", style: GoogleFonts.inter(color: AppTheme.accentCyan, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text("Commit Security", style: GoogleFonts.inter(color: context.accentCyan, fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text("Manage GPG keys to sign your commits and verify your identity on GitHub/GitLab.", 
-            style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 13)),
+            style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13)),
         ],
       ),
     );
@@ -154,11 +154,11 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.verified_user_outlined, size: 64, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+          Icon(Icons.verified_user_outlined, size: 64, color: context.textMuted.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
-          Text("No GPG Keys Configured", style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 16)),
+          Text("No GPG Keys Configured", style: GoogleFonts.inter(color: context.textSecondary, fontSize: 16)),
           const SizedBox(height: 8),
-          Text("Import a PGP key to start signing commits.", style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 13)),
+          Text("Import a PGP key to start signing commits.", style: GoogleFonts.inter(color: context.textMuted, fontSize: 13)),
         ],
       ),
     );
@@ -174,13 +174,13 @@ class _GPGWorkbenchState extends State<GPGWorkbench> {
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: AppTheme.bg2,
-              child: Icon(Icons.verified_rounded, color: AppTheme.accentCyan, size: 20),
+              backgroundColor: context.bg2,
+              child: Icon(Icons.verified_rounded, color: context.accentCyan, size: 20),
             ),
             title: Text(key, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            subtitle: Text("GPG Key • Verified", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+            subtitle: Text("GPG Key • Verified", style: TextStyle(color: context.textSecondary, fontSize: 11)),
             trailing: IconButton(
-              icon: Icon(Icons.delete_rounded, color: AppTheme.textMuted),
+              icon: Icon(Icons.delete_rounded, color: context.textMuted),
               onPressed: () => _deleteKey(key),
             ),
           ),

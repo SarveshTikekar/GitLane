@@ -49,10 +49,10 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: const Text("Collaboration"),
-        backgroundColor: AppTheme.bg0,
+        backgroundColor: context.bg0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -61,7 +61,7 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.accentCyan,
+          indicatorColor: context.accentCyan,
           tabs: [
             Tab(text: "Pull Requests (${_prs.length})"),
             Tab(text: "Issues (${_issues.length})"),
@@ -69,7 +69,7 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? Center(child: CircularProgressIndicator(color: context.accentCyan))
           : TabBarView(
               controller: _tabController,
               children: [
@@ -101,16 +101,16 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.social_distance_rounded, size: 48, color: AppTheme.textMuted),
+          Icon(Icons.social_distance_rounded, size: 48, color: context.textMuted),
           const SizedBox(height: 16),
-          Text(message, style: GoogleFonts.inter(color: AppTheme.textSecondary)),
+          Text(message, style: GoogleFonts.inter(color: context.textSecondary)),
         ],
       ),
     );
   }
 
   Widget _buildPRTile(PullRequest pr) {
-    final statusColor = pr.state == 'open' ? AppTheme.accentGreen : AppTheme.accentPurple;
+    final statusColor = pr.state == 'open' ? context.accentGreen : context.accentPurple;
     return GlassCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       accentBorder: statusColor,
@@ -125,7 +125,7 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
               children: [
                 _buildStatusBadge(pr.state),
                 const SizedBox(width: 8),
-                Text("#${pr.number} by ${pr.author}", style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 12)),
+                Text("#${pr.number} by ${pr.author}", style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12)),
               ],
             ),
             if (pr.labels.isNotEmpty) ...[
@@ -137,13 +137,13 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
             ],
           ],
         ),
-        trailing: Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.textMuted),
+        trailing: Icon(Icons.open_in_new_rounded, size: 16, color: context.textMuted),
       ),
     );
   }
 
   Widget _buildIssueTile(Issue issue) {
-    final statusColor = issue.state == 'open' ? AppTheme.accentGreen : AppTheme.accentPurple;
+    final statusColor = issue.state == 'open' ? context.accentGreen : context.accentPurple;
     return GlassCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       accentBorder: statusColor,
@@ -158,7 +158,7 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
               children: [
                 _buildStatusBadge(issue.state),
                 const SizedBox(width: 8),
-                Text("#${issue.number} by ${issue.author}", style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 12)),
+                Text("#${issue.number} by ${issue.author}", style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12)),
               ],
             ),
             if (issue.labels.isNotEmpty) ...[
@@ -170,15 +170,15 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
             ],
           ],
         ),
-        trailing: Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.textMuted),
+        trailing: Icon(Icons.open_in_new_rounded, size: 16, color: context.textMuted),
       ),
     );
   }
 
   Widget _buildStatusBadge(String state) {
-    Color color = AppTheme.textMuted;
-    if (state == 'open') color = AppTheme.accentGreen;
-    if (state == 'closed' || state == 'merged') color = AppTheme.accentPurple;
+    Color color = context.textMuted;
+    if (state == 'open') color = context.accentGreen;
+    if (state == 'closed' || state == 'merged') color = context.accentPurple;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -195,10 +195,10 @@ class _CollaborationDashboardState extends State<CollaborationDashboard> with Si
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppTheme.textMuted.withValues(alpha: 0.1),
+        color: context.textMuted.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(label, style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 10)),
+      child: Text(label, style: GoogleFonts.inter(color: context.textSecondary, fontSize: 10)),
     );
   }
 }

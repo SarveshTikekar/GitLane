@@ -41,26 +41,26 @@ class _RemotesScreenState extends State<RemotesScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bg2,
-        title: Text('Add Remote', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
+        backgroundColor: context.bg2,
+        title: Text('Add Remote', style: GoogleFonts.inter(color: context.textPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              style: TextStyle(color: AppTheme.textPrimary),
+              style: TextStyle(color: context.textPrimary),
               decoration: InputDecoration(
                 labelText: 'Remote Name (e.g. upstream)',
-                labelStyle: TextStyle(color: AppTheme.textMuted),
+                labelStyle: TextStyle(color: context.textMuted),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: urlController,
-              style: TextStyle(color: AppTheme.textPrimary),
+              style: TextStyle(color: context.textPrimary),
               decoration: InputDecoration(
                 labelText: 'Remote URL',
-                labelStyle: TextStyle(color: AppTheme.textMuted),
+                labelStyle: TextStyle(color: context.textMuted),
               ),
             ),
           ],
@@ -68,11 +68,11 @@ class _RemotesScreenState extends State<RemotesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentPurple),
+            style: ElevatedButton.styleFrom(backgroundColor: context.accentPurple),
             child: const Text('Add'),
           ),
         ],
@@ -84,7 +84,7 @@ class _RemotesScreenState extends State<RemotesScreen> {
       if (mounted) {
         _showSnack(
           code == 0 ? '✓ Remote added' : 'Failed to add remote: $code',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+          code == 0 ? context.accentGreen : context.accentRed,
         );
         _loadRemotes();
       }
@@ -97,24 +97,24 @@ class _RemotesScreenState extends State<RemotesScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bg2,
-        title: Text('Edit Remote: $name', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
+        backgroundColor: context.bg2,
+        title: Text('Edit Remote: $name', style: GoogleFonts.inter(color: context.textPrimary)),
         content: TextField(
           controller: urlController,
-          style: TextStyle(color: AppTheme.textPrimary),
+          style: TextStyle(color: context.textPrimary),
           decoration: InputDecoration(
             labelText: 'New URL',
-            labelStyle: TextStyle(color: AppTheme.textMuted),
+            labelStyle: TextStyle(color: context.textMuted),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan),
+            style: ElevatedButton.styleFrom(backgroundColor: context.accentCyan),
             child: const Text('Save'),
           ),
         ],
@@ -126,7 +126,7 @@ class _RemotesScreenState extends State<RemotesScreen> {
       if (mounted) {
         _showSnack(
           code == 0 ? '✓ Remote URL updated' : 'Failed to update: $code',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+          code == 0 ? context.accentGreen : context.accentRed,
         );
         _loadRemotes();
       }
@@ -137,14 +137,14 @@ class _RemotesScreenState extends State<RemotesScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bg2,
-        title: Text('Delete Remote', style: TextStyle(color: AppTheme.textPrimary)),
-        content: Text('Are you sure you want to remove remote "$name"?', style: TextStyle(color: AppTheme.textSecondary)),
+        backgroundColor: context.bg2,
+        title: Text('Delete Remote', style: TextStyle(color: context.textPrimary)),
+        content: Text('Are you sure you want to remove remote "$name"?', style: TextStyle(color: context.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove', style: TextStyle(color: AppTheme.accentRed)),
+            child: Text('Remove', style: TextStyle(color: context.accentRed)),
           ),
         ],
       ),
@@ -155,7 +155,7 @@ class _RemotesScreenState extends State<RemotesScreen> {
       if (mounted) {
         _showSnack(
           code == 0 ? '✓ Remote removed' : 'Failed to remove: $code',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+          code == 0 ? context.accentGreen : context.accentRed,
         );
         _loadRemotes();
       }
@@ -180,13 +180,13 @@ class _RemotesScreenState extends State<RemotesScreen> {
         title: const Text("Remotes Management"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded, color: AppTheme.accentCyan),
+            icon: Icon(Icons.add_rounded, color: context.accentCyan),
             onPressed: _addRemote,
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? Center(child: CircularProgressIndicator(color: context.accentCyan))
           : _remotes.isEmpty
               ? const EmptyState(
                   icon: Icons.rss_feed_rounded,
@@ -205,9 +205,9 @@ class _RemotesScreenState extends State<RemotesScreen> {
                     return Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppTheme.bg1,
+                        color: context.bg1,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.border),
+                        border: Border.all(color: context.border),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,14 +217,14 @@ class _RemotesScreenState extends State<RemotesScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                                  color: context.accentPurple.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppTheme.accentPurple.withValues(alpha: 0.3)),
+                                  border: Border.all(color: context.accentPurple.withValues(alpha: 0.3)),
                                 ),
                                 child: Text(
                                   name,
                                   style: GoogleFonts.firaMono(
-                                    color: AppTheme.accentPurple,
+                                    color: context.accentPurple,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -232,11 +232,11 @@ class _RemotesScreenState extends State<RemotesScreen> {
                               ),
                               const Spacer(),
                               IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.accentCyan),
+                                icon: Icon(Icons.edit_outlined, size: 20, color: context.accentCyan),
                                 onPressed: () => _editRemote(name, url),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppTheme.accentRed),
+                                icon: Icon(Icons.delete_outline_rounded, size: 20, color: context.accentRed),
                                 onPressed: () => _deleteRemote(name),
                               ),
                             ],
@@ -245,7 +245,7 @@ class _RemotesScreenState extends State<RemotesScreen> {
                           Text(
                             url,
                             style: GoogleFonts.inter(
-                              color: AppTheme.textSecondary,
+                              color: context.textSecondary,
                               fontSize: 13,
                             ),
                             maxLines: 1,

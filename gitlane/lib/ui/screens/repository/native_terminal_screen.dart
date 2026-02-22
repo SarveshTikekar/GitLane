@@ -130,7 +130,7 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
 
   TextSpan _parseTerminalLine(String text) {
     if (text.startsWith("fatal:") || text.startsWith("Error:")) {
-      return TextSpan(text: text, style: const TextStyle(color: AppTheme.accentRed));
+      return TextSpan(text: text, style: TextStyle(color: context.accentRed));
     }
     
     final List<TextSpan> spans = [];
@@ -149,26 +149,26 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
       
       if (match.group(1) != null) {
         // Hash
-        spans.add(TextSpan(text: matchText, style: TextStyle(color: AppTheme.accentYellow)));
+        spans.add(TextSpan(text: matchText, style: TextStyle(color: context.accentYellow)));
       } else if (match.group(2) != null) {
         // Status keyword
-        Color statusColor = AppTheme.textMuted;
-        if (matchText.contains("new file")) statusColor = AppTheme.accentGreen;
-        else if (matchText.contains("modified")) statusColor = AppTheme.accentCyan;
-        else if (matchText.contains("deleted")) statusColor = AppTheme.accentRed;
-        else if (matchText.contains("renamed")) statusColor = AppTheme.accentPurple;
+        Color statusColor = context.textMuted;
+        if (matchText.contains("new file")) statusColor = context.accentGreen;
+        else if (matchText.contains("modified")) statusColor = context.accentCyan;
+        else if (matchText.contains("deleted")) statusColor = context.accentRed;
+        else if (matchText.contains("renamed")) statusColor = context.accentPurple;
         
         spans.add(TextSpan(text: matchText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)));
       } else if (match.group(3) != null) {
          // On branch X
-         spans.add(TextSpan(text: "On branch ", style: TextStyle(color: AppTheme.textMuted)));
-         spans.add(TextSpan(text: match.group(4) ?? "", style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)));
+         spans.add(TextSpan(text: "On branch ", style: TextStyle(color: context.textMuted)));
+         spans.add(TextSpan(text: match.group(4) ?? "", style: TextStyle(color: context.accentCyan, fontWeight: FontWeight.bold)));
       } else if (match.group(5) != null) {
           // clean wd
-         spans.add(TextSpan(text: matchText, style: const TextStyle(color: AppTheme.accentGreen)));
+         spans.add(TextSpan(text: matchText, style: TextStyle(color: context.accentGreen)));
       } else if (match.group(6) != null || match.group(7) != null || match.group(8) != null) {
           // Headers
-         spans.add(TextSpan(text: matchText, style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold)));
+         spans.add(TextSpan(text: matchText, style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold)));
       } else {
         spans.add(TextSpan(text: matchText, style: TextStyle(color: AppTheme.textLight)));
       }
@@ -179,7 +179,7 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
     if (lastMatchEnd < text.length) {
       // If it's a tabbed file path in status
       if (text.startsWith("\t") && !regex.hasMatch(text)) {
-          spans.add(TextSpan(text: text.substring(lastMatchEnd), style: const TextStyle(color: AppTheme.accentRed))); // untracked usually
+          spans.add(TextSpan(text: text.substring(lastMatchEnd), style: TextStyle(color: context.accentRed))); // untracked usually
       } else {
           spans.add(TextSpan(text: text.substring(lastMatchEnd), style: TextStyle(color: AppTheme.textLight)));
       }
@@ -227,7 +227,7 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
                       child: Text(
                         line.text,
                         style: GoogleFonts.firaMono(
-                          color: AppTheme.accentCyan,
+                          color: context.accentCyan,
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -249,7 +249,7 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
             ),
           ),
           if (_isLoading)
-            const LinearProgressIndicator(backgroundColor: Color(0xFF1E1E1E), color: AppTheme.accentCyan, minHeight: 2),
+            LinearProgressIndicator(backgroundColor: Color(0xFF1E1E1E), color: context.accentCyan, minHeight: 2),
             
           Container(
             color: const Color(0xFF252526),
@@ -261,7 +261,7 @@ class _NativeTerminalScreenState extends State<NativeTerminalScreen> {
                 children: [
                   Text(
                     "user@$_repoName ~ \$ git ",
-                    style: GoogleFonts.firaMono(color: AppTheme.accentCyan, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: GoogleFonts.firaMono(color: context.accentCyan, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   Expanded(
                     child: TextField(

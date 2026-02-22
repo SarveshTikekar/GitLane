@@ -58,12 +58,12 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
 
   Color get _authorColor {
     final hash = widget.author.codeUnits.fold(0, (a, b) => a + b);
-    const colors = [
-      AppTheme.accentCyan,
-      AppTheme.accentGreen,
-      AppTheme.accentPurple,
-      AppTheme.accentOrange,
-      AppTheme.accentBlue,
+    final colors = [
+      context.accentCyan,
+      context.accentGreen,
+      context.accentPurple,
+      context.accentOrange,
+      context.accentBlue,
     ];
     return colors[hash % colors.length];
   }
@@ -77,12 +77,12 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
         : widget.commitHash;
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: Text(
           'Commit Detail',
           style: GoogleFonts.inter(
-            color: AppTheme.textPrimary,
+            color: context.textPrimary,
             fontSize: screenWidth < 360 ? 15 : 17,
             fontWeight: FontWeight.w600,
           ),
@@ -119,10 +119,10 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
             _buildHeader(hashShort, screenWidth),
             const Divider(height: 1),
             if (_isLoading)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(48),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppTheme.accentCyan),
+                  child: CircularProgressIndicator(color: context.accentCyan),
                 ),
               )
             else if (diffText != null && diffText.trim().isNotEmpty)
@@ -136,13 +136,13 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                       Icon(
                         Icons.difference_outlined,
                         size: 36,
-                        color: AppTheme.textMuted,
+                        color: context.textMuted,
                       ),
                       const SizedBox(height: 12),
                       Text(
                         'No diff available',
                         style: GoogleFonts.inter(
-                          color: AppTheme.textSecondary,
+                          color: context.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -164,7 +164,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
     final compact = screenWidth < 360;
 
     return Container(
-      color: AppTheme.bg1,
+      color: context.bg1,
       padding: EdgeInsets.all(compact ? 14 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +176,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 child: Text(
                   widget.message,
                   style: GoogleFonts.inter(
-                    color: AppTheme.textPrimary,
+                    color: context.textPrimary,
                     fontSize: compact ? 15 : 17,
                     fontWeight: FontWeight.w600,
                     height: 1.4,
@@ -222,7 +222,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                   Text(
                     widget.author,
                     style: GoogleFonts.inter(
-                      color: AppTheme.textSecondary,
+                      color: context.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -242,25 +242,25 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentCyan.withValues(alpha: 0.08),
+                    color: context.accentCyan.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(5),
                     border: Border.all(
-                      color: AppTheme.accentCyan.withValues(alpha: 0.3),
+                      color: context.accentCyan.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.tag_rounded,
                         size: 11,
-                        color: AppTheme.accentCyan,
+                        color: context.accentCyan,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         hashShort,
                         style: GoogleFonts.firaMono(
-                          color: AppTheme.accentCyan,
+                          color: context.accentCyan,
                           fontSize: 12,
                         ),
                       ),
@@ -277,25 +277,25 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentYellow.withValues(alpha: 0.1),
+                          color: context.accentYellow.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(5),
                           border: Border.all(
-                            color: AppTheme.accentYellow.withValues(alpha: 0.3),
+                            color: context.accentYellow.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.local_offer_rounded,
                               size: 11,
-                              color: AppTheme.accentYellow,
+                              color: context.accentYellow,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               t['name'].toString(),
                               style: GoogleFonts.inter(
-                                color: AppTheme.accentYellow,
+                                color: context.accentYellow,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -311,13 +311,13 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                     Icon(
                       Icons.schedule_rounded,
                       size: 13,
-                      color: AppTheme.textMuted,
+                      color: context.textMuted,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       widget.date,
                       style: GoogleFonts.inter(
-                        color: AppTheme.textMuted,
+                        color: context.textMuted,
                         fontSize: 12,
                       ),
                     ),
@@ -393,20 +393,20 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
             horizontal: 16,
             vertical: compact ? 8 : 10,
           ),
-          color: AppTheme.bg2,
+          color: context.bg2,
           child: Row(
             children: [
               Icon(
                 Icons.description_outlined,
                 size: 14,
-                color: AppTheme.textSecondary,
+                color: context.textSecondary,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   fileName,
                   style: GoogleFonts.firaMono(
-                    color: AppTheme.textPrimary,
+                    color: context.textPrimary,
                     fontSize: compact ? 11 : 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -418,7 +418,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 Text(
                   '+$added',
                   style: GoogleFonts.firaMono(
-                    color: AppTheme.accentGreen,
+                    color: context.accentGreen,
                     fontSize: 11,
                   ),
                 ),
@@ -427,7 +427,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                 Text(
                   '-$removed',
                   style: GoogleFonts.firaMono(
-                    color: AppTheme.accentRed,
+                    color: context.accentRed,
                     fontSize: 11,
                   ),
                 ),
@@ -456,20 +456,20 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
     if (isFileHeader) return const SizedBox.shrink();
 
     Color? bgColor;
-    Color textColor = AppTheme.textSecondary;
-    Color gutterColor = AppTheme.textMuted;
+    Color textColor = context.textSecondary;
+    Color gutterColor = context.textMuted;
 
     if (isAdded) {
-      bgColor = AppTheme.accentGreen.withValues(alpha: 0.08);
-      textColor = AppTheme.accentGreen;
-      gutterColor = AppTheme.accentGreen;
+      bgColor = context.accentGreen.withValues(alpha: 0.08);
+      textColor = context.accentGreen;
+      gutterColor = context.accentGreen;
     } else if (isRemoved) {
-      bgColor = AppTheme.accentRed.withValues(alpha: 0.08);
-      textColor = AppTheme.accentRed;
-      gutterColor = AppTheme.accentRed;
+      bgColor = context.accentRed.withValues(alpha: 0.08);
+      textColor = context.accentRed;
+      gutterColor = context.accentRed;
     } else if (isHunk) {
-      bgColor = AppTheme.accentPurple.withValues(alpha: 0.06);
-      textColor = AppTheme.accentPurple;
+      bgColor = context.accentPurple.withValues(alpha: 0.06);
+      textColor = context.accentPurple;
     }
 
     final fontSize = compact ? 10.5 : 12.0;
@@ -482,7 +482,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
           // Line number gutter
           Container(
             width: compact ? 36 : 44,
-            color: AppTheme.bg2.withValues(alpha: 0.5),
+            color: context.bg2.withValues(alpha: 0.5),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             child: Text(
               isHunk ? '···' : '$lineNum',
@@ -540,19 +540,19 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppTheme.accentGreen.withValues(alpha: 0.1),
+        color: context.accentGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppTheme.accentGreen.withValues(alpha: 0.3)),
+        border: Border.all(color: context.accentGreen.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.verified_user_rounded, color: AppTheme.accentGreen, size: 12),
+          Icon(Icons.verified_user_rounded, color: context.accentGreen, size: 12),
           const SizedBox(width: 4),
           Text(
             "Verified",
             style: GoogleFonts.inter(
-              color: AppTheme.accentGreen,
+              color: context.accentGreen,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),

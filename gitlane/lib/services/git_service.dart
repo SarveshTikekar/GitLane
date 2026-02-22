@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 
 class GitService {
-  static const _channel = MethodChannel('git_channel');
+  static final _channel = MethodChannel('git_channel');
 
   /// Initializes a new Git repository at the given [path].
   static Future<int> initRepository(String path) async {

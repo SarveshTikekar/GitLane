@@ -546,3 +546,24 @@ class AppTheme {
   static TextStyle get monoHash =>
       GoogleFonts.firaMono(color: accentCyan, fontSize: 12);
 }
+
+extension AppThemeContext on BuildContext {
+  bool get _isDark => Theme.of(this).brightness == Brightness.dark;
+
+  Color get bg0 => _isDark ? const Color(0xFF0D1117) : const Color(0xFFFFFFFF);
+  Color get bg1 => _isDark ? const Color(0xFF161B22) : const Color(0xFFF6F8FA);
+  Color get bg2 => _isDark ? const Color(0xFF21262D) : const Color(0xFFEAEEF2);
+  Color get border => _isDark ? const Color(0xFF30363D) : const Color(0xFFD0D7DE);
+
+  Color get textPrimary => _isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F2328);
+  Color get textSecondary => _isDark ? const Color(0xFF8B949E) : const Color(0xFF636C76);
+  Color get textMuted => _isDark ? const Color(0xFF484F58) : const Color(0xFF8C959F);
+
+  Color get accentCyan => AppTheme.accentCyan;
+  Color get accentGreen => AppTheme.accentGreen;
+  Color get accentYellow => AppTheme.accentYellow;
+  Color get accentRed => AppTheme.accentRed;
+  Color get accentBlue => AppTheme.accentBlue;
+  Color get accentPurple => AppTheme.accentPurple;
+  Color get accentOrange => AppTheme.accentOrange;
+}

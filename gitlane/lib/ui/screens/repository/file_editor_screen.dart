@@ -121,7 +121,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentCyan,
+                backgroundColor: context.accentCyan,
               ),
               child: const Text("Commit", style: TextStyle(color: Colors.black)),
             ),
@@ -170,7 +170,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.bg1,
+      backgroundColor: context.bg1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -179,9 +179,9 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.code_rounded,
-                  color: AppTheme.accentCyan,
+                  color: context.accentCyan,
                 ),
                 title: Text(
                   "Go to Definition: $symbol",
@@ -189,7 +189,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                 ),
                 subtitle: Text(
                   loc.path.split(Platform.pathSeparator).last,
-                  style: TextStyle(color: AppTheme.textMuted),
+                  style: TextStyle(color: context.textMuted),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -227,7 +227,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceSlate,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.border),
+                      border: Border.all(color: context.border),
                     ),
                     child: Text(
                       loc.documentation!,
@@ -265,13 +265,13 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
           IconButton(
             icon: Icon(
               _showBlame ? Icons.person_off_rounded : Icons.person_search_rounded,
-              color: _showBlame ? AppTheme.accentCyan : null,
+              color: _showBlame ? context.accentCyan : null,
             ),
             tooltip: "Git Blame",
             onPressed: _toggleBlame,
           ),
           IconButton(
-            icon: const Icon(Icons.bolt_rounded, color: AppTheme.accentOrange),
+            icon: Icon(Icons.bolt_rounded, color: context.accentOrange),
             tooltip: "LSP Code Intel",
             onPressed: _handleSymbolInteraction,
           ),
@@ -308,8 +308,8 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
       return Container(
         width: 80,
         decoration: BoxDecoration(
-          color: AppTheme.bg1,
-          border: Border(right: BorderSide(color: AppTheme.border)),
+          color: context.bg1,
+          border: Border(right: BorderSide(color: context.border)),
         ),
         child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
       );
@@ -318,8 +318,8 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
     return Container(
       width: 100,
       decoration: BoxDecoration(
-        color: AppTheme.bg1,
-        border: Border(right: BorderSide(color: AppTheme.border)),
+        color: context.bg1,
+        border: Border(right: BorderSide(color: context.border)),
       ),
       child: ListView.builder(
         controller: _scrollController, // Sync with code field
@@ -348,7 +348,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                 Expanded(
                   child: Text(
                     author,
-                    style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                    style: TextStyle(color: context.textMuted, fontSize: 10),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -362,11 +362,11 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
 
   Color _getAuthorColor(String name) {
     final colors = [
-      AppTheme.accentCyan,
-      AppTheme.accentPurple,
-      AppTheme.accentOrange,
-      AppTheme.accentGreen,
-      AppTheme.accentPurple,
+      context.accentCyan,
+      context.accentPurple,
+      context.accentOrange,
+      context.accentGreen,
+      context.accentPurple,
     ];
     return colors[name.hashCode % colors.length];
   }

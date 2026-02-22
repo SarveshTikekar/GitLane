@@ -36,12 +36,12 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
     final qrSize = (screenWidth * 0.6).clamp(160.0, 240.0);
 
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: Text(
           'Share Repository',
           style: GoogleFonts.inter(
-            color: AppTheme.textPrimary,
+            color: context.textPrimary,
             fontSize: compact ? 15 : 17,
             fontWeight: FontWeight.w600,
           ),
@@ -81,25 +81,25 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
   Widget _buildRepoInfo(bool compact) {
     return GlassCard(
       padding: EdgeInsets.all(compact ? 14 : 18),
-      accentBorder: AppTheme.accentCyan,
+      accentBorder: context.accentCyan,
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.accentCyan.withValues(alpha: 0.1),
+              color: context.accentCyan.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.folder_rounded, color: AppTheme.accentCyan, size: 20),
+            child: Icon(Icons.folder_rounded, color: context.accentCyan, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.repoName, style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: compact ? 16 : 18, fontWeight: FontWeight.bold)),
-                Text('Scan QR or export bundle for P2P', style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 12)),
+                Text(widget.repoName, style: GoogleFonts.inter(color: context.textPrimary, fontSize: compact ? 16 : 18, fontWeight: FontWeight.bold)),
+                Text('Scan QR or export bundle for P2P', style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12)),
               ],
             ),
           ),
@@ -115,7 +115,7 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: AppTheme.accentCyan.withValues(alpha: 0.2), blurRadius: 24),
+          BoxShadow(color: context.accentCyan.withValues(alpha: 0.2), blurRadius: 24),
         ],
       ),
       child: QrImageView(
@@ -133,13 +133,13 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.bg2,
+        color: context.bg2,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: context.border),
       ),
       child: Text(
         widget.remoteUrl,
-        style: GoogleFonts.firaMono(color: AppTheme.accentCyan, fontSize: compact ? 10 : 12),
+        style: GoogleFonts.firaMono(color: context.accentCyan, fontSize: compact ? 10 : 12),
         textAlign: TextAlign.center,
       ),
     );
@@ -169,7 +169,7 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
                 : const Icon(Icons.share_rounded, size: 16),
             label: Text(_isExporting ? 'Preparing Bundle...' : 'Direct P2P Share'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentOrange,
+              backgroundColor: context.accentOrange,
               foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
@@ -193,12 +193,12 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
         await Share.shareXFiles([file], text: 'GitLane Repository: ${widget.repoName}');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: AppTheme.accentRed, content: Text('Error preparing bundle: $result')),
+          SnackBar(backgroundColor: context.accentRed, content: Text('Error preparing bundle: $result')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: AppTheme.accentRed, content: Text('Share failed: $e')),
+        SnackBar(backgroundColor: context.accentRed, content: Text('Share failed: $e')),
       );
     } finally {
       if (mounted) setState(() => _isExporting = false);
@@ -213,11 +213,11 @@ class _ShareRepoScreenState extends State<ShareRepoScreen> {
 
     if (result == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: AppTheme.accentGreen, content: Text('✓ Bundle exported to: ${widget.repoName}.bundle')),
+        SnackBar(backgroundColor: context.accentGreen, content: Text('✓ Bundle exported to: ${widget.repoName}.bundle')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: AppTheme.accentRed, content: Text('Error creating bundle: $result')),
+        SnackBar(backgroundColor: context.accentRed, content: Text('Error creating bundle: $result')),
       );
     }
   }

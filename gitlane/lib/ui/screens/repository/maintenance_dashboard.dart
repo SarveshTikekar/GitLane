@@ -48,10 +48,10 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg0,
+      backgroundColor: context.bg0,
       appBar: AppBar(
         title: const Text("Maintenance & Health"),
-        backgroundColor: AppTheme.bg0,
+        backgroundColor: context.bg0,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -60,13 +60,13 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
           children: [
             _buildStatusCard(),
             const SizedBox(height: 32),
-            Text("Tools", style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+            Text("Tools", style: GoogleFonts.inter(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
             const SizedBox(height: 16),
             _buildToolTile(
               "Check Integrity",
               "Verify repository object database (fsck).",
               Icons.verified_user_rounded,
-              AppTheme.accentCyan,
+              context.accentCyan,
               _isChecking ? null : _checkHealth,
               _isChecking,
             ),
@@ -75,7 +75,7 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
               "Optimize Storage",
               "Run Garbage Collection and repack objects.",
               Icons.speed_rounded,
-              AppTheme.accentGreen,
+              context.accentGreen,
               _isOptimizing ? null : _runOptimization,
               _isOptimizing,
             ),
@@ -84,7 +84,7 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
               "Repair Repository",
               "Fix index and ref inconsistencies.",
               Icons.build_circle_rounded,
-              AppTheme.accentOrange,
+              context.accentOrange,
               () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Repairing... (Simulation)"))),
               false,
             ),
@@ -93,7 +93,7 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
               "Conflict Simulator",
               "Force a real merge conflict to test the resolver.",
               Icons.difference_rounded,
-              AppTheme.accentBlue,
+              context.accentBlue,
               _isSimulating ? null : _simulateConflict,
               _isSimulating,
             ),
@@ -133,8 +133,8 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
       if (mounted) {
         if (result < 0) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: AppTheme.accentOrange,
+            SnackBar(
+              backgroundColor: context.accentOrange,
               content: Text("✓ Conflict triggered! Check the 'Status' tab."),
             ),
           );
@@ -148,7 +148,7 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: AppTheme.accentRed, content: Text("Simulator error: $e")),
+          SnackBar(backgroundColor: context.accentRed, content: Text("Simulator error: $e")),
         );
       }
     } finally {
@@ -161,21 +161,21 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: (isHealthy ? AppTheme.accentGreen : AppTheme.accentOrange).withValues(alpha: 0.1),
+        color: (isHealthy ? context.accentGreen : context.accentOrange).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: (isHealthy ? AppTheme.accentGreen : AppTheme.accentOrange).withValues(alpha: 0.3)),
+        border: Border.all(color: (isHealthy ? context.accentGreen : context.accentOrange).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: (isHealthy ? AppTheme.accentGreen : AppTheme.accentOrange).withValues(alpha: 0.2),
-            child: Icon(isHealthy ? Icons.check_rounded : Icons.warning_rounded, color: isHealthy ? AppTheme.accentGreen : AppTheme.accentOrange),
+            backgroundColor: (isHealthy ? context.accentGreen : context.accentOrange).withValues(alpha: 0.2),
+            child: Icon(isHealthy ? Icons.check_rounded : Icons.warning_rounded, color: isHealthy ? context.accentGreen : context.accentOrange),
           ),
           const SizedBox(width: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("System Status", style: GoogleFonts.inter(color: AppTheme.textSecondary, fontSize: 12)),
+              Text("System Status", style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12)),
               Text(_healthStatus, style: GoogleFonts.inter(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
             ],
           ),
@@ -190,10 +190,10 @@ class _MaintenanceDashboardState extends State<MaintenanceDashboard> {
         onTap: onTap,
         leading: Icon(icon, color: color),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: context.textSecondary)),
         trailing: loading 
-          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentCyan))
-          : Icon(Icons.chevron_right_rounded, size: 20, color: AppTheme.textMuted),
+          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.accentCyan))
+          : Icon(Icons.chevron_right_rounded, size: 20, color: context.textMuted),
       ),
     );
   }

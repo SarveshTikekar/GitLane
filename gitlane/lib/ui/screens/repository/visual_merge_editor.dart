@@ -82,30 +82,30 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
         title: Text(widget.filePath.split('/').last, style: GoogleFonts.inter(fontSize: 14)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.done_all_rounded, color: AppTheme.accentGreen),
+            icon: Icon(Icons.done_all_rounded, color: context.accentGreen),
             tooltip: "Apply Resolution",
             onPressed: _applyResolution,
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentCyan))
+          ? Center(child: CircularProgressIndicator(color: context.accentCyan))
           : Column(
               children: [
                 _buildConflictNavigator(),
                 Expanded(
                   child: Row(
                     children: [
-                      Expanded(child: _buildSourcePane("YOURS", 'local', AppTheme.accentCyan, _mineScroll)),
-                      VerticalDivider(width: 1, color: AppTheme.border),
-                      Expanded(child: _buildSourcePane("THEIRS", 'remote', AppTheme.accentOrange, _theirsScroll)),
+                      Expanded(child: _buildSourcePane("YOURS", 'local', context.accentCyan, _mineScroll)),
+                      VerticalDivider(width: 1, color: context.border),
+                      Expanded(child: _buildSourcePane("THEIRS", 'remote', context.accentOrange, _theirsScroll)),
                     ],
                   ),
                 ),
-                Divider(height: 1, color: AppTheme.border),
+                Divider(height: 1, color: context.border),
                 Container(
                   height: 200,
-                  color: AppTheme.bg1,
+                  color: context.bg1,
                   child: _buildResultPane(),
                 ),
               ],
@@ -129,7 +129,7 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: AppTheme.accentOrange, size: 16),
+                  Icon(Icons.warning_amber_rounded, color: context.accentOrange, size: 16),
                   const SizedBox(width: 8),
                   Text(
                     "Conflict ${_currentConflictIndex + 1} of ${conflicts.length}",
@@ -155,12 +155,12 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.psychology_rounded, color: AppTheme.accentCyan, size: 14),
+                Icon(Icons.psychology_rounded, color: context.accentCyan, size: 14),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     "Semantic Hint: Conflicting logic in ${symbols.join(', ')}",
-                    style: GoogleFonts.inter(color: AppTheme.accentCyan, fontSize: 11, fontStyle: FontStyle.italic),
+                    style: GoogleFonts.inter(color: context.accentCyan, fontSize: 11, fontStyle: FontStyle.italic),
                   ),
                 ),
               ],
@@ -234,7 +234,7 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: AppTheme.border.withValues(alpha: 0.3),
+          color: context.border.withValues(alpha: 0.3),
           child: Text("LIVE RESULT PREVIEW", 
             style: GoogleFonts.inter(color: AppTheme.textDim, fontSize: 9, fontWeight: FontWeight.bold)),
         ),
@@ -246,7 +246,7 @@ class _VisualMergeEditorState extends State<VisualMergeEditor> {
               child: Text(
                 preview,
                 style: GoogleFonts.firaCode(
-                  color: selection == null ? AppTheme.textMuted : AppTheme.accentGreen, 
+                  color: selection == null ? context.textMuted : context.accentGreen, 
                   fontSize: 12,
                 ),
               ),

@@ -12,7 +12,7 @@ class MergeResolutionScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {},
-            child: const Text('DONE', style: TextStyle(color: AppTheme.accentCyan)),
+            child: Text('DONE', style: TextStyle(color: context.accentCyan)),
           ),
         ],
       ),
