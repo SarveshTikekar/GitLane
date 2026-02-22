@@ -20,6 +20,7 @@ import 'merge_conflict_screen.dart';
 import 'stash_screen.dart';
 import 'share_repo_screen.dart';
 import 'security_workbench.dart';
+import '../../../services/pat_service.dart';
 import 'reflog_screen.dart';
 import 'analytics_screen.dart';
 import 'remotes_screen.dart';
@@ -966,36 +967,50 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     );
   }
 
-  Future<void> _pullRepo() => _showCredentialDialog(
-    onConfirm: (token) async {
-      setState(() => _isLoading = true);
-      final code = await GitService.pullRepository(widget.repoPath, token);
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showSnack(
-          code == 0 ? '⬇ Pull successful' : 'Pull failed ($code)',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-        );
-        _fetchData();
-        _listRepoFiles();
-      }
-    },
-  );
+  Future<void> _pullRepo() async {
+    final activePat = await PATService.getActiveTokenString();
+    if (activePat != null) {
+      _executePull(activePat);
+    } else {
+      _showCredentialDialog(onConfirm: _executePull);
+    }
+  }
 
-  Future<void> _pushRepo() => _showCredentialDialog(
-    onConfirm: (token) async {
-      setState(() => _isLoading = true);
-      final code = await GitService.pushRepository(widget.repoPath, token);
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showSnack(
-          code == 0 ? '⬆ Push successful' : 'Push failed ($code)',
-          code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-        );
-        _fetchData();
-      }
-    },
-  );
+  Future<void> _executePull(String token) async {
+    setState(() => _isLoading = true);
+    final code = await GitService.pullRepository(widget.repoPath, token);
+    if (mounted) {
+      setState(() => _isLoading = false);
+      _showSnack(
+        code == 0 ? '⬇ Pull successful' : 'Pull failed ($code)',
+        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      );
+      _fetchData();
+      _listRepoFiles();
+    }
+  }
+
+  Future<void> _pushRepo() async {
+    final activePat = await PATService.getActiveTokenString();
+    if (activePat != null) {
+      _executePush(activePat);
+    } else {
+      _showCredentialDialog(onConfirm: _executePush);
+    }
+  }
+
+  Future<void> _executePush(String token) async {
+    setState(() => _isLoading = true);
+    final code = await GitService.pushRepository(widget.repoPath, token);
+    if (mounted) {
+      setState(() => _isLoading = false);
+      _showSnack(
+        code == 0 ? '⬆ Push successful' : 'Push failed ($code)',
+        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+      );
+      _fetchData();
+    }
+  }
 
 
   void _showSnack(String msg, Color color) {
