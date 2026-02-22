@@ -1878,10 +1878,100 @@ run_command_cleanup:
         if (status) git_status_list_free(status);
         if (head_ref) git_reference_free(head_ref);
         if (repo) git_repository_free(repo);
-    } else if (strcmp(cmd, "log") == 0) {
-        strcat(output, "commit d3f8b9e... (HEAD -> main)\nAuthor: User <user@example.com>\nDate: Sat Feb 21 19:15:00 2026 +0530\n\n    Initial commit\n");
+    } else if (strncmp(cmd, "log", 3) == 0) {
+        int oneline = (strstr(cmd, "--oneline") != NULL);
+        git_repository *repo = NULL;
+        git_revwalk *walker = NULL;
+        
+        if (git_repository_open(&repo, path) < 0) {
+            snprintf(output, 1024 * 32, "fatal: %s\n", git_error_str(-1));
+            goto run_command_cleanup;
+        }
+
+        if (git_revwalk_new(&walker, repo) == 0) {
+            git_revwalk_sorting(walker, GIT_SORT_TIME);
+            if (git_revwalk_push_head(walker) == 0) {
+                git_oid oid;
+                int count = 0;
+                int pos = 0;
+                
+                while (git_revwalk_next(&oid, walker) == 0 && count < 50 && pos < (1024 * 32 - 512)) {
+                    git_commit *commit = NULL;
+                    if (git_commit_lookup(&commit, repo, &oid) == 0) {
+                        char hash_str[8]; 
+                        git_oid_tostr(hash_str, sizeof(hash_str), &oid);
+                        
+                        const char *full_msg = git_commit_message(commit);
+                        char msg[128] = {0};
+                        for (int i = 0; i < 127 && full_msg[i] && full_msg[i] != '\n'; i++) {
+                            msg[i] = full_msg[i];
+                        }
+                        
+                        if (oneline) {
+                            pos += snprintf(output + pos, (1024 * 32) - pos, "%s %s\n", hash_str, msg);
+                        } else {
+                            char full_hash[41];
+                            git_oid_tostr(full_hash, sizeof(full_hash), &oid);
+                            const git_signature *author = git_commit_author(commit);
+                            pos += snprintf(output + pos, (1024 * 32) - pos, "commit %s\nAuthor: %s <%s>\n\n    %s\n", 
+                                            full_hash, author->name, author->email, msg);
+                        }
+                        
+                        git_commit_free(commit);
+                        count++;
+                    }
+                }
+            }
+            git_revwalk_free(walker);
+        }
+        if (repo) git_repository_free(repo);
+    } else if (strncmp(cmd, "remote", 6) == 0) {
+        int verbose = (strstr(cmd, "-v") != NULL || strstr(cmd, "-V") != NULL);
+        git_repository *repo = NULL;
+        git_strarray remotes = {0};
+        
+        if (git_repository_open(&repo, path) == 0) {
+            if (git_remote_list(&remotes, repo) == 0) {
+                int pos = 0;
+                for (size_t i = 0; i < remotes.count && pos < (1024 * 32 - 512); i++) {
+                    const char *name = remotes.strings[i];
+                    if (verbose) {
+                        git_remote *remote = NULL;
+                        if (git_remote_lookup(&remote, repo, name) == 0) {
+                            const char *url = git_remote_url(remote);
+                            pos += snprintf(output + pos, (1024 * 32) - pos, "%s\t%s (fetch)\n%s\t%s (push)\n", name, url ? url : "", name, url ? url : "");
+                            git_remote_free(remote);
+                        } else {
+                            pos += snprintf(output + pos, (1024 * 32) - pos, "%s\n", name);
+                        }
+                    } else {
+                        pos += snprintf(output + pos, (1024 * 32) - pos, "%s\n", name);
+                    }
+                }
+                git_strarray_dispose(&remotes);
+            }
+            git_repository_free(repo);
+        } else {
+             snprintf(output, 1024 * 32, "fatal: not a git repository\n");
+        }
+    } else if (strcmp(cmd, "tag") == 0) {
+        git_repository *repo = NULL;
+        git_strarray tag_names = {0};
+        
+        if (git_repository_open(&repo, path) == 0) {
+            if (git_tag_list(&tag_names, repo) == 0) {
+                int pos = 0;
+                for (size_t i = 0; i < tag_names.count && pos < (1024 * 32 - 128); i++) {
+                    pos += snprintf(output + pos, (1024 * 32) - pos, "%s\n", tag_names.strings[i]);
+                }
+                git_strarray_dispose(&tag_names);
+            }
+            git_repository_free(repo);
+        } else {
+             snprintf(output, 1024 * 32, "fatal: not a git repository\n");
+        }
     } else if (strcmp(cmd, "help") == 0) {
-        strcat(output, "Supported commands: status, log, branch, diff, remote, help\n");
+        strcat(output, "Supported commands: status, log, branch, diff, remote, tag, help\n");
     } else {
         strcat(output, "gitlane: '");
         strcat(output, cmd);
@@ -2612,30 +2702,4 @@ Java_com_example_gitlane_GitBridge_runHealthCheck(
     git_libgit2_shutdown();
     return (*env)->NewStringUTF(env, result_msg);
 }
-<<<<<<< HEAD
 
-JNIEXPORT jint JNICALL
-Java_com_example_gitlane_GitBridge_createBundle(
-        JNIEnv *env, jobject obj, jstring jpath, jstring jbundlePath) {
-    git_libgit2_init();
-    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
-    const char *bundlePath = (*env)->GetStringUTFChars(env, jbundlePath, NULL);
-    git_repository *repo = NULL;
-    int result = -1;
-
-    if (git_repository_open(&repo, path) == 0) {
-        // Create bundle for all references
-        // Note: For simplicity, we bundle all refs. 
-        // In a real app, we might allow refspec selection.
-        result = git_bundle_create(bundlePath, repo, NULL);
-    }
-
-    if (repo) git_repository_free(repo);
-    (*env)->ReleaseStringUTFChars(env, jpath, path);
-    (*env)->ReleaseStringUTFChars(env, jbundlePath, bundlePath);
-    git_libgit2_shutdown();
-    return (jint)result;
-}
-
-=======
->>>>>>> main

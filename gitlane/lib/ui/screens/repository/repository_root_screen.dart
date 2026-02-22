@@ -375,18 +375,22 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
                     setDialogState(() => pushAfter = val ?? false),
               ),
               CheckboxListTile(
-              CheckboxListTile(
-                title: Text('Sign with GPG',
-                    style: GoogleFonts.inter(fontSize: 14)),
+                title: Text(
+                  'Sign with GPG',
+                  style: GoogleFonts.inter(fontSize: 14),
+                ),
                 value: signWithGPG,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppTheme.accentOrange,
-                onChanged: (val) => setDialogState(() => signWithGPG = val ?? false),
+                onChanged: (val) =>
+                    setDialogState(() => signWithGPG = val ?? false),
               ),
               CheckboxListTile(
-                title: Text('Create tag',
-                    style: GoogleFonts.inter(fontSize: 14)),
+                title: Text(
+                  'Create tag',
+                  style: GoogleFonts.inter(fontSize: 14),
+                ),
                 value: createTag,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
@@ -1341,7 +1345,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           if (res == true) _fetchData();
         });
         break;
-        // Consolidated into reordered switch
+      // Consolidated into reordered switch
       case 'quantum':
         Navigator.push(
           context,
@@ -1369,7 +1373,7 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
           ),
         );
         break;
-        // Consolidated into 'security'
+      // Consolidated into 'security'
       case 'health':
         Navigator.push(
           context,
