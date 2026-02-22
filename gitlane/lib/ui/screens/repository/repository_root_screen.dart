@@ -992,10 +992,21 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     final code = await GitService.pullRepository(widget.repoPath, token);
     if (mounted) {
       setState(() => _isLoading = false);
-      _showSnack(
-        code == 0 ? '⬇ Pull successful' : 'Pull failed ($code)',
-        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-      );
+      
+      String msg = 'Pull failed ($code)';
+      Color color = AppTheme.accentRed;
+      
+      if (code == 0) {
+        msg = '⬇ Pull successful (Fast-forward)';
+        color = AppTheme.accentGreen;
+      } else if (code == -2) {
+        msg = '⚠ Branch diverged. Normal Merge/Rebase required.';
+        color = AppTheme.accentYellow;
+      } else if (code == -12) {
+        msg = '⛔ Authentication failed. Active PAT was rejected.';
+      }
+      
+      _showSnack(msg, color);
       _fetchData();
       _listRepoFiles();
     }
@@ -1015,10 +1026,20 @@ class _RepositoryRootScreenState extends State<RepositoryRootScreen>
     final code = await GitService.pushRepository(widget.repoPath, token);
     if (mounted) {
       setState(() => _isLoading = false);
-      _showSnack(
-        code == 0 ? '⬆ Push successful' : 'Push failed ($code)',
-        code == 0 ? AppTheme.accentGreen : AppTheme.accentRed,
-      );
+      
+      String msg = 'Push failed ($code)';
+      Color color = AppTheme.accentRed;
+      
+      if (code == 0) {
+        msg = '⬆ Push successful';
+        color = AppTheme.accentGreen;
+      } else if (code == -1) {
+        msg = '⛔ Push rejected by server (Unauthorized / Diverged)';
+      } else if (code == -12) {
+        msg = '⛔ Authentication failed. Active PAT was rejected.';
+      }
+      
+      _showSnack(msg, color);
       _fetchData();
     }
   }
